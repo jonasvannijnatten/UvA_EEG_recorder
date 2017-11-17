@@ -47,7 +47,14 @@ function EEG_recorder_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 guidata(hObject, handles);
 curdir = cd;
-addpath([curdir filesep 'Data']);
+if ~(exist('Backup','dir')==7)
+    mkdir('Backup')
+    addpath([curdir filesep 'Backup']);
+end
+if ~(exist('Data','dir')==7)
+    mkdir('Data');
+    addpath([curdir filesep 'Data']);
+end
 addpath(genpath([curdir filesep 'Functions']));
 
 function varargout = EEG_recorder_OutputFcn(hObject, eventdata, handles)
@@ -85,10 +92,11 @@ disp('Manually stopped')
 ai = daqfind;
 if ~isempty(ai)
     stop(ai)
+    disp('Acquisition object cleared')
     %     delete(ai)
     %     clear ai
 end
-disp('Acquisition object cleared')
+
 if save_disk == 1 || save_diskmem == 1
     data = daqread(FileName);
 end
@@ -124,7 +132,7 @@ function Start_EEG_Callback(hObject, eventdata, handles)
 disp('---------------------------------Start-------------------------------------')
 disp(['Recording started at: ' datestr(now)])
 set(handles.Start_EEG, 'Enable','off')
-    set(handles.Clear, 'Enable','off')
+     set(handles.clear, 'Enable','off')
 global dur_aq
 global Fs
 global num_chan
@@ -286,8 +294,7 @@ if (get(handles.save_diskmem, 'Value') == get(handles.save_diskmem, 'Max'))
     save_diskmem        = 1;
     ai.LoggingMode      = 'Disk&Memory';
     ai.LogToDiskMode    = 'Index';
-    FileName            = 'backupData';
-    ai.LogFileName      = FileName;
+    ai.LogFileName      = [curdir '\backup\backup' datestr(now,'yyyymmddTHHMM')];
 else
     save_diskmem = 0;
 end
