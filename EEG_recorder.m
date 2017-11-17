@@ -46,11 +46,14 @@ end
 function EEG_recorder_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 guidata(hObject, handles);
+set(handles.start_recording, 'Enable','on');
+set(handles.stop_recording, 'Enable','off');
+set(handles.clear, 'Enable','off');
 curdir = cd;
 if ~(exist('Backup','dir')==7)
     mkdir('Backup')
-    addpath([curdir filesep 'Backup']);
 end
+addpath([curdir filesep 'Backup']);
 if ~(exist('Data','dir')==7)
     mkdir('Data');
     addpath([curdir filesep 'Data']);
@@ -59,6 +62,9 @@ addpath(genpath([curdir filesep 'Functions']));
 
 function varargout = EEG_recorder_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
+fprintf('powering up...\n')
+set(gcf, 'units','normalized','outerposition',[0 0.03 1 .97]); % maximize screen
+fprintf('Welcome to the EEG recorder!\n')
 
 function find_lega_Callback(hObject, eventdata, handles)
 global ai
@@ -79,7 +85,7 @@ rates.ConstraintValue
 delete(ai)
 clear ai
 
-function stop_daq_Callback(hObject, eventdata, handles)
+function stop_recording_Callback(hObject, eventdata, handles)
 % global ai
 % global data
 global manualstop
@@ -98,11 +104,17 @@ if ~isempty(ai)
 end
 
 if save_disk == 1 || save_diskmem == 1
-    data = daqread(FileName);
+    if exist(FileName,'file')==2
+        data = daqread(FileName);
+    else
+        fprintf('no data to backup')
+    end
 end
 disp(['Recorded ' num2str(length(data)/256) ' seconds of data'])
 disp(['Recording ended at: '  datestr(now)])
 disp('---------------------------------Stop--------------------------------------')
+set(handles.start_recording,'Enable','on');
+set(handles.dur_aq,'Enable','on');
 % data = getdata(ai);
 % if (~isempty(daqfind))
 %     stop(daqfind)
@@ -128,11 +140,11 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-function Start_EEG_Callback(hObject, eventdata, handles)
-disp('---------------------------------Start-------------------------------------')
-disp(['Recording started at: ' datestr(now)])
-set(handles.Start_EEG, 'Enable','off')
-     set(handles.clear, 'Enable','off')
+function start_recording_Callback(hObject, eventdata, handles)
+set(handles.start_recording, 'Enable','off')
+set(handles.clear, 'Enable','off')
+set(handles.stop_recording,'Enable','on')
+set(handles.dur_aq,'Enable','off');
 global dur_aq
 global Fs
 global num_chan
@@ -161,8 +173,6 @@ global channel_8
 ai = daqfind;
 if ~isempty(ai)
     stop(ai)
-    %     delete(ai);
-    %     clear ai
 end
 
 if get(handles.channel_1, 'Value') == get(handles.channel_1, 'Max')
@@ -235,13 +245,14 @@ if get(handles.ch15_on, 'Value') == get(handles.ch15_on, 'Max')
 else
     ch15_on = 0;
 end
-
+fprintf('getting recording settings \n')
 dur_aq      = str2double(get(handles.dur_aq,'String'));
 Fs          = str2double(get(handles.Fs_vak,'String'));
 chan_d      = str2double(get(handles.chan_d,'String'));
 fft_l       = str2double(get(handles.fft_ll,'String'));
 preview     = str2double(get(handles.prev_t,'String'));
 manualstop  = 0;
+
 
 % global ana_only_on
 % if (get(handles.ana_only_on,'Value') == get(handles.ana_only_on,'Max'))
@@ -258,10 +269,16 @@ if (get(handles.save_SD_on,'Value') == get(handles.save_SD_on,'Max'))
 else
     save_SD_on =0;
 end
-
+fprintf('connecting to recording device \n')
 daqinfo = daqhwinfo('gmlplusdaq');
 if isempty(daqinfo.InstalledBoardIds)
-    errordlg('there is no connection with the MOBILab')
+    errordlg(sprintf(['Unable to connect to the recording device. Make sure that:\n' ...
+    '- the device is plugged in \n- the device is turned on\n' ... 
+    '- the device is ready (green light blinking)\n- the drivers are installed correctly']))
+    set(handles.start_recording, 'Enable','on');
+    set(handles.stop_recording, 'Enable','off');
+    set(handles.clear, 'Enable','off');
+    return
 end
 comport = str2double(daqinfo.InstalledBoardIds{1});
 
@@ -284,8 +301,7 @@ if (get(handles.save_disk, 'Value') == get(handles.save_disk, 'Max'))
     save_disk           = 1;
     ai.LoggingMode      = 'Disk';
     ai.LogToDiskMode    = 'Index';
-    FileName            = 'backupData';
-    ai.LogFileName      = FileName;
+    ai.LogFileName      = [curdir '\backup\backup' datestr(now,'yyyymmddTHHMM')];
 else
     save_disk = 0;
 end
@@ -370,7 +386,7 @@ channels_on = [analog_channels_on digital_channels_on];
 channel_selection = find(channels_on);
 num_chan_plot = length(channel_selection);
 
-disp(['nr of channels: ' num2str(num_chan)])
+fprintf('nr of channels: %d \n', num2str(num_chan));
 set(ai,'SamplesPerTrigger',dur_aq*Fs);
 global a
 chan_d = chan_d / 10000;
@@ -381,7 +397,8 @@ for k = 1:num_chan_plot
 end
 hold(handles.axes1,'off')
 
-
+disp('---------------------------------Start-------------------------------------')
+fprintf(['Recording started at: \n' datestr(now)])
 start(ai)
 
 while ai.SamplesAcquired <= preview && manualstop == 0
@@ -390,18 +407,6 @@ end
 ai.SamplesAcquired;
 while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     data = peekdata(ai,preview);
-    %     if ana_only_on == 1
-    %         plot(handles.axes1,data(:,1)+a(8),'b'); hold(handles.axes1,'on')
-    %         plot(handles.axes1,data(:,2)+a(7),'b'); hold(handles.axes1,'on')
-    %         plot(handles.axes1,data(:,3)+a(6),'b'); hold(handles.axes1,'on')
-    %         plot(handles.axes1,data(:,4)+a(5),'b'); hold(handles.axes1,'on')
-    %         plot(handles.axes1,data(:,5)+a(4),'b'); hold(handles.axes1,'on')
-    %         plot(handles.axes1,data(:,6)+a(3),'b'); hold(handles.axes1,'on')
-    %         plot(handles.axes1,data(:,7)+a(2),'b'); hold(handles.axes1,'on')
-    %         plot(handles.axes1,data(:,8)+a(1),'b'); grid(handles.axes1,'on')
-    %         grid(handles.axes1,'on')
-    %         drawnow; hold(handles.axes1,'off')
-    %     else
     [k1 k2] = size(data);
     %         b = wrev(a);
     digicounter  = 0;
@@ -425,93 +430,107 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     data    = peekdata(ai,fft_l);
     fft_selection = length(find(channels_on(1:8)));
     plot_counter = 0;
-    if channel_1
-        L       = length(data(:,1));
-        NFFT    = 2^nextpow2(L);
-        Yo      = fft(data(:,1),NFFT)/L;
-        fo      = Fs/2*linspace(0,1,NFFT/2+1);
-        spectraldata = 2*abs(Yo(1:NFFT/2+1));
-        freqindex1 = find(fo>=minfreq,1);
-        freqindex2 = find(fo>=maxfreq,1);
-        plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'),hold(handles.axes2,'on')
-        plot_counter = plot_counter + 1;
+    for ichan = 1:8
+        if eval(['channel_' num2str(ichan)])
+            L       = length(data(:,ichan));
+            NFFT    = 2^nextpow2(L);
+            Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/L;
+            fo      = Fs/2*linspace(0,1,NFFT/2+1);
+            spectraldata = 2*abs(Yo(1:NFFT/2+1));
+            freqindex1 = find(fo>=minfreq,1);
+            freqindex2 = find(fo>=maxfreq,1);
+            plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'),hold(handles.axes2,'on')
+            plot_counter = plot_counter + 1;
+        end
     end
-    if channel_2
-        L       = length(data(:,2));
-        NFFT    = 2^nextpow2(L);
-        Yo      = fft(data(:,2),NFFT)/L;
-        fo      = Fs/2*linspace(0,1,NFFT/2+1);
-        spectraldata = 2*abs(Yo(1:NFFT/2+1));
-        freqindex1 = find(fo>=minfreq,1);
-        freqindex2 = find(fo>=maxfreq,1);
-        plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
-        plot_counter = plot_counter + 1;
-    end
-    if channel_3
-        L=length(data(:,3));
-        NFFT = 2^nextpow2(L);
-        Yo = fft(data(:,3),NFFT)/L;
-        fo = Fs/2*linspace(0,1,NFFT/2+1);
-        spectraldata = 2*abs(Yo(1:NFFT/2+1));
-        freqindex1 = find(fo>=minfreq,1);
-        freqindex2 = find(fo>=maxfreq,1);
-        plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
-        plot_counter = plot_counter + 1;
-    end
-    if channel_4
-        L=length(data(:,4));
-        NFFT = 2^nextpow2(L);
-        Yo = fft(data(:,4),NFFT)/L;
-        fo = Fs/2*linspace(0,1,NFFT/2+1);
-        spectraldata = 2*abs(Yo(1:NFFT/2+1));
-        freqindex1 = find(fo>=minfreq,1);
-        freqindex2 = find(fo>=maxfreq,1);
-        plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
-        plot_counter = plot_counter + 1;
-    end
-    if channel_5
-        L=length(data(:,5));
-        NFFT = 2^nextpow2(L);
-        Yo = fft(data(:,5),NFFT)/L;
-        fo = Fs/2*linspace(0,1,NFFT/2+1);
-        spectraldata = 2*abs(Yo(1:NFFT/2+1));
-        freqindex1 = find(fo>=minfreq,1);
-        freqindex2 = find(fo>=maxfreq,1);
-        plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r');hold(handles.axes2,'on')
-        plot_counter = plot_counter + 1;
-    end
-    if channel_6
-        L=length(data(:,6));
-        NFFT = 2^nextpow2(L);
-        Yo = fft(data(:,6),NFFT)/L;
-        fo = Fs/2*linspace(0,1,NFFT/2+1);
-        spectraldata = 2*abs(Yo(1:NFFT/2+1));
-        freqindex1 = find(fo>=minfreq,1);
-        freqindex2 = find(fo>=maxfreq,1);
-        plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
-        plot_counter = plot_counter + 1;
-    end
-    if channel_7
-        L=length(data(:,7));
-        NFFT = 2^nextpow2(L);
-        Yo = fft(data(:,7),NFFT)/L;
-        fo = Fs/2*linspace(0,1,NFFT/2+1);
-        spectraldata = 2*abs(Yo(1:NFFT/2+1));
-        freqindex1 = find(fo>=minfreq,1);
-        freqindex2 = find(fo>=maxfreq,1);
-        plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
-        plot_counter = plot_counter + 1;
-    end
-    if channel_8
-        L=length(data(:,8));
-        NFFT = 2^nextpow2(L);
-        Yo = fft(data(:,8),NFFT)/L;
-        fo = Fs/2*linspace(0,1,NFFT/2+1);
-        spectraldata = 2*abs(Yo(1:NFFT/2+1));
-        freqindex1 = find(fo>=minfreq,1);
-        freqindex2 = find(fo>=maxfreq,1);
-        plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
-    end
+    
+%     if channel_1
+%         L       = length(data(:,1));
+%         NFFT    = 2^nextpow2(L);
+%         Yo      = fft(data(:,1),NFFT)/L;
+%         fo      = Fs/2*linspace(0,1,NFFT/2+1);
+%         spectraldata = 2*abs(Yo(1:NFFT/2+1));
+%         freqindex1 = find(fo>=minfreq,1);
+%         freqindex2 = find(fo>=maxfreq,1);
+%         plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'),hold(handles.axes2,'on')
+%         plot_counter = plot_counter + 1;
+%     end
+%     if channel_2
+%         L       = length(data(:,2));
+%         NFFT    = 2^nextpow2(L);
+%         Yo      = fft(data(:,2),NFFT)/L;
+%         fo      = Fs/2*linspace(0,1,NFFT/2+1);
+%         spectraldata = 2*abs(Yo(1:NFFT/2+1));
+%         freqindex1 = find(fo>=minfreq,1);
+%         freqindex2 = find(fo>=maxfreq,1);
+%         plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
+%         plot_counter = plot_counter + 1;
+%     end
+%     if channel_3
+%         L=length(data(:,3));
+%         NFFT = 2^nextpow2(L);
+%         Yo = fft(data(:,3),NFFT)/L;
+%         fo = Fs/2*linspace(0,1,NFFT/2+1);
+%         spectraldata = 2*abs(Yo(1:NFFT/2+1));
+%         freqindex1 = find(fo>=minfreq,1);
+%         freqindex2 = find(fo>=maxfreq,1);
+%         plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
+%         plot_counter = plot_counter + 1;
+%     end
+%     if channel_4
+%         L=length(data(:,4));
+%         NFFT = 2^nextpow2(L);
+%         Yo = fft(data(:,4),NFFT)/L;
+%         fo = Fs/2*linspace(0,1,NFFT/2+1);
+%         spectraldata = 2*abs(Yo(1:NFFT/2+1));
+%         freqindex1 = find(fo>=minfreq,1);
+%         freqindex2 = find(fo>=maxfreq,1);
+%         plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
+%         plot_counter = plot_counter + 1;
+%     end
+%     if channel_5
+%         L=length(data(:,5));
+%         NFFT = 2^nextpow2(L);
+%         Yo = fft(data(:,5),NFFT)/L;
+%         fo = Fs/2*linspace(0,1,NFFT/2+1);
+%         spectraldata = 2*abs(Yo(1:NFFT/2+1));
+%         freqindex1 = find(fo>=minfreq,1);
+%         freqindex2 = find(fo>=maxfreq,1);
+%         plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r');hold(handles.axes2,'on')
+%         plot_counter = plot_counter + 1;
+%     end
+%     if channel_6
+%         L=length(data(:,6));
+%         NFFT = 2^nextpow2(L);
+%         Yo = fft(data(:,6),NFFT)/L;
+%         fo = Fs/2*linspace(0,1,NFFT/2+1);
+%         spectraldata = 2*abs(Yo(1:NFFT/2+1));
+%         freqindex1 = find(fo>=minfreq,1);
+%         freqindex2 = find(fo>=maxfreq,1);
+%         plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
+%         plot_counter = plot_counter + 1;
+%     end
+%     if channel_7
+%         L=length(data(:,7));
+%         NFFT = 2^nextpow2(L);
+%         Yo = fft(data(:,7),NFFT)/L;
+%         fo = Fs/2*linspace(0,1,NFFT/2+1);
+%         spectraldata = 2*abs(Yo(1:NFFT/2+1));
+%         freqindex1 = find(fo>=minfreq,1);
+%         freqindex2 = find(fo>=maxfreq,1);
+%         plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
+%         plot_counter = plot_counter + 1;
+%     end
+%     if channel_8
+%         L=length(data(:,8));
+%         NFFT = 2^nextpow2(L);
+%         Yo = fft(data(:,8),NFFT)/L;
+%         fo = Fs/2*linspace(0,1,NFFT/2+1);
+%         spectraldata = 2*abs(Yo(1:NFFT/2+1));
+%         freqindex1 = find(fo>=minfreq,1);
+%         freqindex2 = find(fo>=maxfreq,1);
+%         plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10,'r'); hold(handles.axes2,'on')
+%     end
     drawnow; hold(handles.axes2,'off')
 end
 
@@ -607,14 +626,14 @@ plot(handles.axes2,fo,2*abs(Yo(1:NFFT/2+1))+a(1)/10,'r'); hold(handles.axes2,'on
 
 grid(handles.axes1,'on')
 drawnow; hold(handles.axes2,'off')
-set(handles.Start_EEG, 'Enable','on')
+set(handles.start_recording, 'Enable','on')
 if manualstop == 0
     delete(ai)
     clear ai
     disp('Acquisition object cleared')
     disp(['Recording ended at: '  datestr(now)])
     disp('---------------------------------Stop--------------------------------------')
-    set(handles.Start_EEG, 'Enable','on')
+    set(handles.start_recording, 'Enable','on')
     set(handles.Clear, 'Enable','on')
 end
 
@@ -680,7 +699,7 @@ delete(ai)
 clear ai
 cla(handles.axes1,'reset')
 cla(handles.axes2,'reset')
-set(handles.Start_EEG, 'Enable','on')
+set(handles.start_recording, 'Enable','on')
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
 global data
