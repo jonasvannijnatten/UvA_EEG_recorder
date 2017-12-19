@@ -44,21 +44,22 @@ end
 % End initialization code - DO NOT EDIT
 
 function EEG_recorder_OpeningFcn(hObject, eventdata, handles, varargin)
-handles.output = hObject;
-guidata(hObject, handles);
 set(handles.start_recording, 'Enable','on');
 set(handles.stop_recording, 'Enable','off');
 set(handles.clear, 'Enable','off');
-curdir = cd;
+handles.curdir = cd;
 if ~(exist('Backup','dir')==7)
     mkdir('Backup')
 end
-addpath([curdir filesep 'Backup']);
+addpath([handles.curdir filesep 'Backup']);
 if ~(exist('Data','dir')==7)
     mkdir('Data');
-    addpath([curdir filesep 'Data']);
+    addpath([handles.curdir filesep 'Data']);
 end
-addpath(genpath([curdir filesep 'Functions']));
+addpath(genpath([handles.curdir filesep 'Functions']));
+
+handles.output = hObject;
+guidata(hObject, handles);
 
 function varargout = EEG_recorder_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
@@ -99,8 +100,10 @@ ai = daqfind;
 if ~isempty(ai)
     stop(ai)
     disp('Acquisition object cleared')
-    %     delete(ai)
-    %     clear ai
+    disp(['Recorded ' num2str(length(data)/256) ' seconds of data'])
+    disp(['Recording ended at: '  datestr(now)])
+    disp('---------------------------------Stop--------------------------------------')
+    pause(.1);
 end
 
 if save_disk == 1 || save_diskmem == 1
@@ -110,15 +113,11 @@ if save_disk == 1 || save_diskmem == 1
         fprintf('no data to backup\n')
     end
 end
-disp(['Recorded ' num2str(length(data)/256) ' seconds of data'])
-disp(['Recording ended at: '  datestr(now)])
-disp('---------------------------------Stop--------------------------------------')
 set(handles.start_recording, 'Enable', 'off');
 pause(.1);
 set(handles.stop_recording, 'Enable', 'off');
 set(handles.dur_aq,'Enable','on');
 set(handles.clear,'Enable','on');
-pause(.1);
 
 function dur_aq_Callback(hObject, eventdata, handles)
 global dur_aq
@@ -139,6 +138,7 @@ end
 
 
 function start_recording_Callback(hObject, eventdata, handles)
+fprintf('\n')
 set(handles.start_recording, 'Enable','off')
 set(handles.clear, 'Enable','off')
 set(handles.stop_recording,'Enable','on')
@@ -153,296 +153,175 @@ global fft_l
 global preview
 global ai
 global manualstop
-global ch9_on; global ch10_on; global ch11_on;
-global ch12_on; global ch13_on; global ch14_on;
-global ch15_on; global ch16_on;
-global channel_1
-global channel_2
-global channel_3
-global channel_4
-global channel_5
-global channel_6
-global channel_7
-global channel_8
-curdir = cd;
 
-wb = waitbar(0);
-waitbar(.1,wb,'terminate any running recordings');
-ai = daqfind;
-if ~isempty(ai)
-    stop(ai)
-end
+curdir = handles.curdir;
 
-waitbar(.2,wb,'setting viewing parameters');
-if get(handles.channel_1, 'Value') == get(handles.channel_1, 'Max')
-    channel_1 = 1;
-else
-    channel_1 = 0;
-end
-if get(handles.channel_2, 'Value') == get(handles.channel_2, 'Max')
-    channel_2 = 1;
-else
-    channel_2 = 0;
-end
-if get(handles.channel_3, 'Value') == get(handles.channel_3, 'Max')
-    channel_3 = 1;
-else
-    channel_3 = 0;
-end
-if get(handles.channel_4, 'Value') == get(handles.channel_4, 'Max')
-    channel_4 = 1;
-else
-    channel_4 = 0;
-end
-if get(handles.channel_5, 'Value') == get(handles.channel_5, 'Max')
-    channel_5 = 1;
-else
-    channel_5 = 0;
-end
-if get(handles.channel_6, 'Value') == get(handles.channel_6, 'Max')
-    channel_6 = 1;
-else
-    channel_6 = 0;
-end
-if get(handles.channel_7, 'Value') == get(handles.channel_7, 'Max')
-    channel_7 = 1;
-else
-    channel_7 = 0;
-end
-if get(handles.channel_8, 'Value') == get(handles.channel_8, 'Max')
-    channel_8 = 1;
-else
-    channel_8 = 0;
-end
-if get(handles.ch9_on, 'Value') == get(handles.ch9_on, 'Max')
-    ch9_on = 1;
-else
-    ch9_on = 0;
-end
-if get(handles.ch10_on, 'Value') == get(handles.ch10_on, 'Max')
-    ch10_on = 1;
-else
-    ch10_on = 0;
-end
-if get(handles.ch12_on, 'Value') == get(handles.ch12_on, 'Max')
-    ch12_on = 1;
-else
-    ch12_on = 0;
-end
-if get(handles.ch13_on, 'Value') == get(handles.ch13_on, 'Max')
-    ch13_on = 1;
-else
-    ch13_on = 0;
-end
-if get(handles.ch14_on, 'Value') == get(handles.ch14_on, 'Max')
-    ch14_on = 1;
-else
-    ch14_on = 0;
-end
-if get(handles.ch15_on, 'Value') == get(handles.ch15_on, 'Max')
-    ch15_on = 1;
-else
-    ch15_on = 0;
-end
-fprintf('setting viewing parameters\n')
-dur_aq      = str2double(get(handles.dur_aq,'String'));
-Fs          = str2double(get(handles.Fs_vak,'String'));
-chan_d      = str2double(get(handles.chan_d,'String'));
-fft_l       = str2double(get(handles.fft_ll,'String'));
-preview     = str2double(get(handles.prev_t,'String'));
-manualstop  = 0;
-
-
-% global ana_only_on
-% if (get(handles.ana_only_on,'Value') == get(handles.ana_only_on,'Max'))
-%     ana_only_on =1;
-% else
-%     ana_only_on =0;
-% end
-
-
-
-global save_SD_on
-if (get(handles.save_SD_on,'Value') == get(handles.save_SD_on,'Max'))
-    save_SD_on =1;
-else
-    save_SD_on =0;
-end
-
-waitbar(.3,wb,'searching for recording device');
-
-fprintf('searching for recording device \n')
-daqinfo = daqhwinfo('gmlplusdaq');
-if isempty(daqinfo.InstalledBoardIds)
-    waitbar(.4,wb,'device not found, retrying');
-    fprintf('searching searching again \n')
-    daqreset;
-    daqinfo = daqhwinfo('gmlplusdaq');
-end
-waitbar(.4,wb,'recording device found');
-
-if isempty(daqinfo.InstalledBoardIds)
-    errordlg(sprintf(['Unable to connect to the recording device. Make sure that:\n' ...
-        '- the device is plugged in \n- the device is turned on\n' ...
-        '- the device is ready (green light blinking)\n- the drivers are installed correctly\n'...
-        'If you ran all the above checks and still are unable to connect then call for help.\n'...
-        ]), 'Unable to connect to device')
-    set(handles.start_recording, 'Enable','on');
-    set(handles.stop_recording, 'Enable','off');
-    set(handles.clear, 'Enable','off');
-    close(wb);
-    return
-end
-
-comport = str2double(daqinfo.InstalledBoardIds{1});
-
-waitbar(.5,wb,'connected to recording device');
-fprintf('established connection with %s on comport %s \n', daqinfo.BoardNames{1}, daqinfo.InstalledBoardIds{1})
-
-waitbar(.6,wb,'setting recording parameters');
-ai = analoginput('gmlplusdaq',comport);
-waitbar(.7,wb,'setting recording parameters');
-if save_SD_on == 1
-    set(ai,'SDCard', 'Enable');
-else
-    set(ai,'SDCard', 'Disable');
-end
-global save_mem
-if (get(handles.save_mem, 'Value') == get(handles.save_mem, 'Max'))
-    save_mem = 1;
-else
-    save_mem = 0;
-end
-global save_disk
-global FileName
-if (get(handles.save_disk, 'Value') == get(handles.save_disk, 'Max'))
-    save_disk           = 1;
-    ai.LoggingMode      = 'Disk';
-    ai.LogToDiskMode    = 'Index';
-    ai.LogFileName      = [curdir '\backup\backup' datestr(now,'yyyymmddTHHMM')];
-else
-    save_disk = 0;
-end
-global save_diskmem
-if (get(handles.save_diskmem, 'Value') == get(handles.save_diskmem, 'Max'))
-    save_diskmem        = 1;
-    ai.LoggingMode      = 'Disk&Memory';
-    ai.LogToDiskMode    = 'Index';
-    ai.LogFileName      = [curdir '\backup\backup' datestr(now,'yyyymmddTHHMM')];
-else
-    save_diskmem = 0;
-end
-addchannel(ai,1:8);
-% if ana_only_on == 1
-% num_chan = 8;
-% else
-num_chan = 8;
-if ch9_on == 1
-    addchannel(ai,9);
-    num_chan = num_chan+1;
-end
-if ch10_on == 1
-    addchannel(ai,10);
-    num_chan = num_chan+1;
-end
-if ch11_on == 1
-    addchannel(ai,11);
-    num_chan = num_chan+1;
-end
-if ch12_on == 1
-    addchannel(ai,12);
-    num_chan = num_chan+1;
-    %         if ch12_out_on == 1
-    %             set(ai,'DIO1direction','Out');
-    %             eval(ch12_out)
-    %         else
-    %             set(ai,'DIO1direction','In');
-    %         end
-end
-if ch13_on == 1
-    addchannel(ai,13);
-    num_chan = num_chan+1;
-    %         if ch13_out_on == 1
-    %             set(ai,'DIO2direction','Out');
-    %             eval(ch13_out)
-    %         else
-    %             set(ai,'DIO2direction','In');
-    %         end
-end
-if ch14_on == 1
-    addchannel(ai,14);
-    num_chan = num_chan+1;
-    %         if ch14_out_on == 1
-    %             set(ai,'DIO3direction','Out');
-    %             eval(ch14_out)
-    %         else
-    %             set(ai,'DIO3direction','In');
-    %         end
-end
-if ch15_on == 1
-    addchannel(ai,15);
-    num_chan = num_chan+1;
-    %         if ch15_out_on == 1
-    %             set(ai,'DIO4direction','Out');
-    %             eval(ch15_out)
-    %         else
-    %             set(ai,'DIO4direction','In');
-    %         end
-end
-if ch16_on == 1
-    addchannel(ai,16);
-    num_chan = num_chan+1;
-end
-
-
-
-analog_channels_on = [channel_1 channel_2 channel_3 channel_4...
-    channel_5 channel_6 channel_7 channel_8];
-digital_channels_on = [ch9_on ch10_on ch12_on ch13_on ch14_on ch15_on ch16_on];
-num_dig_chan = length(find(digital_channels_on));
-
-channels_on = [analog_channels_on digital_channels_on];
-
-channel_selection = find(channels_on);
-num_chan_plot = length(channel_selection);
-
-fprintf('nr of channels: %d \n', num_chan);
-set(ai,'SamplesPerTrigger',dur_aq*Fs);
-global a
-chan_d = chan_d / 10000;
-a = linspace(-chan_d,chan_d,num_chan_plot);
-
-for k = 1:num_chan_plot
-    plot(handles.axes1,zeros(preview,1)+a(k),'b'); hold(handles.axes1,'on')
-end
-hold(handles.axes1,'off')
-
-waitbar(.8,wb,'ready to start recording');
-disp('---------------------------------Start-------------------------------------')
-fprintf('Recording started at: %s \n', datestr(now))
-start(ai)
-waitbar(.8,wb,'recording started. Getting data to plot');
-
-while ai.SamplesAcquired <= preview && manualstop == 0
-    %Wait for samples
-    if (ai.SamplesAcquired) == preview/2
-        waitbar(.9,wb,'recording started. Getting data to plot');        
+handles.wb = waitbar(0);
+try
+    waitbar(.1,handles.wb,'terminate any running recordings');
+    ai = daqfind;
+    if ~isempty(ai)
+        stop(ai)
     end
+    
+    waitbar(.2,handles.wb,'setting viewing parameters');
+    for ichan = 1:8
+        eval(['chan' num2str(ichan) ' = get(handles.channel_' num2str(ichan) ', ''Value'');'])
+    end
+    for ichan = [9 10 12 13 14 15]
+        eval(['chan' num2str(ichan) ' = get(handles.ch' num2str(ichan) '_on , ''Value'');'])
+    end
+  
+    fprintf('setting viewing parameters\n')
+    dur_aq      = str2double(get(handles.dur_aq,'String'));
+    Fs          = str2double(get(handles.Fs_vak,'String'));
+    % chan_d      = str2double(get(handles.chan_d,'String'));
+    fft_l       = str2double(get(handles.fft_ll,'String'));
+    preview     = str2double(get(handles.prev_t,'String'));
+    manualstop  = 0;
+    
+    global save_SD_on
+    if (get(handles.save_SD_on,'Value') == get(handles.save_SD_on,'Max'))
+        save_SD_on =1;
+    else
+        save_SD_on =0;
+    end
+    
+    waitbar(.3,handles.wb,'searching for recording device');
+    
+    fprintf('searching for recording device \n')
+    %% connect to MOBIlab
+    % see if a mobilab was connected before
+    % if so, use the same device
+    % else search for connected devices
+    if ~isfield(handles, 'daqinfo') || isempty(handles.daqinfo.InstalledBoardIds)
+        try
+            handles.daqinfo = getDaqDevice('gmlplusdaq');
+            if isempty(handles.daqinfo.InstalledBoardIds)
+                fprintf('device initialization failed\n')
+                set(handles.start_recording, 'Enable','on');
+                set(handles.stop_recording, 'Enable','off');
+                set(handles.clear, 'Enable','off');
+                close(handles.wb);
+                return
+            end
+        catch ME
+            close(handles.wb);
+            errordlg('Some unexpected error occured while connecting to the MOBIlab. See MATLAB command window for more information.')
+            rethrow(ME);
+        end
+    else
+        fprintf('Using same device as last time\n');
+    end
+    guidata(hObject, handles)
+    waitbar(.5,handles.wb,'connected to recording device');
+    fprintf('established connection with %s on comport %s \n', handles.daqinfo.BoardNames{1}, handles.daqinfo.InstalledBoardIds{1})
+    
+    waitbar(.6,handles.wb,'creating data acquisition object');
+    %% create recording object
+    try
+        ai = analoginput(handles.daqinfo.AdaptorName,handles.daqinfo.comport);
+    catch ME
+        close(handles.wb);
+        errordlg('Some unexpected error occured while connecting to the MOBIlab. See MATLAB command window for more information.')
+        rethrow(ME);
+    end
+    
+    %% Set recording parameters
+    waitbar(.7,handles.wb,'setting recording parameters');
+    if save_SD_on == 1
+        set(ai,'SDCard', 'Enable');
+    else
+        set(ai,'SDCard', 'Disable');
+    end
+    global save_mem
+    if (get(handles.save_mem, 'Value') == get(handles.save_mem, 'Max'))
+        save_mem = 1;
+    else
+        save_mem = 0;
+    end
+    global save_disk
+    global FileName
+    if (get(handles.save_disk, 'Value') == get(handles.save_disk, 'Max'))
+        save_disk           = 1;
+        ai.LoggingMode      = 'Disk';
+        ai.LogToDiskMode    = 'Index';
+        ai.LogFileName      = [curdir '\backup\backup' datestr(now,'yyyymmddTHHMM')];
+    else
+        save_disk = 0;
+    end
+    global save_diskmem
+    if (get(handles.save_diskmem, 'Value') == get(handles.save_diskmem, 'Max'))
+        save_diskmem        = 1;
+        ai.LoggingMode      = 'Disk&Memory';
+        ai.LogToDiskMode    = 'Index';
+        ai.LogFileName      = [curdir '\backup\backup' datestr(now,'yyyymmddTHHMM')];
+    else
+        save_diskmem = 0;
+    end
+    
+    %% add channels to recording object
+    % always record the eight EEG channels
+    addchannel(ai,1:8);
+    num_chan = 8;
+    
+    % check which DIO channels are activated
+    for ichan = [9 10 12 13 14 15]
+        eval(['if chan' num2str(ichan) ' == 1; addchannel(ai,' num2str(ichan) ');  num_chan = num_chan+1; end'])
+    end
+      
+    analog_channels_on = [chan1 chan2 chan3 chan4...
+        chan5 chan6 chan7 chan8];
+    digital_channels_on = [chan9 chan10 chan12 chan13 chan14 chan15];
+    num_dig_chan = length(find(digital_channels_on));
+    
+    channels_on = [analog_channels_on digital_channels_on];
+    
+    channel_selection = find(channels_on);
+    num_chan_plot = length(channel_selection);
+    
+    fprintf('nr of channels: %d \n', num_chan);
+    set(ai,'SamplesPerTrigger',dur_aq*Fs);
+    global a
+    
+catch ME
+    delete(handles.wb)
+    errordlg('Initialization failed! see command window for more information.')
+    rethrow(ME)
 end
-delete(wb);
+
+try
+    waitbar(.8,handles.wb,'ready to start recording');
+    disp('---------------------------------Start-------------------------------------')
+    fprintf('Recording started at: %s \n', datestr(now))
+    start(ai)
+    waitbar(.8,handles.wb,'recording started. Getting data to plot');
+    
+    while ai.SamplesAcquired <= preview && manualstop == 0
+        %Wait for samples
+        if (ai.SamplesAcquired) == preview/2
+            waitbar(.9,handles.wb,'recording started. Getting data to plot');
+        end
+    end
+    delete(handles.wb);
+catch ME
+    delete(handles.wb);
+    errordlg('Gathering preview data failed. See command window for more information.');
+    rethrow(ME);
+end
 ai.SamplesAcquired;
 while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     data = peekdata(ai,preview);
-    [~, nrofchans] = size(data);
     %         b = wrev(a);
     digicounter  = 0;
-    b=sort(a,'descend');
-    for k=1:num_chan_plot
-        if channel_selection(k)<9
-            plot(handles.axes1,data(:,channel_selection(k))+b(k),'b'); hold(handles.axes1,'on')
+    for ichan=1:num_chan_plot
+        a = linspace(-str2double(get(handles.chan_d,'String'))/1000,str2double(get(handles.chan_d,'String'))/1000,num_chan_plot);
+        b=sort(a,'descend');
+        if channel_selection(ichan)<9
+            plot(handles.axes1,data(:,channel_selection(ichan))+b(ichan),'b'); hold(handles.axes1,'on')
         else
             digicounter = digicounter + 1;
-            plot(handles.axes1,data(:,(8+digicounter))./100000+b(k),'r'); hold(handles.axes1,'on')
+            plot(handles.axes1,data(:,(8+digicounter))./100000+b(ichan),'r'); hold(handles.axes1,'on')
         end
         %         set(handles.axes1, 'Ylim', [min(b)-0.001  max(b)+.001])
     end
@@ -457,7 +336,7 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     fft_selection = length(find(channels_on(1:8)));
     plot_counter = 0;
     for ichan = 1:8
-        if eval(['channel_' num2str(ichan)])
+        if eval(['chan' num2str(ichan)])
             L       = length(data(:,ichan));
             NFFT    = 2^nextpow2(L);
             Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/L;
@@ -476,9 +355,6 @@ end
 if manualstop == 0
     stop(ai);
 end
-% alltimers = timerfindall;
-% stop(alltimers(:));
-disp(['Recorded ' num2str(ai.SamplesAcquired/Fs) ' seconds of data'])
 
 if save_mem || save_diskmem
     data = getdata(ai, ai.SamplesAcquired);
@@ -488,7 +364,7 @@ end
 
 [~, nrofchans] = size(data);
 %         b = wrev(a);
-
+chan_d = str2double(get(handles.chan_d, 'String'))/1000;
 a = linspace(-chan_d,chan_d,num_chan);
 b=sort(a,'descend');
 for k=1:nrofchans
@@ -524,6 +400,7 @@ if manualstop == 0
     clear ai
     disp('Acquisition object cleared')
     disp(['Recording ended at: '  datestr(now)])
+    disp(['Recorded ' num2str(length(data)/256) ' seconds of data'])
     disp('---------------------------------Stop--------------------------------------')
     set(handles.stop_recording, 'Enable','off')
     set(handles.start_recording, 'Enable','on')
@@ -650,8 +527,7 @@ end
 % --------------------------------------------------------------------
 function save_Callback(hObject, eventdata, handles)
 global data;
-% [k1 k2] = size(data);
-curdir = cd;
+curdir = handles.curdir;
 cd([curdir filesep 'data']);
 uisave({'data'},'Name');
 cd(curdir);
@@ -677,85 +553,22 @@ Data_plotter
 % --------------------------------------------------------------------
 function Event_cutter_Callback(hObject, eventdata, handles)
 Event_cutter
-function get_serial_Callback(hObject, eventdata, handles)
-global ai
-daqinfo = daqhwinfo('gmlplusdaq');
-comport = str2double(daqinfo.InstalledBoardIds{1});
-ai = analoginput('gmlplusdaq',comport);
-str = get(ai,'DeviceSerial');
-msgbox(str)
-delete(ai)
-clear ai
+
 function prev_t_Callback(hObject, eventdata, handles)
 global preview
 preview = str2double(get(hObject,'String'));
 return
+
 function prev_t_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-function ana_only_on_Callback(hObject, eventdata, handles)
-global ana_only_on
-if (get(hObject,'Value') == get(hObject,'Max'))
-    ana_only_on =1;
-else
-    ana_only_on =0;
-end
 
-function softscop_Callback(hObject, eventdata, handles)
-global ai
-daqinfo = daqhwinfo('gmlplusdaq');
-comport = str2double(daqinfo.InstalledBoardIds{1});
-global Test_mode_on
-if (get(handles.Test_mode_on,'Value') == get(handles.Test_mode_on,'Max'))
-    Test_mode_on =1;
-else
-    Test_mode_on =0;
-end
-ai = analoginput('gmlplusdaq',comport);
-if Test_mode_on == 1
-    set(ai,'Testmode','Enable');
-else
-    set(ai,'Testmode','Disable');
-end
-addchannel (ai,1:16)
-start(ai)
-softscope(ai);
-% --------------------------------------------------------------------
 function filter_Callback(hObject, eventdata, handles)
 filters
 
 function Syllabus_Callback(hObject, eventdata, handles)
 web('Syllabus.htm', '-helpbrowser')
-
-
-% --------------------------------------------------------------------
-% function Syllabus_Callback(hObject, eventdata, handles)
-% hObject    handle to Syllabus (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function Untitled_1_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function Untitled_2_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-function maxfreq_Callback(hObject, eventdata, handles)
-% hObject    handle to maxfreq (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of maxfreq as text
-%        str2double(get(hObject,'String')) returns contents of maxfreq as a double
 
 
 % --- Executes during object creation, after setting all properties.
@@ -772,15 +585,6 @@ end
 
 
 
-function minfreq_Callback(hObject, eventdata, handles)
-% hObject    handle to minfreq (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of minfreq as text
-%        str2double(get(hObject,'String')) returns contents of minfreq as a double
-
-
 % --- Executes during object creation, after setting all properties.
 function minfreq_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to minfreq (see GCBO)
@@ -793,128 +597,3 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
-% --- Executes on button press in channel_1.
-function channel_1_Callback(hObject, eventdata, handles)
-% hObject    handle to channel_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of channel_1
-
-
-% --- Executes on button press in channel_2.
-function channel_2_Callback(hObject, eventdata, handles)
-% hObject    handle to channel_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of channel_2
-
-
-% --- Executes on button press in channel_3.
-function channel_3_Callback(hObject, eventdata, handles)
-% hObject    handle to channel_3 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of channel_3
-
-
-% --- Executes on button press in channel_4.
-function channel_4_Callback(hObject, eventdata, handles)
-% hObject    handle to channel_4 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of channel_4
-
-
-% --- Executes on button press in channel_5.
-function channel_5_Callback(hObject, eventdata, handles)
-% hObject    handle to channel_5 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of channel_5
-
-
-% --- Executes on button press in channel_6.
-function channel_6_Callback(hObject, eventdata, handles)
-% hObject    handle to channel_6 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of channel_6
-
-
-% --- Executes on button press in channel_7.
-function channel_7_Callback(hObject, eventdata, handles)
-% hObject    handle to channel_7 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of channel_7
-
-
-% --- Executes on button press in channel_8.
-function channel_8_Callback(hObject, eventdata, handles)
-% hObject    handle to channel_8 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of channel_8
-
-
-% --- Executes on button press in ch9_on.
-function ch9_on_Callback(hObject, eventdata, handles)
-% hObject    handle to ch9_on (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of ch9_on
-
-
-% --- Executes on button press in ch10_on.
-function ch10_on_Callback(hObject, eventdata, handles)
-% hObject    handle to ch10_on (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of ch10_on
-
-
-% --- Executes on button press in ch12_on.
-function ch12_on_Callback(hObject, eventdata, handles)
-% hObject    handle to ch12_on (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of ch12_on
-
-
-% --- Executes on button press in ch13_on.
-function ch13_on_Callback(hObject, eventdata, handles)
-% hObject    handle to ch13_on (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of ch13_on
-
-
-% --- Executes on button press in ch14_on.
-function ch14_on_Callback(hObject, eventdata, handles)
-% hObject    handle to ch14_on (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of ch14_on
-
-
-% --- Executes on button press in ch15_on.
-function ch15_on_Callback(hObject, eventdata, handles)
-% hObject    handle to ch15_on (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of ch15_on
