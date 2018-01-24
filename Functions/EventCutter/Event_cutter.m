@@ -102,19 +102,26 @@ global filename; global data9
 curdir = cd;
 cd([curdir filesep 'data']);
 [filename, pathname] = ...
-     uigetfile({'*.mat';},'Select a 2D array');
-  load(filename);
-  data9 = data;
- [a b c] = size(data9);
-if c>1
-    errordlg('This function only accepts 2D input','Dimension error');
-end
+    uigetfile({'*.mat';},'Select a 2D array');
 cd(curdir);
-set(handles.load_name,'string',filename)
- [str1] = size(data9);
- str = num2str(str1);
-set(handles.file_size_old,'string',str);
-set(handles.file_size_new,'string',' ');
+if ~isempty(filename)
+    load([pathname filename]);
+    data9 = data;
+    [a b c] = size(data9);
+    if c>1
+        errordlg('This function only accepts 2D input','Dimension error');
+        clear data;
+        set(handles.file_size_old,'string',' ');
+        set(handles.file_size_new,'string',' ');
+        set(handles.load_name,'string',' ');
+    end
+    set(handles.load_name,'string',filename)
+    [str1] = size(data9);
+    str = num2str(str1);
+    set(handles.file_size_old,'string',str);
+    set(handles.file_size_new,'string',' ');
+end
+
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
 web('Event_cutter_help.htm', '-helpbrowser')
