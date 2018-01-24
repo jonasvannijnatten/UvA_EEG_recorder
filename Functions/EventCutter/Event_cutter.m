@@ -65,13 +65,10 @@ col_nr = str2double(get(handles.col_nr,'String'));
 % gr_dan = str2double(get(handles.gr_dan,'String'));
 beg = str2double(get(handles.beg,'String'));
 eind = str2double(get(handles.eind,'String'));
-if size(data9,2) > 8
-    data9(1:end-1,9:end) = diff(data9(:,9:end)); % jonas edit: replace TLL signal by differentiated signal
-end
 
 gr_dan = 4; % hoogte van TTLs, kan aangepast worden
-for i = 1:length(data9)
-    if data9(i,col_nr) >= gr_dan
+for i = 2:length(data9)
+    if diff(data9(i-1:i,col_nr)) >= gr_dan
         sec = data9(i-beg:i+eind,:);
         if isempty(cut_sections )==1
             cut_sections  = sec;
@@ -83,7 +80,7 @@ end
 
 data = cut_sections;
 curdir = cd;
-cd([curdir filesep 'data']);
+cd([curdir filesep 'Data']);
 uisave({'data'},'Name');
 cd(curdir);
 % cut_sections = [];

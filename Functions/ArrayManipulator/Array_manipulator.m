@@ -428,7 +428,7 @@ function save_Callback(hObject, eventdata, handles)
 global array_data
 data = array_data;
 curdir = cd;
-cd([curdir filesep 'data']);
+cd([curdir filesep 'Data']);
 uisave({'data'},'Name');
 cd(curdir);
 clear data;
