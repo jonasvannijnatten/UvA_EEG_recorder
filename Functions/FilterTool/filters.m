@@ -171,9 +171,10 @@ function load_Callback(hObject, eventdata, handles)
 global filename;
 global filter_data
 curdir = cd;
-cd([curdir filesep 'data']);
+cd([curdir filesep 'Data']);
 [filename, pathname] = ...
     uigetfile({'*.mat';},'Select a 2D array');
+cd(curdir);
 if any(filename)
     set(handles.fi_name,'string',filename);
     load([pathname filename]);
@@ -183,14 +184,13 @@ if any(filename)
     set(handles.fi_size,'string',str);
     clear data
 end
-cd(curdir);
 
 function save_Callback(hObject, eventdata, handles)
 global filter_data;
 global power;
 data = filter_data;
 curdir = cd;
-cd([curdir filesep 'data']);
+cd([curdir filesep 'Data']);
 uisave({'data'},'Name');
 cd(curdir);
 clear filename; clear data; clear filter_data;
@@ -198,7 +198,7 @@ str = ' ';
 set(handles.fi_name,'string',str);
 set(handles.fi_size,'string',str);
 curdir = cd;
-cd([curdir filesep 'data']);
+cd([curdir filesep 'Data']);
 uisave({'power'},'Power');
 cd(curdir);
 clear power;

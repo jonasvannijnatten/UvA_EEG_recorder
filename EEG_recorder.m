@@ -22,8 +22,6 @@ function varargout = EEG_recorder(varargin)
 
 % Edit the above text to modify the response to help EEG_recorder
 
-% Last Modified by Eva van Poppel v4.2 08-April-2015 10:49:36
-
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -47,16 +45,16 @@ function EEG_recorder_OpeningFcn(hObject, eventdata, handles, varargin)
 set(handles.start_recording, 'Enable','on');
 set(handles.stop_recording, 'Enable','off');
 set(handles.clear, 'Enable','off');
-handles.curdir = cd;
+handles.maindir = cd;
 if ~(exist('Backup','dir')==7)
     mkdir('Backup')
 end
-addpath([handles.curdir filesep 'Backup']);
+addpath([handles.maindir filesep 'Backup']);
 if ~(exist('Data','dir')==7)
     mkdir('Data');
-    addpath([handles.curdir filesep 'Data']);
 end
-addpath(genpath([handles.curdir filesep 'Functions']));
+addpath(genpath([handles.maindir filesep 'Data']));
+addpath(genpath([handles.maindir filesep 'Functions']));
 
 handles.output = hObject;
 guidata(hObject, handles);
@@ -154,7 +152,7 @@ global preview
 global ai
 global manualstop
 
-curdir = handles.curdir;
+maindir = handles.maindir;
 
 handles.wb = waitbar(0);
 try
@@ -246,7 +244,7 @@ try
         save_disk           = 1;
         ai.LoggingMode      = 'Disk';
         ai.LogToDiskMode    = 'Index';
-        ai.LogFileName      = [curdir '\backup\backup' datestr(now,'yyyymmddTHHMM')];
+        ai.LogFileName      = [maindir '\Backup\backup_' datestr(now,'yyyymmdd_HH:MM')];
     else
         save_disk = 0;
     end
@@ -255,7 +253,7 @@ try
         save_diskmem        = 1;
         ai.LoggingMode      = 'Disk&Memory';
         ai.LogToDiskMode    = 'Index';
-        ai.LogFileName      = [curdir '\backup\backup' datestr(now,'yyyymmddTHHMM')];
+        ai.LogFileName      = [maindir '\Backup\backup' datestr(now,'yyyymmdd_HH:MM')];
     else
         save_diskmem = 0;
     end
@@ -339,7 +337,7 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
         if eval(['chan' num2str(ichan)])
             L       = length(data(:,ichan));
             NFFT    = 2^nextpow2(L);
-            Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/L;
+            Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/NFFT;
             fo      = Fs/2*linspace(0,1,NFFT/2+1);
             spectraldata = 2*abs(Yo(1:NFFT/2+1));
             freqindex1 = find(fo>=minfreq,1);
@@ -383,7 +381,7 @@ plot_counter = 0;
 for ichan = 1:8
     L=length(data(:,ichan));
     NFFT = 2^nextpow2(L);
-    Yo = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/L;
+    Yo = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/NFFT;
     fo = Fs/2*linspace(0,1,NFFT/2+1);
     spectraldata = 2*abs(Yo(1:NFFT/2+1));
     freqindex1 = find(fo>=minfreq,1);
@@ -406,6 +404,8 @@ if manualstop == 0
     set(handles.start_recording, 'Enable','on')
     set(handles.clear, 'Enable','on')
 end
+handles.data = data;
+guidata(hObject, handles);
 
 function set_dio_Callback(hObject, eventdata, handles)
 Config_dio
@@ -472,7 +472,7 @@ cla(handles.axes2,'reset')
 set(handles.start_recording, 'Enable','on')
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-global data
+% global data
 global dur_aq
 dur_aq = str2double(get(handles.dur_aq,'String'));
 global Fs
@@ -483,9 +483,12 @@ global fft_l
 fft_l = str2double(get(handles.fft_l,'String'));
 global preview
 preview = str2double(get(handles.prev_t,'String'));
-
-uiopen
-if exist('data','var')
+cd([handles.maindir filesep 'Data'])
+[filename, pathname] = uigetfile({'*.mat';},'Select file');
+cd(handles.maindir)
+if any(filename)
+    load([pathname filename]);
+    handles.data = data;
     if size(data,3) > 1
         warndlg('You are trying to load cut data (3D). The EEG_recorder is not able to display this')
     else
@@ -506,16 +509,16 @@ if exist('data','var')
         
         minfreq = str2double(get(handles.minfreq, 'String'));
         maxfreq = str2double(get(handles.maxfreq, 'String'));
-        
+                
         for ichan = 1:8
             L       = length(data(:,ichan));
             NFFT    = 2^nextpow2(L);
-            Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/L;
+            Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/NFFT;
             fo      = Fs/2*linspace(0,1,NFFT/2+1);
             spectraldata = 2*abs(Yo(1:NFFT/2+1));
             freqindex1 = find(fo>=minfreq,1);
             freqindex2 = find(fo>=maxfreq,1);
-            plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a((ichan+1)-1)/10,'r'),hold(handles.axes2,'on')
+            plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)-a(ichan)/10,'r'),hold(handles.axes2,'on')
         end
         
         drawnow; hold(handles.axes2,'off');
@@ -523,14 +526,14 @@ if exist('data','var')
     end
     
 end
+guidata(hObject, handles);
 
 % --------------------------------------------------------------------
 function save_Callback(hObject, eventdata, handles)
 global data;
-curdir = handles.curdir;
-cd([curdir filesep 'data']);
+cd([handles.maindir filesep 'Data']);
 uisave({'data'},'Name');
-cd(curdir);
+cd(handles.maindir);
 % --------------------------------------------------------------------
 function tools_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
@@ -597,3 +600,17 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+
+
+% --------------------------------------------------------------------
+function File_Callback(hObject, eventdata, handles)
+% hObject    handle to File (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function Info_Callback(hObject, eventdata, handles)
+% hObject    handle to Info (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)

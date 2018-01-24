@@ -303,7 +303,7 @@ if isempty(corrected_data)
 elseif ~isempty(corrected_data)
     data = corrected_data;
     curdir = cd;
-    cd([curdir filesep 'data']);
+    cd([curdir filesep 'Data']);
     uisave({'data'},'Name');
     cd(curdir);
     clear data;

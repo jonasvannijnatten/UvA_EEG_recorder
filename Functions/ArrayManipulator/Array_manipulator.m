@@ -411,7 +411,8 @@ cd([curdir filesep 'data']);
     uigetfile({'*.mat';},'Select an array');
 cd(curdir);
 if any(filename)
-    load(filename);array_data = data;
+    load([pathname filename]);
+    array_data = data;
     [str1] = size(array_data);
     if length(str1) == 3
         str = [num2str(str1(1)) ' - ' num2str(str1(2)) ' - ' num2str(str1(3))];
@@ -427,7 +428,7 @@ function save_Callback(hObject, eventdata, handles)
 global array_data
 data = array_data;
 curdir = cd;
-cd([curdir filesep 'data']);
+cd([curdir filesep 'Data']);
 uisave({'data'},'Name');
 cd(curdir);
 clear data;

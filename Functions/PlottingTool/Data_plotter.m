@@ -164,10 +164,8 @@ cd([curdir filesep 'data']);
     uigetfile({'*.mat';},'Select a 2D array');
 cd(curdir);
 if any(filenamep)
-%     [filenamep, pathname] = ...
-%         uigetfile({'*.mat';},'Select a 2D array');
     set(handles.l_data,'string',filenamep);
-    load(filenamep);
+    load([pathname filenamep]);
     plotter_data = data;
     [str1] = size(plotter_data);
     str = num2str(str1);
