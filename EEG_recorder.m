@@ -47,7 +47,7 @@ fprintf('powering up...\n')
 set(handles.start_recording, 'Enable','on');
 set(handles.stop_recording, 'Enable','off');
 set(handles.clear, 'Enable','off');
-handles.maindir = cd; % save path to main directory
+handles.mainDir = cd; % save path to main directory
 if ~(exist('Backup','dir')==7) % create 'Backup' directory if necessary
     mkdir('Backup')
     fprintf('created Backup directory\n')
@@ -57,9 +57,10 @@ if ~(exist('Data','dir')==7) % create 'Backup' directory if necessary
     fprintf('created Data directory\n')
 end
 % add subdirectories
-addpath([handles.maindir filesep 'Backup']);
-addpath(genpath([handles.maindir filesep 'Data']));
-addpath(genpath([handles.maindir filesep 'Functions']));
+handles.backupDir   = [mainDir filesep 'Backup'];
+handles.dataDir     = [mainDir filesep 'Data'];
+handles.functionDir = [mainDir filesep 'Functions'];
+addpath(handles.backupDir, genpath(handles.dataDir), genpath(handles.functionsDir));
 
 handles.output = hObject;
 guidata(hObject, handles);
@@ -165,7 +166,7 @@ global preview
 global ai
 global manualstop
 
-maindir = handles.maindir;
+mainDir = handles.mainDir;
 
 handles.wb = waitbar(0);
 try
@@ -258,7 +259,7 @@ try
         save_disk           = 1;
         ai.LoggingMode      = 'Disk';
         ai.LogToDiskMode    = 'Index';
-        ai.LogFileName      = [maindir '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
+        ai.LogFileName      = [mainDir '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
     else
         save_disk = 0;
     end
@@ -267,7 +268,7 @@ try
         save_diskmem        = 1;
         ai.LoggingMode      = 'Disk&Memory';
         ai.LogToDiskMode    = 'Index';
-        ai.LogFileName      = [maindir '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
+        ai.LogFileName      = [mainDir '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
     else
         save_diskmem = 0;
     end
@@ -372,7 +373,7 @@ end
 if save_mem || save_diskmem
     data = getdata(ai, ai.SamplesAcquired);
 elseif save_disk
-    data = daqread(FileName);
+    data = daqread(ai.LogFileName);
 end
 
 [~, nrofchans] = size(data);
@@ -498,9 +499,9 @@ global fft_l
 fft_l = str2double(get(handles.fft_l,'String'));
 global preview
 preview = str2double(get(handles.prev_t,'String'));
-cd([handles.maindir filesep 'Data'])
+cd([handles.mainDir filesep 'Data'])
 [filename, pathname] = uigetfile({'*.mat';},'Select file');
-cd(handles.maindir)
+cd(handles.mainDir)
 if any(filename)
     load([pathname filename]);
     handles.data = data;
@@ -546,9 +547,9 @@ guidata(hObject, handles);
 % --------------------------------------------------------------------
 function save_Callback(hObject, eventdata, handles)
 global data;
-cd([handles.maindir filesep 'Data']);
+cd([handles.mainDir filesep 'Data']);
 uisave({'data'},'Name');
-cd(handles.maindir);
+cd(handles.mainDir);
 % --------------------------------------------------------------------
 function tools_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
