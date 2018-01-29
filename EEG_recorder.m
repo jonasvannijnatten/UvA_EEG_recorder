@@ -42,17 +42,19 @@ end
 % End initialization code - DO NOT EDIT
 
 function EEG_recorder_OpeningFcn(hObject, eventdata, handles, varargin)
+% Enable 'start' button, disable 'stop' and 'clear' button
 set(handles.start_recording, 'Enable','on');
 set(handles.stop_recording, 'Enable','off');
 set(handles.clear, 'Enable','off');
-handles.maindir = cd;
-if ~(exist('Backup','dir')==7)
+handles.maindir = cd; % save path to main directory
+if ~(exist('Backup','dir')==7) % create 'Backup' directory if necessary
     mkdir('Backup')
 end
-addpath([handles.maindir filesep 'Backup']);
-if ~(exist('Data','dir')==7)
+if ~(exist('Data','dir')==7) % create 'Backup' directory if necessary
     mkdir('Data');
 end
+% add subdirectories
+addpath([handles.maindir filesep 'Backup']);
 addpath(genpath([handles.maindir filesep 'Data']));
 addpath(genpath([handles.maindir filesep 'Functions']));
 
@@ -244,7 +246,7 @@ try
         save_disk           = 1;
         ai.LoggingMode      = 'Disk';
         ai.LogToDiskMode    = 'Index';
-        ai.LogFileName      = [maindir '\Backup\backup_' datestr(now,'yyyymmdd_HH:MM')];
+        ai.LogFileName      = [maindir '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
     else
         save_disk = 0;
     end
@@ -253,7 +255,7 @@ try
         save_diskmem        = 1;
         ai.LoggingMode      = 'Disk&Memory';
         ai.LogToDiskMode    = 'Index';
-        ai.LogFileName      = [maindir '\Backup\backup' datestr(now,'yyyymmdd_HH:MM')];
+        ai.LogFileName      = [maindir '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
     else
         save_diskmem = 0;
     end
