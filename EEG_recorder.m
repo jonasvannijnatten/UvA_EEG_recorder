@@ -42,6 +42,7 @@ end
 % End initialization code - DO NOT EDIT
 
 function EEG_recorder_OpeningFcn(hObject, eventdata, handles, varargin)
+fprintf('powering up...\n')
 % Enable 'start' button, disable 'stop' and 'clear' button
 set(handles.start_recording, 'Enable','on');
 set(handles.stop_recording, 'Enable','off');
@@ -49,9 +50,11 @@ set(handles.clear, 'Enable','off');
 handles.maindir = cd; % save path to main directory
 if ~(exist('Backup','dir')==7) % create 'Backup' directory if necessary
     mkdir('Backup')
+    fprintf('created Backup directory\n')
 end
 if ~(exist('Data','dir')==7) % create 'Backup' directory if necessary
     mkdir('Data');
+    fprintf('created Data directory\n')
 end
 % add subdirectories
 addpath([handles.maindir filesep 'Backup']);
@@ -63,9 +66,18 @@ guidata(hObject, handles);
 
 function varargout = EEG_recorder_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
-fprintf('powering up...\n')
-set(gcf, 'units','normalized','outerposition',[0 0.03 1 .97]); % maximize screen
-fprintf('Welcome to the EEG recorder!\n')
+set(gcf, 'units','normalized','outerposition',[0 0 1 1]); % maximize screen
+if strcmp(computer, 'PCWIN64')
+    bitwarning = sprintf([...
+        'You are running a 64-bit version of MATLAB.\n' ...
+        'Recording is currently only available in 32-bit MATLAB.\n' ...
+        'Data analysis tools are available in both versions.\n'...
+        ]);
+    warndlg(bitwarning);
+    fprintf(['\nWARNING:\n' bitwarning '\n']);
+    set(handles.start_recording, 'Enable','off');
+    fprintf('Welcome to the EEG recorder!\n')
+end
 
 function find_lega_Callback(hObject, eventdata, handles)
 global ai
@@ -141,7 +153,6 @@ function start_recording_Callback(hObject, eventdata, handles)
 fprintf('\n')
 set(handles.start_recording, 'Enable','off')
 set(handles.clear, 'Enable','off')
-set(handles.stop_recording,'Enable','on')
 set(handles.dur_aq,'Enable','off');
 pause(.1);
 global dur_aq
@@ -196,6 +207,7 @@ try
     % else search for connected devices
     if ~isfield(handles, 'daqinfo') || isempty(handles.daqinfo.InstalledBoardIds)
         try
+            daqreset;
             handles.daqinfo = getDaqDevice('gmlplusdaq');
             if isempty(handles.daqinfo.InstalledBoardIds)
                 fprintf('device initialization failed\n')
@@ -296,6 +308,7 @@ try
     fprintf('Recording started at: %s \n', datestr(now))
     start(ai)
     waitbar(.8,handles.wb,'recording started. Getting data to plot');
+    set(handles.stop_recording,'Enable','on')
     
     while ai.SamplesAcquired <= preview && manualstop == 0
         %Wait for samples
@@ -314,9 +327,9 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     data = peekdata(ai,preview);
     %         b = wrev(a);
     digicounter  = 0;
+    a = linspace(-str2double(get(handles.chan_d,'String'))/1000,str2double(get(handles.chan_d,'String'))/1000,num_chan_plot);
+    b=sort(a,'descend');
     for ichan=1:num_chan_plot
-        a = linspace(-str2double(get(handles.chan_d,'String'))/1000,str2double(get(handles.chan_d,'String'))/1000,num_chan_plot);
-        b=sort(a,'descend');
         if channel_selection(ichan)<9
             plot(handles.axes1,data(:,channel_selection(ichan))+b(ichan),'b'); hold(handles.axes1,'on')
         else
