@@ -47,20 +47,20 @@ fprintf('powering up...\n')
 set(handles.start_recording, 'Enable','on');
 set(handles.stop_recording, 'Enable','off');
 set(handles.clear, 'Enable','off');
-handles.mainDir = cd; % save path to main directory
-if ~(exist('Backup','dir')==7) % create 'Backup' directory if necessary
+handles.dir.main = cd; % save path to main directory
+if ~(exist([cd filesep 'Backup'],'dir')==7) % create 'Backup' directory if necessary
     mkdir('Backup')
     fprintf('created Backup directory\n')
 end
-if ~(exist('Data','dir')==7) % create 'Backup' directory if necessary
+if ~(exist([cd filesep 'Data'],'dir')==7) % create 'Backup' directory if necessary
     mkdir('Data');
     fprintf('created Data directory\n')
 end
 % add subdirectories
-handles.backupDir   = [mainDir filesep 'Backup'];
-handles.dataDir     = [mainDir filesep 'Data'];
-handles.functionDir = [mainDir filesep 'Functions'];
-addpath(handles.backupDir, genpath(handles.dataDir), genpath(handles.functionsDir));
+handles.dir.backup   = [handles.dir.main filesep 'Backup'];
+handles.dir.data     = [handles.dir.main filesep 'Data'];
+handles.dir.functions = [handles.dir.main filesep 'Functions'];
+addpath(handles.dir.backup, genpath(handles.dir.data), genpath(handles.dir.functions));
 
 handles.output = hObject;
 guidata(hObject, handles);
@@ -166,7 +166,7 @@ global preview
 global ai
 global manualstop
 
-mainDir = handles.mainDir;
+mainDir = handles.dir.main;
 
 handles.wb = waitbar(0);
 try
@@ -259,7 +259,7 @@ try
         save_disk           = 1;
         ai.LoggingMode      = 'Disk';
         ai.LogToDiskMode    = 'Index';
-        ai.LogFileName      = [mainDir '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
+        ai.LogFileName      = [handles.dir.main '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
     else
         save_disk = 0;
     end
@@ -268,7 +268,7 @@ try
         save_diskmem        = 1;
         ai.LoggingMode      = 'Disk&Memory';
         ai.LogToDiskMode    = 'Index';
-        ai.LogFileName      = [mainDir '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
+        ai.LogFileName      = [handles.dir.main '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
     else
         save_diskmem = 0;
     end
@@ -280,7 +280,7 @@ try
     
     % check which DIO channels are activated
     for ichan = [9 10 12 13 14 15]
-        eval(['if chan' num2str(ichan) ' == 1; addchannel(ai,' num2str(ichan) ');  num_chan = num_chan+1; end'])
+        if eval(['chan' num2str(ichan) ]) == 1; addchannel(ai,ichan);  num_chan = num_chan+1; end
     end
       
     analog_channels_on = [chan1 chan2 chan3 chan4...
@@ -305,7 +305,7 @@ end
 
 try
     waitbar(.8,handles.wb,'ready to start recording');
-    disp('---------------------------------Start-------------------------------------')
+    fprintf('---------------------------------Start-------------------------------------\n')
     fprintf('Recording started at: %s \n', datestr(now))
     start(ai)
     waitbar(.8,handles.wb,'recording started. Getting data to plot');
@@ -339,8 +339,8 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
         end
         %         set(handles.axes1, 'Ylim', [min(b)-0.001  max(b)+.001])
     end
-    grid(handles.axes1,'on')
-    drawnow; hold(handles.axes1,'off')
+    grid(handles.axes1,'on');
+    drawnow; hold(handles.axes1,'off');
     %     end
     
     minfreq = str2double(get(handles.minfreq, 'String'));
@@ -363,7 +363,7 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
         end
     end
     
-    drawnow; hold(handles.axes2,'off')
+    drawnow; hold(handles.axes2,'off');
 end
 
 if manualstop == 0
@@ -389,7 +389,7 @@ for k=1:nrofchans
     end
 end
 grid(handles.axes1,'on')
-drawnow; hold(handles.axes1,'off')
+drawnow; hold(handles.axes1,'off');
 % end
 a = linspace(-chan_d,chan_d,8);
 disp('Plotting data')
@@ -407,7 +407,7 @@ for ichan = 1:8
 end
 
 grid(handles.axes1,'on')
-drawnow; hold(handles.axes2,'off')
+drawnow; hold(handles.axes2,'off');
 set(handles.start_recording, 'Enable','on')
 if manualstop == 0
     delete(ai)
@@ -499,14 +499,14 @@ global fft_l
 fft_l = str2double(get(handles.fft_l,'String'));
 global preview
 preview = str2double(get(handles.prev_t,'String'));
-cd([handles.mainDir filesep 'Data'])
+cd(handles.dir.data)
 [filename, pathname] = uigetfile({'*.mat';},'Select file');
-cd(handles.mainDir)
+cd(handles.dir.main)
 if any(filename)
     load([pathname filename]);
     handles.data = data;
     if size(data,3) > 1
-        warndlg('You are trying to load cut data (3D). The EEG_recorder is not able to display this')
+        warndlg('You are trying to load 3D data, the EEG_recorder is not able to display this.')
     else
         [~, nrofchans] = size(data);
         a = linspace(-chan_d,chan_d,nrofchans);
@@ -547,9 +547,9 @@ guidata(hObject, handles);
 % --------------------------------------------------------------------
 function save_Callback(hObject, eventdata, handles)
 global data;
-cd([handles.mainDir filesep 'Data']);
+cd(handles.dir.data);
 uisave({'data'},'Name');
-cd(handles.mainDir);
+cd(handles.dir.main);
 % --------------------------------------------------------------------
 function tools_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
@@ -560,18 +560,18 @@ function about_Callback(hObject, eventdata, handles)
 web('About EEG recorder.htm', '-helpbrowser')
 % --------------------------------------------------------------------
 function Array_manipulator_Callback(hObject, eventdata, handles)
-Array_manipulator
+Array_manipulator(handles)
 % --------------------------------------------------------------------
 function Spectral_analysis_Callback(hObject, eventdata, handles)
-Spectral_analysis
+Spectral_analysis(handles)
 % --------------------------------------------------------------------
 function ERP_tool_Callback(hObject, eventdata, handles)
-ERP_tool
+ERP_tool(handles)
 function Data_plotter_Callback(hObject, eventdata, handles)
-Data_plotter
+Data_plotter(handles)
 % --------------------------------------------------------------------
 function Event_cutter_Callback(hObject, eventdata, handles)
-Event_cutter
+Event_cutter(handles)
 
 function prev_t_Callback(hObject, eventdata, handles)
 global preview
@@ -584,7 +584,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function filter_Callback(hObject, eventdata, handles)
-filters
+filters(handles)
 
 function Syllabus_Callback(hObject, eventdata, handles)
 web('Syllabus.htm', '-helpbrowser')
