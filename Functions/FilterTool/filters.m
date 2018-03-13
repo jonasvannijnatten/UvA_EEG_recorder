@@ -45,7 +45,7 @@ end
 
 function filters_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
-
+handles.dir = varargin{1}.dir;
 guidata(hObject, handles);
 % UIWAIT makes filters wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -168,7 +168,6 @@ msgbox('Data filtered')
 
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-global filename;
 global filter_data
 curdir = cd;
 cd([curdir filesep 'Data']);

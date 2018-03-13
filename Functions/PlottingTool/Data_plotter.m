@@ -54,7 +54,7 @@ function Data_plotter_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for Data_plotter
 handles.output = hObject;
-
+handles.dir = varargin{1}.dir;
 % Update handles structure
 guidata(hObject, handles);
 
@@ -85,8 +85,8 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 function plot_Callback(hObject, eventdata, handles)
-global strp;global Fsp;global row_on; global Collumns_on; % global filenamep;
-global x_ax; global y_ax; global plotter_data; global axx; global filenamep;
+global strp;global Fsp;global row_on; global Collumns_on;
+global x_ax; global y_ax; global axx;
 x_ax = get(handles.x_ax,'String');
 y_ax = get(handles.y_ax,'String');
 strp = get(handles.chan2plot,'String');
@@ -109,15 +109,15 @@ end
 if isempty(strp)
     errordlg('Select rows/columns to plot')
 else
-    [a b c] = size(plotter_data);
+    [a b c] = size(handles.data);
     ka = [eval(strp)];
     h = figure;
     for A = 1:length(strp)
         if Collumns_on == 1
             time = ((1:a)./Fsp)-onset;
-            plot(time,plotter_data(:,ka).*10^6);hold on %plot signal in microvolts
+            plot(time,handles.data(:,ka).*10^6);hold on %plot signal in microvolts
         elseif row_on == 1
-            plot((1:b)./Fsp,plotter_data(ka,:).*10^6);hold on %plot signal in microvolts
+            plot((1:b)./Fsp,handles.data(ka,:).*10^6);hold on %plot signal in microvolts
         else
             errordlg('select if rows or collums should be plotted','Please select');
             A = length(strp)+1;
@@ -150,28 +150,18 @@ else
     labeling = labels(ka);
     legend(labeling,'Location','NorthEastOutside');
     hold off
-    title(filenamep,'Interpreter','none')
+    title(handles.filename,'Interpreter','none')
     xlabel('Time (s)')
     ylabel('EEG Amplitude (microvolts)')
 end
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-global filenamep;
-global plotter_data
-curdir = cd;
-cd([curdir filesep 'data']);
-[filenamep, ] = ...
-    uigetfile({'*.mat';},'Select a 2D array');
-cd(curdir);
-if any(filenamep)
-    set(handles.l_data,'string',filenamep);
-    load([pathname filenamep]);
-    plotter_data = data;
-    [str1] = size(plotter_data);
-    str = num2str(str1);
-    set(handles.l_size,'string',str);
-    clear data
+[handles.filename, handles.data] = EEGLoadData(handles);
+if any(handles.filename)
+    set(handles.l_data,'string',handles.filename);
+    set(handles.l_size,'string',num2str(size(handles.data)));
 end
+  guidata(hObject,handles);
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
 web('Plotter_help.htm', '-helpbrowser')

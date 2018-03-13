@@ -22,7 +22,7 @@ function varargout = Array_manipulator(varargin)
 
 % Edit the above text to modify the response to help Array_manipulator
 
-% Last Modified by GUIDE v2.5 12-Jun-2013 16:09:35
+% Last Modified by GUIDE v2.5 08-Mar-2018 18:28:11
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -45,6 +45,7 @@ end
 
 function Array_manipulator_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
+handles.dir = varargin{1}.dir;
 guidata(hObject, handles);
 
 function varargout = Array_manipulator_OutputFcn(hObject, eventdata, handles)
@@ -505,3 +506,10 @@ function Untitled_2_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 function Syllabus_Callback(hObject, eventdata, handles)
 web('Syllabus.htm', '-helpbrowser')
+
+
+% --- Executes when uipanel5 is resized.
+function uipanel5_SizeChangedFcn(hObject, eventdata, handles)
+% hObject    handle to uipanel5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)

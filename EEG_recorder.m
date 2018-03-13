@@ -42,28 +42,43 @@ end
 % End initialization code - DO NOT EDIT
 
 function EEG_recorder_OpeningFcn(hObject, eventdata, handles, varargin)
+fprintf('powering up...\n')
+% Enable 'start' button, disable 'stop' and 'clear' button
 set(handles.start_recording, 'Enable','on');
 set(handles.stop_recording, 'Enable','off');
 set(handles.clear, 'Enable','off');
-handles.maindir = cd;
-if ~(exist('Backup','dir')==7)
+handles.dir.main = cd; % save path to main directory
+if ~(exist([cd filesep 'Backup'],'dir')==7) % create 'Backup' directory if necessary
     mkdir('Backup')
+    fprintf('created Backup directory\n')
 end
-addpath([handles.maindir filesep 'Backup']);
-if ~(exist('Data','dir')==7)
+if ~(exist([cd filesep 'Data'],'dir')==7) % create 'Backup' directory if necessary
     mkdir('Data');
+    fprintf('created Data directory\n')
 end
-addpath(genpath([handles.maindir filesep 'Data']));
-addpath(genpath([handles.maindir filesep 'Functions']));
+% add subdirectories
+handles.dir.backup   = [handles.dir.main filesep 'Backup'];
+handles.dir.data     = [handles.dir.main filesep 'Data'];
+handles.dir.functions = [handles.dir.main filesep 'Functions'];
+addpath(handles.dir.backup, genpath(handles.dir.data), genpath(handles.dir.functions));
 
 handles.output = hObject;
 guidata(hObject, handles);
 
 function varargout = EEG_recorder_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
-fprintf('powering up...\n')
-set(gcf, 'units','normalized','outerposition',[0 0.03 1 .97]); % maximize screen
-fprintf('Welcome to the EEG recorder!\n')
+set(gcf, 'units','normalized','outerposition',[0 0 1 1]); % maximize screen
+if strcmp(computer, 'PCWIN64')
+    bitwarning = sprintf([...
+        'You are running a 64-bit version of MATLAB.\n' ...
+        'Recording is currently only available in 32-bit MATLAB.\n' ...
+        'Data analysis tools are available in both versions.\n'...
+        ]);
+    warndlg(bitwarning);
+    fprintf(['\nWARNING:\n' bitwarning '\n']);
+    set(handles.start_recording, 'Enable','off');
+    fprintf('Welcome to the EEG recorder!\n')
+end
 
 function find_lega_Callback(hObject, eventdata, handles)
 global ai
@@ -139,7 +154,6 @@ function start_recording_Callback(hObject, eventdata, handles)
 fprintf('\n')
 set(handles.start_recording, 'Enable','off')
 set(handles.clear, 'Enable','off')
-set(handles.stop_recording,'Enable','on')
 set(handles.dur_aq,'Enable','off');
 pause(.1);
 global dur_aq
@@ -152,7 +166,7 @@ global preview
 global ai
 global manualstop
 
-maindir = handles.maindir;
+mainDir = handles.dir.main;
 
 handles.wb = waitbar(0);
 try
@@ -194,6 +208,7 @@ try
     % else search for connected devices
     if ~isfield(handles, 'daqinfo') || isempty(handles.daqinfo.InstalledBoardIds)
         try
+            daqreset;
             handles.daqinfo = getDaqDevice('gmlplusdaq');
             if isempty(handles.daqinfo.InstalledBoardIds)
                 fprintf('device initialization failed\n')
@@ -244,7 +259,7 @@ try
         save_disk           = 1;
         ai.LoggingMode      = 'Disk';
         ai.LogToDiskMode    = 'Index';
-        ai.LogFileName      = [maindir '\Backup\backup_' datestr(now,'yyyymmdd_HH:MM')];
+        ai.LogFileName      = [handles.dir.main '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
     else
         save_disk = 0;
     end
@@ -253,7 +268,7 @@ try
         save_diskmem        = 1;
         ai.LoggingMode      = 'Disk&Memory';
         ai.LogToDiskMode    = 'Index';
-        ai.LogFileName      = [maindir '\Backup\backup' datestr(now,'yyyymmdd_HH:MM')];
+        ai.LogFileName      = [handles.dir.main '\Backup\backup_' datestr(now,'ddmmyyyy_HHMM')];
     else
         save_diskmem = 0;
     end
@@ -265,7 +280,7 @@ try
     
     % check which DIO channels are activated
     for ichan = [9 10 12 13 14 15]
-        eval(['if chan' num2str(ichan) ' == 1; addchannel(ai,' num2str(ichan) ');  num_chan = num_chan+1; end'])
+        if eval(['chan' num2str(ichan) ]) == 1; addchannel(ai,ichan);  num_chan = num_chan+1; end
     end
       
     analog_channels_on = [chan1 chan2 chan3 chan4...
@@ -290,10 +305,11 @@ end
 
 try
     waitbar(.8,handles.wb,'ready to start recording');
-    disp('---------------------------------Start-------------------------------------')
+    fprintf('---------------------------------Start-------------------------------------\n')
     fprintf('Recording started at: %s \n', datestr(now))
     start(ai)
     waitbar(.8,handles.wb,'recording started. Getting data to plot');
+    set(handles.stop_recording,'Enable','on')
     
     while ai.SamplesAcquired <= preview && manualstop == 0
         %Wait for samples
@@ -312,9 +328,9 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     data = peekdata(ai,preview);
     %         b = wrev(a);
     digicounter  = 0;
+    a = linspace(-str2double(get(handles.chan_d,'String'))/1000,str2double(get(handles.chan_d,'String'))/1000,num_chan_plot);
+    b=sort(a,'descend');
     for ichan=1:num_chan_plot
-        a = linspace(-str2double(get(handles.chan_d,'String'))/1000,str2double(get(handles.chan_d,'String'))/1000,num_chan_plot);
-        b=sort(a,'descend');
         if channel_selection(ichan)<9
             plot(handles.axes1,data(:,channel_selection(ichan))+b(ichan),'b'); hold(handles.axes1,'on')
         else
@@ -323,8 +339,8 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
         end
         %         set(handles.axes1, 'Ylim', [min(b)-0.001  max(b)+.001])
     end
-    grid(handles.axes1,'on')
-    drawnow; hold(handles.axes1,'off')
+    grid(handles.axes1,'on');
+    drawnow; hold(handles.axes1,'off');
     %     end
     
     minfreq = str2double(get(handles.minfreq, 'String'));
@@ -347,7 +363,7 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
         end
     end
     
-    drawnow; hold(handles.axes2,'off')
+    drawnow; hold(handles.axes2,'off');
 end
 
 if manualstop == 0
@@ -357,7 +373,7 @@ end
 if save_mem || save_diskmem
     data = getdata(ai, ai.SamplesAcquired);
 elseif save_disk
-    data = daqread(FileName);
+    data = daqread(ai.LogFileName);
 end
 
 [~, nrofchans] = size(data);
@@ -373,7 +389,7 @@ for k=1:nrofchans
     end
 end
 grid(handles.axes1,'on')
-drawnow; hold(handles.axes1,'off')
+drawnow; hold(handles.axes1,'off');
 % end
 a = linspace(-chan_d,chan_d,8);
 disp('Plotting data')
@@ -391,7 +407,7 @@ for ichan = 1:8
 end
 
 grid(handles.axes1,'on')
-drawnow; hold(handles.axes2,'off')
+drawnow; hold(handles.axes2,'off');
 set(handles.start_recording, 'Enable','on')
 if manualstop == 0
     delete(ai)
@@ -483,14 +499,14 @@ global fft_l
 fft_l = str2double(get(handles.fft_l,'String'));
 global preview
 preview = str2double(get(handles.prev_t,'String'));
-cd([handles.maindir filesep 'Data'])
+cd(handles.dir.data)
 [filename, pathname] = uigetfile({'*.mat';},'Select file');
-cd(handles.maindir)
+cd(handles.dir.main)
 if any(filename)
     load([pathname filename]);
     handles.data = data;
     if size(data,3) > 1
-        warndlg('You are trying to load cut data (3D). The EEG_recorder is not able to display this')
+        warndlg('You are trying to load 3D data, the EEG_recorder is not able to display this.')
     else
         [~, nrofchans] = size(data);
         a = linspace(-chan_d,chan_d,nrofchans);
@@ -531,9 +547,9 @@ guidata(hObject, handles);
 % --------------------------------------------------------------------
 function save_Callback(hObject, eventdata, handles)
 global data;
-cd([handles.maindir filesep 'Data']);
+cd(handles.dir.data);
 uisave({'data'},'Name');
-cd(handles.maindir);
+cd(handles.dir.main);
 % --------------------------------------------------------------------
 function tools_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
@@ -544,18 +560,18 @@ function about_Callback(hObject, eventdata, handles)
 web('About EEG recorder.htm', '-helpbrowser')
 % --------------------------------------------------------------------
 function Array_manipulator_Callback(hObject, eventdata, handles)
-Array_manipulator
+Array_manipulator(handles)
 % --------------------------------------------------------------------
 function Spectral_analysis_Callback(hObject, eventdata, handles)
-Spectral_analysis
+Spectral_analysis(handles)
 % --------------------------------------------------------------------
 function ERP_tool_Callback(hObject, eventdata, handles)
-ERP_tool
+ERP_tool(handles)
 function Data_plotter_Callback(hObject, eventdata, handles)
-Data_plotter
+Data_plotter(handles)
 % --------------------------------------------------------------------
 function Event_cutter_Callback(hObject, eventdata, handles)
-Event_cutter
+Event_cutter(handles)
 
 function prev_t_Callback(hObject, eventdata, handles)
 global preview
@@ -568,7 +584,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function filter_Callback(hObject, eventdata, handles)
-filters
+filters(handles)
 
 function Syllabus_Callback(hObject, eventdata, handles)
 web('Syllabus.htm', '-helpbrowser')
