@@ -22,7 +22,7 @@ function varargout = Spectral_analysis(varargin)
 
 % Edit the above text to modify the response to help Spectral_analysis
 
-% Last Modified by GUIDE v2.5 21-Feb-2013 15:44:24
+% Last Modified by GUIDE v2.5 13-Mar-2018 14:45:16
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -228,16 +228,41 @@ global chan;global filter;global nfft;global noverlap;global window;global Fs
 global data2; y = data2;global a;a=[]; global b;b=[]; global cmi; cmi=[];global cma;cma=[]; global value_y_min; global value_y_max
 chan = get(handles.chan,'String');
 chan = eval(chan);
-filter = str2double(get(handles.filter,'String'));
+fprintf('---------------------------- \n')
+fprintf('settings used for time-frequency analysis: \n');
+window = str2double(get(handles.window,'String'));
+fprintf('sliding window-size = %i \n', window);
+noverlap = str2double(get(handles.noverlap,'String'));
+fprintf('sliding step in samples = %i \n', noverlap);
 nfft = str2double(get(handles.nfft,'String'));
 nfft = pow2(nextpow2(nfft));
-noverlap = str2double(get(handles.noverlap,'String'));
-window = str2double(get(handles.window,'String'));
+fprintf('NFFT = %i\n', nfft);
+filter = str2double(get(handles.filter,'String'));
+if mod(filter,2)==0
+    filterwarn = sprintf('2D filter size has to be an odd number. Filter size is changed from %i to %i',filter,filter+1);
+    warndlg(filterwarn);
+    filter = filter+1;
+end
+fprintf('2D filter = %i \n', filter);
 Fs = str2double(get(handles.fs,'String'));
 test = length(chan);
 h2 = figure;
-%edit jim: change the values of value_y_min and max to string
-
+onset_sample = eval(get(handles.onset_sample, 'String'));
+if ~(isnumeric(onset_sample) && (mod(onset_sample,1)==0))
+    if isnumeric(onset_sample) && ~(mod(onset_sample,1)==0)
+        warndlg('The provided onset sample is not an integer. No baseline correction will be applied')
+        onset_sample = 0;
+    elseif ~isnumeric(onset_sample)
+        warndlg('The provided onset sample is not number. No baseline correction will be applied')
+        onset_sample = 0;
+    elseif isempty(onset_sample)
+        warndlg('The provided onset sample is empty. No baseline correction will be applied')
+        onset_sample = 0;
+    else
+        warndlg('The provided onset sample is unidentified. No baseline correction will be applied')
+        onset_sample = 0;
+    end
+end
 value_y_min = str2double(get(handles.setymin,'String'));
 
 value_y_max = str2double(get(handles.setymax,'String'));
@@ -249,6 +274,13 @@ if size(y,3) == 1
         q=cfilter2(log10(abs(P)),filter);
         ax(k) = subplot(test,1,k);
         Fselect = F> value_y_min & F < value_y_max;
+        if onset_sample
+            fprintf('The first %i samples, or %d seconds, are used as baseline period \n', onset_sample, onset_sample/Fs)
+            T = T-(onset_sample/Fs);
+            bslT = T<0;
+            bslP = mean(q(:,bslT,:),2);
+            q = bsxfun(@minus, q, bslP);
+        end
         surf(T,F(Fselect),q(Fselect,:),'EdgeColor','none'); %jim edit: adjust q for the new frequencies
         axis xy; axis tight; colormap(jet(30));view(0,90);
         xlabel('Time (s)');
@@ -289,6 +321,13 @@ elseif size(y,3)>1
         q = mean(powermatrix,3);
         ax(k) = subplot(test,1,k);
         Fselect = F> value_y_min & F < value_y_max;
+        if onset_sample
+            fprintf('The first %i samples, or %d seconds, are used as baseline period \n', onset_sample, onset_sample/Fs)
+            T = T-(onset_sample/Fs);
+            bslT = T<0;
+            bslP = mean(q(:,bslT,:),2);
+            q = bsxfun(@minus, q, bslP);
+        end
         surf(T,F(Fselect),q(Fselect,:),'EdgeColor','none'); %jim edit: adjust q for the new frequencies
         %         caxis([cmi cma]);
         axis xy; axis tight; colormap(jet(30));view(0,90);
@@ -337,6 +376,7 @@ elseif size(y,3)>1
 %     end
 end
 clear a; clear b; clear cmi; clear cma;
+fprintf('---------------------------- \n')
 
 function plot_fft_Callback(hObject, eventdata, handles)
 global fs; global chanfft; global data2;
@@ -434,6 +474,29 @@ global chanfft
 chanfft = str2double(get(hObject,'String')); return
 
 function chanfft_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function onset_sample_Callback(hObject, eventdata, handles)
+% hObject    handle to onset_sample (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of onset_sample as text
+%        str2double(get(hObject,'String')) returns contents of onset_sample as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function onset_sample_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to onset_sample (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
