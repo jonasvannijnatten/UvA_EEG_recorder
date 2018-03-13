@@ -17,6 +17,7 @@ else
 end
 function Event_cutter_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
+handles.dir = varargin{1}.dir;
 guidata(hObject, handles);
 function varargout = Event_cutter_OutputFcn(hObject, eventdata, handles) 
 varargout{1} = handles.output;
