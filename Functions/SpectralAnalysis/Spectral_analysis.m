@@ -27,11 +27,11 @@ function varargout = Spectral_analysis(varargin)
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @Spectral_analysis_OpeningFcn, ...
-                   'gui_OutputFcn',  @Spectral_analysis_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @Spectral_analysis_OpeningFcn, ...
+    'gui_OutputFcn',  @Spectral_analysis_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -47,51 +47,56 @@ end
 % --- Executes just before Spectral_analysis is made visible.
 function Spectral_analysis_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
+handles.dir = varargin{1}.dir;
 guidata(hObject, handles);
 
 % UIWAIT makes Spectral_analysis wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
-function varargout = Spectral_analysis_OutputFcn(hObject, eventdata, handles) 
+function varargout = Spectral_analysis_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 function pushbutton1_Callback(hObject, eventdata, handles)
-global time; 
+global time;
 global y; global dur; global fs; global colm; global colms
 global data2;
 y = data2;
 fs = str2double(get(handles.fs,'String'));
-       colm = get(handles.colm,'String');
-       colms = eval(colm);
-       test3 = length(colms);
-       plotColor = {'b','g','r','c','m','y','k','-b'};
+colm = get(handles.colm,'String');
+colms = eval(colm);
+test3 = length(colms);
+labels = [];
+plotColor = {'b','g','r','c','m','y','k','-b'};
 figure;
-        dur = length(y(:,colms(1)))/fs;
-        time = [0:dur/length(y(:,colms(1))):dur]';
-        time = time(1:length(y(:,colms(1))),1);
+dur = length(y(:,colms(1)))/fs;
+time = [0:dur/length(y(:,colms(1))):dur]';
+time = time(1:length(y(:,colms(1))),1);
 for k = 1:test3
-        subplot(2,1,1)
-        c = cell2mat(plotColor(k));
-        plot(time,y(:,colms(k)),c);hold on  
+    labels = [labels; ['data ' num2str(colms(k))]];
+    subplot(2,1,1)
+    c = cell2mat(plotColor(k));
+    plot(time,y(:,colms(k)),c);hold on;
 end
-    xlabel('time (s)')
-    ylabel('Amplitude (V)')
-    title('{\bf EEG in time domain (Colorcode: blue,green,red,cyan,magenta,yellow,black,dash blue}')
-    hold off
+xlabel('time (s)')
+ylabel('Amplitude (V)')
+title('EEG in time domain')
+legend(labels);
+hold off;
 [l m] = size(y);
-        m = length(y(:,colms(1)));          
-        n = pow2(nextpow2(m)); 
+m = length(y(:,colms(1)));
+n = pow2(nextpow2(m));
 for k = 1:test3
-        subplot(2,1,2)
-        dfty1 = fft(y(:,colms(k)),n);       
-        f = (0:n-1)*(fs/n);          
-        p = dfty1.*conj(dfty1)/n; 
-        c = cell2mat(plotColor(k));
-        plot(f(1:floor(n/2)),p(1:floor(n/2)),c);hold on
- end
-hold off
+    subplot(2,1,2)
+    dfty1 = fft(y(:,colms(k))-mean(y(:,colms(k))),n);
+    f = (0:n-1)*(fs/n);
+    p = dfty1.*conj(dfty1)/n;
+    c = cell2mat(plotColor(k));
+    plot(f(1:floor(n/2)),p(1:floor(n/2)),c);hold on;
+end
+hold off;
 xlabel('Frequency (Hz)')
 ylabel('Single sided amplitude spectrum (V)')
-title('{\bf EEG in frequency domain}')
+title('{EEG in frequency domain}')
+legend(labels);
 
 function colm_Callback(hObject, eventdata, handles)
 global colm
@@ -113,7 +118,7 @@ end
 function load_Callback(hObject, eventdata, handles)
 global filenameq;global data2
 curdir = cd;
-cd([curdir filesep 'data']);
+cd([curdir filesep 'Data']);
 [filenameq, pathname] = ...
     uigetfile({'*.mat';},'Select a 2D array');
 cd(curdir);
@@ -187,7 +192,7 @@ function setymin_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
-   
+    
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -200,7 +205,7 @@ function setymax_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
-   
+    
 end
 %%%%%%%%%%%%%%%%%%%%%
 function setymin_Callback(hObject, eventdata, handles)
@@ -225,6 +230,7 @@ chan = get(handles.chan,'String');
 chan = eval(chan);
 filter = str2double(get(handles.filter,'String'));
 nfft = str2double(get(handles.nfft,'String'));
+nfft = pow2(nextpow2(nfft));
 noverlap = str2double(get(handles.noverlap,'String'));
 window = str2double(get(handles.window,'String'));
 Fs = str2double(get(handles.fs,'String'));
@@ -232,22 +238,21 @@ test = length(chan);
 h2 = figure;
 %edit jim: change the values of value_y_min and max to string
 
-value_y_min = str2double(get(handles.setymin,'String')); 
+value_y_min = str2double(get(handles.setymin,'String'));
 
-value_y_max = str2double(get(handles.setymax,'String')); 
-
-for k = 1:test
+value_y_max = str2double(get(handles.setymax,'String'));
+if size(y,3) == 1
+    for k = 1:test
         [S,F,T,P] = spectrogram(y(:,chan(k)),window,noverlap,nfft,Fs);
         mp = min(P);
         F = value_y_min:value_y_max; %jim edit: from the frequencies take only the ones you are interested in
         q=cfilter2(log10(abs(P)),filter);
         ax(k) = subplot(test,1,k);
-        surf(T,F,q(value_y_min:value_y_max,:),'EdgeColor','none'); %jim edit: adjust q for the new frequencies
+        Fselect = F> value_y_min & F < value_y_max;
+        surf(T,F(Fselect),q(Fselect,:),'EdgeColor','none'); %jim edit: adjust q for the new frequencies
         axis xy; axis tight; colormap(jet(30));view(0,90);
-        xlabel('Time (s)'); 
+        xlabel('Time (s)');
         ylabel('Frequency (Hz)');
-        
-
         
         colorbar();
         linkaxes(ax,'xy')
@@ -259,7 +264,6 @@ for k = 1:test
                 cmi = a;
             end
         end
-        
         if isempty(cma)==1
             cma = b;
         else
@@ -267,72 +271,163 @@ for k = 1:test
                 cma = b;
             end
         end
-        
         if k ==1
             title('{\bf Spectrogram of selected channels with optimized colormap/subplot}')
         end
-end
-
-h3 = figure;
-for k = 1:test
-        [S,F,T,P] = spectrogram(y(:,chan(k)),window,noverlap,nfft,Fs);
-        mp = min(P);
-        q=cfilter2(log10(abs(P)),filter);
+    end
+    
+    
+elseif size(y,3)>1
+    powermatrix = [];
+    for k = 1:test
+        for itrial=1:size(y,3)
+            [S,F,T,P] = spectrogram(y(:,chan(k),itrial),window,noverlap,nfft,Fs);
+            mp = min(P);
+            q=cfilter2(log10(abs(P)),filter);
+            powermatrix = cat(3,powermatrix,q);
+        end
+        q = mean(powermatrix,3);
         ax(k) = subplot(test,1,k);
-        surf(T,F,q,'EdgeColor','none');
-        caxis([cmi cma])
+        Fselect = F> value_y_min & F < value_y_max;
+        surf(T,F(Fselect),q(Fselect,:),'EdgeColor','none'); %jim edit: adjust q for the new frequencies
+        %         caxis([cmi cma]);
         axis xy; axis tight; colormap(jet(30));view(0,90);
-        ylim([value_y_min value_y_max]) %jimedit Set y axis for plots
-        xlabel('Time (s)'); 
-        ylabel('Frequency (Hz)');
+        xlabel('Time (s)');
+        ylabel('Frequency (Hz)');        
+        ylim([value_y_min value_y_max])
         colorbar();
         linkaxes(ax,'xy')
         [a b] = caxis;
-                
-        if k ==1
-            title('{\bf Spectrogram of selected channels with same colormap in each subplot}')
+    end
+    if isempty(cmi)==1
+        cmi = a;
+    else
+        if a<cmi
+            cmi = a;
         end
+    end
+    if isempty(cma)==1
+        cma = b;
+    else
+        if b>cma
+            cma = b;
+        end
+    end
+    caxis([cmi cma])
+    
+%     h3 = figure;
+%     for k = 1:test
+%         [S,F,T,P] = spectrogram(y(:,chan(k)),window,noverlap,nfft,Fs);
+%         mp = min(P);
+%         q=cfilter2(log10(abs(P)),filter);
+%         ax(k) = subplot(test,1,k);
+%         surf(T,F,q,'EdgeColor','none');
+%         caxis([cmi cma])
+%         axis xy; axis tight; colormap(jet(30));view(0,90);
+%         ylim([value_y_min value_y_max]) %jimedit Set y axis for plots
+%         xlabel('Time (s)');
+%         ylabel('Frequency (Hz)');
+%         colorbar();
+%         linkaxes(ax,'xy')
+%         [a b] = caxis;
+%         
+%         if k ==1
+%             title('{\bf Spectrogram of selected channels with same colormap in each subplot}')
+%         end
+%     end
 end
 clear a; clear b; clear cmi; clear cma;
-       
-function plot_fft_Callback(hObject, eventdata, handles)
-global fs; global chanfft; global data2;y = data2;
 
+function plot_fft_Callback(hObject, eventdata, handles)
+global fs; global chanfft; global data2;
+y = data2;
 fs = str2double(get(handles.fs,'String'));
 chanfft = get(handles.chanfft,'String');
 chanfft = eval(chanfft);
 test2 = length(chanfft);
-
-h5 = figure;
-        dur = length(y(:,chanfft(1)))/fs;
-        time = [0:dur/length(y(:,chanfft(1))):dur]';
-        time = time(1:length(y(:,chanfft(1))),1);
-for k = 1:test2
-        ax(k) = subplot(test2,1,k);
+if size(y,3) == 1
+    h5 = figure;
+    dur = length(y(:,chanfft(1)))/fs;
+    time = [0:dur/length(y(:,chanfft(1))):dur]';
+    time = time(1:length(y(:,chanfft(1))),1);
+    for k = 1:test2
+        ax(k) = subplot(test2,2,(2*k)-1);
         plot(time,y(:,chanfft(k)),'b')
         ylabel('Amplitude (V)')
         linkaxes(ax,'x')
-        if k ==1
-            title('{\bf EEG of selected channels in the time domain}')
-        end
-end
-xlabel('time (s)')
-h5 = figure;
-        m = length(y(:,chanfft(1)));          
-        n = pow2(nextpow2(m)); 
-for k = 1:test2
-        ax2(k) = subplot(test2,1,k);
-        dfty1 = fft(y(:,chanfft(k)),n);       
-        f = (0:n-1)*(fs/n);          
-        p = dfty1.*conj(dfty1)/n; 
+        legend(['channel ' num2str(k) ]);
+        if k==1; title('EEG signal in the time domain'); end
+    end
+    
+    xlabel('time (s)')
+    % h5 = figure;
+    m = length(y(:,chanfft(1)));
+    n = nextpow2(m)
+    for k = 1:test2
+        ax2(k) = subplot(test2,2,(2*k));
+        dfty1 = fft(y(:,chanfft(k))-mean(y(:,chanfft(k))),n);
+        f = (0:n-1)*(fs/n);
+        p = dfty1.*conj(dfty1)/n;
         plot(f(1:floor(n/2)),p(1:floor(n/2)),'b')
         ylabel('FFT (V)')
         linkaxes(ax2,'x')
-        if k ==1
-            title('{\bf EEG of selected channels in the frequency domain}')
+        legend(['channel ' num2str(k) ]);
+        if k==1; title('EEG signal in the frequency domain'); end
+    end
+    xlabel('Frequency (Hz)')
+    
+    %% For a dataset with multiple trials in the 3rd dimension
+elseif size(y,3)>1
+    h5 = figure;
+    labels = [];
+    dur = length(y(:,chanfft(1)))/fs;
+    time = [0:dur/length(y(:,chanfft(1))):dur]';
+    time = time(1:length(y(:,chanfft(1))),1);
+    %     for k = 1:test2
+    %         for itrial = 1:size(y,3)
+    %             ax(k) = subplot(test2,2,(2*k)-1);
+    %             plot(time,y(:,chanfft(k)),'b')
+    %             ylabel('Amplitude (V)')
+    %             linkaxes(ax,'x')
+    %             labels = [labels; num2str(k)];
+    %         end
+    %         legend(labels);
+    %         if k==1; title('EEG signal in the time domain'); end
+    %     end
+    
+    %     xlabel('time (s)')
+    % h5 = figure;
+    m = length(y(:,chanfft(1)));
+    %     n = pow2(nextpow2(m));
+    n = m;
+    f = (0:n-1)*(fs/n);
+    f = f(1:floor(n/2));
+    powermatrix = [];
+    for k = 1:test2
+        for itrial = 1:size(y,3)
+            subplot(2,test2,k);
+            hold on;
+            dfty1 = fft(y(:,chanfft(k),itrial)-mean(y(:,chanfft(k),itrial)),n);
+            p = (dfty1.*conj(dfty1))/n;
+            p = p(1:floor(n/2));
+            plot(f,p);
+            powermatrix(:,k,itrial) = p;
         end
+        axis tight
+        title(['channel ' num2str(chanfft(k))]);
+    end
+    
+    ylabel('FFT (V)')
+    %     linkaxes(ax2,'x')
+    xlabel('Frequency (Hz)')
+    for k = 1:test2
+        subplot(2,test2,k+test2)
+        plot(f,mean(powermatrix(:,k,:),3))
+        %         semilogy(f(2:end),mean(powermatrix(2:end,k,:),3))
+        axis tight
+    end
 end
-xlabel('Frequency (Hz)')
+
 
 function chanfft_Callback(hObject, eventdata, handles)
 global chanfft
