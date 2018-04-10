@@ -72,6 +72,7 @@ global l1; global h1;
 global filter_data; 
 global Fs; Fs = 256;
 global power;
+power = [];
 global stop_on; global pass_on; global plot_on;
 l1 = str2double(get(handles.l1,'String'));
 h1 = str2double(get(handles.h1,'String'));
@@ -192,7 +193,7 @@ curdir = cd;
 cd([curdir filesep 'Data']);
 uisave({'data'},'Name');
 cd(curdir);
-clear filename; clear data; clear filter_data;
+clear filename; clear data; clearvars -global filter_data;
 str = ' ';
 set(handles.fi_name,'string',str);
 set(handles.fi_size,'string',str);
@@ -200,7 +201,7 @@ curdir = cd;
 cd([curdir filesep 'Data']);
 uisave({'power'},'Power');
 cd(curdir);
-clear power;
+clearvars -global power
 
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
