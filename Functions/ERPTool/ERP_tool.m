@@ -22,7 +22,7 @@ function varargout = ERP_tool(varargin)
 
 % Edit the above text to modify the response to help temp_browse
 
-% Last Modified by GUIDE v2.5 20-Jan-2016 15:21:36
+% Last Modified by GUIDE v2.5 20-Dec-2018 15:04:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -48,7 +48,7 @@ end
 function ERP_tool_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.dir = varargin{1}.dir;
 clear -global corrected_data
-set(handles.filename, 'String', 'no data loaded')
+set(handles.filename_txt, 'String', 'no data loaded')
 % This function has no output args, see OutputFcn.
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -164,8 +164,8 @@ cd(curdir);
 if any(filenamep)
     load([pathname filenamep]);
     erp_data = data;
-    set(handles.filename, 'String', filenamep);
-    set(handles.filesize, 'String', num2str(size(data)));
+    set(handles.filename_txt, 'String', filenamep);
+    set(handles.filesize_txt, 'String', num2str(size(data)));
     clear -global corrected_data
     set(handles.corrected_box, 'String', '')
 end

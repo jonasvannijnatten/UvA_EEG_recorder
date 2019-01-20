@@ -22,7 +22,7 @@ function varargout = Data_plotter(varargin)
 
 % Edit the above text to modify the response to help Data_plotter
 
-% Last Modified by GUIDE v2.5 12-Jun-2013 23:54:42
+% Last Modified by GUIDE v2.5 20-Dec-2018 15:05:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -69,29 +69,25 @@ varargout{1} = handles.output;
 
 
 function Fs_Callback(hObject, eventdata, handles)
-global Fsp
-Fsp = str2double(get(hObject,'String'));
 return
 function Fs_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
 function chan2plot_Callback(hObject, eventdata, handles)
-global strp
-strp = get(hObject,'String');
 return
 function chan2plot_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
 function plot_Callback(hObject, eventdata, handles)
-global strp;global Fsp;global row_on; global Collumns_on;
-global x_ax; global y_ax; global axx;
-x_ax = get(handles.x_ax,'String');
-y_ax = get(handles.y_ax,'String');
-strp = get(handles.chan2plot,'String');
-Fsp = str2double(get(handles.Fs,'String'));
-onset = str2num(get(handles.onset, 'String'));
+x_ax = get(handles.x_ax,'String'); % get x limits
+y_ax = get(handles.y_ax,'String'); % get y limits
+strp = get(handles.chan2plot,'String'); % get selection to plot
+Fsp = str2double(get(handles.Fs,'String')); % get sampling rate
+onset = str2double(get(handles.onset, 'String')); % get stim-onset sample
 if isempty(onset)
     onset = 0;
 end
@@ -156,30 +152,22 @@ else
 end
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-[handles.filename, handles.data] = EEGLoadData(handles);
-if any(handles.filename)
-    set(handles.l_data,'string',handles.filename);
-    set(handles.l_size,'string',num2str(size(handles.data)));
+[filename, data] = EEGLoadData(handles);
+if any(filename)
+    handles.data = data;
+    handles.filename= filename;
+    set(handles.filename_txt,'string',filename);
+    set(handles.filesize_txt,'string',num2str(size(handles.data)));
 end
-  guidata(hObject,handles);
+ guidata(hObject,handles);
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
 web('Plotter_help.htm', '-helpbrowser')
 
 function row_on_Callback(hObject, eventdata, handles)
-global row_on
-if (get(hObject,'Value') == get(hObject,'Max'))
-    row_on =1;
-else
-    row_on =0;
-end
+
 function Collumns_on_Callback(hObject, eventdata, handles)
-global Collumns_on
-if (get(hObject,'Value') == get(hObject,'Max'))
-    Collumns_on =1;
-else
-    Collumns_on =0;
-end
+
 function x_ax_Callback(hObject, eventdata, handles)
 global x_ax
 x_ax = str2double(get(hObject,'String')); return

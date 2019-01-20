@@ -309,14 +309,8 @@ try
     fprintf('Recording started at: %s \n', datestr(now))
     start(ai)
     waitbar(.8,handles.wb,'recording started. Getting data to plot');
-    set(handles.stop_recording,'Enable','on')
-    
-    while ai.SamplesAcquired <= preview && manualstop == 0
-        %Wait for samples
-        if (ai.SamplesAcquired) == preview/2
-            waitbar(.9,handles.wb,'recording started. Getting data to plot');
-        end
-    end
+    pause(.1);
+    set(handles.stop_recording,'Enable','on')       
     delete(handles.wb);
 catch ME
     delete(handles.wb);
@@ -325,25 +319,43 @@ catch ME
 end
 ai.SamplesAcquired;
 while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
-    data = peekdata(ai,preview);
-    %         b = wrev(a);
+    %% get latest data to plot
+    samps = ai.SamplesAcquired;  % how many samples are acquired in total
+    
+    % get the proportion of the preview time
+    tempSample = mod(samps-1, preview)+1;
+    
+    % calculate samples to time for x-axis
+    tempTime = (samps-tempSample+1:samps-tempSample+preview)/256 ;
+    
+    % get most recent data to plot
+    tempData = peekdata(ai,tempSample);
+    
+    %% get plotting setting
+    data = zeros(preview,num_chan_plot);
+    data(1:tempSample,:) = tempData;
     digicounter  = 0;
-    chan_space_Callback([],[],handles);
-    a = linspace(-chan_spac,chan_spac,num_chan_plot);
+
+    chan_space = str2double(get(handles.chan_space,'String'))/1000;
+    a = linspace(-chan_space,chan_space,num_chan_plot);
+
     b=sort(a,'descend');
+    
+    %% plot live signal
     for ichan=1:num_chan_plot
         if channel_selection(ichan)<9
-            plot(handles.axes1,data(:,channel_selection(ichan))+b(ichan),'b'); hold(handles.axes1,'on')
+            plot(handles.axes1,tempTime,data(:,channel_selection(ichan))+b(ichan),'b'); hold(handles.axes1,'on')
         else
             digicounter = digicounter + 1;
-            plot(handles.axes1,data(:,(8+digicounter))./1000000+b(ichan),'r'); hold(handles.axes1,'on')
+            plot(handles.axes1,tempTime,data(:,(8+digicounter))./100000+b(ichan),'r'); hold(handles.axes1,'on')
         end
-        %         set(handles.axes1, 'Ylim', [min(b)-0.001  max(b)+.001])
     end
     grid(handles.axes1,'on');
     drawnow; hold(handles.axes1,'off');
-    %     end
+    xlim([min(tempTime) max(tempTime)]);
     
+    
+    %% plot power spectrum
     minfreq = str2double(get(handles.minfreq, 'String'));
     maxfreq = str2double(get(handles.maxfreq, 'String'));
     
@@ -378,7 +390,6 @@ elseif save_disk
 end
 
 [~, nrofchans] = size(data);
-%         b = wrev(a);
 chan_space = chan_space_Callback([],[],handles);;
 a = linspace(-chan_space,chan_space,num_chan);
 b=sort(a,'descend');
@@ -440,7 +451,7 @@ delete(ai)
 clear ai
 
 function chan_space = chan_space_Callback(hObject, eventdata, handles)
-chan_space = str2double(get(handles.chan_space, 'String'))/1000;
+    chan_space = str2double(get(handles.chan_space, 'String'))/1000;
 return
 
 function chan_space_CreateFcn(hObject, eventdata, handles)
