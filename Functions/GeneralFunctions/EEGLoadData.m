@@ -4,6 +4,7 @@ cd(handles.dir.data);
 cd(handles.dir.main);
 if any(filename)
     load([pathname filename]);
+    fprintf('file loaded: %s%s\n', pathname, filename)
 else
     data = [];
 end
