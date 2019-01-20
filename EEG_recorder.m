@@ -52,7 +52,7 @@ if ~(exist([cd filesep 'Backup'],'dir')==7) % create 'Backup' directory if neces
     mkdir('Backup')
     fprintf('created Backup directory\n')
 end
-if ~(exist([cd filesep 'Data'],'dir')==7) % create 'Backup' directory if necessary
+if ~(exist([cd filesep 'Data'],'dir')==7) % create 'Data' directory if necessary
     mkdir('Data');
     fprintf('created Data directory\n')
 end
@@ -160,7 +160,6 @@ global dur_aq
 global Fs
 global num_chan
 global data; data = [];
-global chan_space
 global fft_l
 global preview
 global ai
@@ -300,6 +299,7 @@ try
 catch ME
     delete(handles.wb)
     errordlg('Initialization failed! see command window for more information.')
+    set(handles.stop_recording,'Enable','on')
     rethrow(ME)
 end
 
@@ -335,8 +335,10 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     data = zeros(preview,num_chan_plot);
     data(1:tempSample,:) = tempData;
     digicounter  = 0;
+
     chan_space = str2double(get(handles.chan_space,'String'))/1000;
     a = linspace(-chan_space,chan_space,num_chan_plot);
+
     b=sort(a,'descend');
     
     %% plot live signal
@@ -388,15 +390,14 @@ elseif save_disk
 end
 
 [~, nrofchans] = size(data);
-
-chan_space = str2double(get(handles.chan_space, 'String'))/1000;
+chan_space = chan_space_Callback([],[],handles);;
 a = linspace(-chan_space,chan_space,num_chan);
 b=sort(a,'descend');
 for k=1:nrofchans
     if k<9
         plot(handles.axes1,data(:,k)+b(k),'b'); hold(handles.axes1,'on')
     else
-        plot(handles.axes1,data(:,k)./10000+b(k),'r'); hold(handles.axes1,'on')
+        plot(handles.axes1,data(:,k)./5000+b(k),'r'); hold(handles.axes1,'on')
     end
 end
 grid(handles.axes1,'on')
@@ -449,9 +450,8 @@ end
 delete(ai)
 clear ai
 
-function chan_space_Callback(hObject, eventdata, handles)
-global chan_space
-chan_space = str2double(get(hObject,'String'));
+function chan_space = chan_space_Callback(hObject, eventdata, handles)
+    chan_space = str2double(get(handles.chan_space, 'String'))/1000;
 return
 
 function chan_space_CreateFcn(hObject, eventdata, handles)
@@ -504,8 +504,7 @@ global dur_aq
 dur_aq = str2double(get(handles.dur_aq,'String'));
 global Fs
 Fs = str2double(get(handles.Fs_vak,'String'));
-global chan_space
-chan_space = str2double(get(handles.chan_space,'String'))/10000;
+chan_space = chan_space_Callback([],[],handles);
 global fft_l
 fft_l = str2double(get(handles.fft_l,'String'));
 global preview
@@ -578,11 +577,13 @@ Spectral_analysis(handles)
 % --------------------------------------------------------------------
 function ERP_tool_Callback(hObject, eventdata, handles)
 ERP_tool(handles)
+% --------------------------------------------------------------------
 function Data_plotter_Callback(hObject, eventdata, handles)
 Data_plotter(handles)
 % --------------------------------------------------------------------
 function Event_cutter_Callback(hObject, eventdata, handles)
 Event_cutter(handles)
+% --------------------------------------------------------------------
 
 function prev_t_Callback(hObject, eventdata, handles)
 global preview
