@@ -10,3 +10,5 @@ Functions/Frequency readout per trial.asv
 Help_figs/set_DIO.png
 Functions/Help_figs/set_DIO.png
 *.mat
+Functions/noisy_data_generator.m
+NI_USB_6501_init.m
