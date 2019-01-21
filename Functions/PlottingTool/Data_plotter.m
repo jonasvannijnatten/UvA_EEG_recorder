@@ -54,18 +54,26 @@ function Data_plotter_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for Data_plotter
 handles.output = hObject;
-handles.dir = varargin{1}.dir;
+if isempty(varargin)
+    warndlg('Unable to open this tool directly, open it from the EEG_recorder main function')
+    handles.closeFigure = true;
+else
+    handles.dir = varargin{1}.dir;
+end
 % Update handles structure
 guidata(hObject, handles);
 
 % UIWAIT makes Data_plotter wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
-
+function varargout = Data_plotter_CloseRequestFcn(hObject, eventdata, handles)
+delete(hObject)
 
 % --- Outputs from this function are returned to the command line.
 function varargout = Data_plotter_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
-
+if (isfield(handles,'closeFigure') && handles.closeFigure)
+      Data_plotter_CloseRequestFcn(hObject, eventdata, handles)
+end
 
 
 function Fs_Callback(hObject, eventdata, handles)
