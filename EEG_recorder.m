@@ -642,3 +642,11 @@ function Info_Callback(hObject, eventdata, handles)
 % hObject    handle to Info (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function TF_analysis_Callback(hObject, eventdata, handles)
+TF_Analysis(handles)
+% hObject    handle to TF_analysis (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
