@@ -22,7 +22,7 @@ function varargout = TF_Analysis(varargin)
 
 % Edit the above text to modify the response to help TF_Analysis
 
-% Last Modified by GUIDE v2.5 25-Jan-2019 23:03:27
+% Last Modified by GUIDE v2.5 29-Jan-2019 00:13:32
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -83,7 +83,7 @@ catch
     warndlg('Invalid channel selection')
     return
 end
-calculateTF_Callback(hObject, eventdata, handles)
+computeTF_Callback(hObject, eventdata, handles)
 % hObject    handle to chan (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -113,7 +113,7 @@ catch
     warndlg('Invalid channel selection')
     return
 end
-calculateTF_Callback(hObject, eventdata, handles)
+computeTF_Callback(hObject, eventdata, handles)
 % hObject    handle to chan (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -137,7 +137,7 @@ end
 
 
 function XLim_Callback(hObject, eventdata, handles)
-calculateTF_Callback(hObject, eventdata, handles)
+computeTF_Callback(hObject, eventdata, handles)
 % hObject    handle to XLim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -161,7 +161,7 @@ end
 
 
 function YLim_Callback(hObject, eventdata, handles)
-calculateTF_Callback(hObject, eventdata, handles)
+computeTF_Callback(hObject, eventdata, handles)
 % hObject    handle to YLim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -185,7 +185,7 @@ end
 
 
 function ZLim_Callback(hObject, eventdata, handles)
-calculateTF_Callback(hObject, eventdata, handles)
+computeTF_Callback(hObject, eventdata, handles)
 % hObject    handle to ZLim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -273,11 +273,15 @@ guidata(hObject,handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-% --- Executes on button press in calculateTF.
-function calculateTF_Callback(hObject, eventdata, handles)
-% hObject    handle to calculateTF (see GCBO)
+% --- Executes on button press in computeTF.
+function computeTF_Callback(hObject, eventdata, handles)
+% hObject    handle to computeTF (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+if isfield(handles,'tf')
+    handles = rmfield(handles,'tf');
+end
+
 try
 data = handles.data;
 Fs = 256;
@@ -292,7 +296,8 @@ if chan < 0 || chan > size(data,2)
     warndlg('Invalid channel number')
     return
 end
-numchan = length(chan);
+% number of channels
+numchans = size(data,2);
 
 % check whether trial selection is valid
 trial = str2double(handles.trial.String);
@@ -350,22 +355,25 @@ end
 % get frequency range to plot
 % ylimits = str2num(get(handles.YLim, 'String'));
 
+
 %% calculate time frequency representation
 wb = waitbar(0, 'Running fourier analysis');
 numtrials = size(data,3);
 count = 0;
 powermatrix = [];
-% for itrial=1:numtrials
-    count = count+1;
-    waitbar(count/numtrials*numchan,wb,['Running fourier analysis ' num2str(count) ' / ' num2str(numtrials*numchan)])
-    [S,F,T,P] = spectrogram(data(:,chan,trial),window,noverlap,nfft,Fs);
-    mp = min(P);
-    tf=cfilter2(log10(abs(P)),filter); % original code
-%     tf=cfilter2((abs(P)),filter);
-    powermatrix = cat(3,powermatrix,tf);
+% for ichan = 1:numchans
+    for itrial=1:numtrials
+        count = count+1;
+        waitbar(count/numtrials,wb,['Running fourier analysis ' num2str(count) ' / ' num2str(numtrials)])
+        [~,F,T,P] = spectrogram(data(:,chan,itrial),window,noverlap,nfft,Fs);
+        %mp = min(P);
+        tf(:,:,chan,itrial)=cfilter2(log10(abs(P)),filter); % original code
+        %     tf=cfilter2((abs(P)),filter);
+%         powermatrix = cat(5,powermatrix,tf);
+    end
 % end
 
-% determine baseline samples
+%% determine baseline samples
 if any(str2num(get(handles.bsl, 'String')))
     bsl = str2num(get(handles.bsl, 'String'));
     if numel(bsl) > 1 % in case of two values, use this sample range
@@ -381,43 +389,54 @@ end
 fprintf('Baseline in samples: %i : %i\n', bsl(1), bsl(2))
 fprintf('Baseline in seconds: %4.2f : %4.2f \n', bsl(1)/Fs, bsl(2)/Fs)
 
-% apply baseline correction
-bslP = mean(tf(:,bslT,:),2);
-tf = bsxfun(@rdivide, tf, bslP);
+
+%% apply baseline correction
+bslP = mean(tf(:,bslT,chan,:),2);
+tf = bsxfun(@rdivide, tf(:,:,chan,:), bslP);
 fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
 
 % rereference the X-axis to the event onset
 T = T-(onset_sample/Fs);
 
-handles.tfdata.tf   = tf;
-handles.tfdata.F    = F;
-handles.tfdata.T    = T;
-
-close(wb)
+%% store variables to handles
+handles.tf.data   = tf;
+handles.tf.F    = F;
+handles.tf.T    = T;
 guidata(hObject, handles);
+
+% close waitbar
+close(wb)
+
+% calculate average power for the time- and freq of interest
 averagePower_Callback(hObject, eventdata, handles)
+
+% plot the results
 plotTF(hObject, eventdata, handles)
 fprintf('---------------------------- \n')
 catch ME
-    errordlg('Some unexpected error occured, see matlab Command Window for more information')
-    if ishandle(wb)
+    if exist('wb','var') && ishandle(wb)
         close(wb)
     end
+    errordlg('Some unexpected error occured, see matlab Command Window for more information')
     ME.rethrow
 end
 
 function plotTF(hObject, eventdata, handles)
-if isfield(handles,'tfdata')
-    tf  = handles.tfdata.tf;
-    T   = handles.tfdata.T;
-    F   = handles.tfdata.F;
+if isfield(handles,'tf')
+    tf  = handles.tf.data;
+    T   = handles.tf.T;
+    F   = handles.tf.F;
 else
     warndlg('There is no time-frequency data to plot. Compute time-frequency data first')
+    return
 end
+chan = str2double(handles.chan.String);
+trial = str2double(handles.trial.String);
 ylimits = str2num(handles.YLim.String);
 Fselect = F> ylimits(1) & F < ylimits(2);
 %% plot results    
-surf(handles.tfPlot,T,F(Fselect),mean(tf(Fselect,:,:),3),'EdgeColor','none');
+% surf(handles.tfPlot,T,F(Fselect),mean(tf(Fselect,:,:),3),'EdgeColor','none');
+surf(handles.tfPlot,T,F(Fselect),tf(Fselect,:,1,trial),'EdgeColor','none');
 colormap(handles.tfPlot,jet(30)); % set colormap
 view(handles.tfPlot,0,90); % set view from xy-axis angle
 axis(handles.tfPlot,'xy'); 
@@ -467,7 +486,7 @@ end
 
 
 function onset_Callback(hObject, eventdata, handles)
-calculateTF_Callback(hObject, eventdata, handles)
+computeTF_Callback(hObject, eventdata, handles)
 % hObject    handle to onset (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -491,7 +510,7 @@ end
 
 
 function bsl_Callback(hObject, eventdata, handles)
-calculateTF_Callback(hObject, eventdata, handles)
+computeTF_Callback(hObject, eventdata, handles)
 % hObject    handle to bsl (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -550,7 +569,7 @@ else
     chan = chan-1;
 end
 handles.chan.String = num2str(chan);
-calculateTF_Callback(hObject, eventdata, handles)
+computeTF_Callback(hObject, eventdata, handles)
 % hObject    handle to prevChan (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -570,7 +589,7 @@ else
     chan = chan+1;
 end
 handles.chan.String = num2str(chan);
-calculateTF_Callback(hObject, eventdata, handles)
+computeTF_Callback(hObject, eventdata, handles)
 % hObject    handle to nextChan (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -584,12 +603,17 @@ catch
     return
 end
 if trial == 1
-    trial = size(handles.data,3);
+    trial = size(handles.tf.data,4);
 else
     trial = trial-1;
 end
 handles.trial.String = num2str(trial);
-calculateTF_Callback(hObject, eventdata, handles)
+if isfield(handles,'tf')
+    plotTF(hObject, eventdata, handles)
+    averagePower_Callback(hObject, eventdata, handles)
+else
+    computeTF_Callback(hObject, eventdata, handles)
+end
 % hObject    handle to prevTrial (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -603,13 +627,18 @@ catch
     warndlg('Invalid channel selection')
     return
 end
-if trial == size(handles.data,3)
+if trial == size(handles.tf.data,4)
     trial = 1;
 else
     trial = trial+1;
 end
 handles.trial.String = num2str(trial);
-calculateTF_Callback(hObject, eventdata, handles)
+if isfield(handles,'tf')
+    plotTF(hObject, eventdata, handles)
+    averagePower_Callback(hObject, eventdata, handles)
+else
+    computeTF_Callback(hObject, eventdata, handles)
+end
 % hObject    handle to nextTrial (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -617,11 +646,12 @@ calculateTF_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in averagePower.
 function averagePower_Callback(hObject, eventdata, handles)
-tf = handles.tfdata.tf;
-T = handles.tfdata.T;
-F = handles.tfdata.F;
+tf = handles.tf.data;
+T = handles.tf.T;
+F = handles.tf.F;
 
-toi = str2num(handles.toi.String);
+chan  = str2double(handles.chan.String);
+trial = str2double(handles.trial.String); 
 
 % plot powerspectrum
 powspec = handles.powSpec;
@@ -629,7 +659,7 @@ toi = str2num(handles.toi.String);
 Tselect = T>toi(1) & T<toi(2);
 ylimits = str2num(handles.YLim.String);
 Fselect = F>ylimits(1) & F<ylimits(2);
-plot(powspec,F(Fselect),mean(tf(Fselect,Tselect),2))
+plot(powspec,F(Fselect),mean(tf(Fselect,Tselect,1,trial),2))
 axis(powspec, 'tight');
 powspec.XLabel.String = 'Frequency (Hz)';
 powspec.YLabel.String = 'Power / baseline';
@@ -642,7 +672,7 @@ powspec.Title.String = ['Power during ' num2str(toi(1)) 's to ' num2str(toi(2)) 
 tpPlot = handles.tpPlot;
 foi = str2num(handles.foi.String);
 Fselect = F>foi(1) & F<foi(2);
-plot(tpPlot, T,mean(tf(Fselect,:),1));
+plot(tpPlot, T,mean(tf(Fselect,:,1,trial),1));
 axis(tpPlot, 'tight');
 tpPlot.XLabel.String = 'Time (s)';
 tpPlot.YLabel.String = 'Relative power';
@@ -658,9 +688,26 @@ tois = str2num(handles.toi.String);
 foi = str2num(handles.foi.String);
 Tselect = T>tois(1) & T<tois(2);
 Fselect = F>foi(1) & F<foi(2);
-selection = tf(Fselect,Tselect);
+selection = tf(Fselect,Tselect,1,trial);
 handles.meanPower.String = num2str(mean(selection(:)));
 
 % hObject    handle to averagePower (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in computeAverage.
+function computeAverage_Callback(hObject, eventdata, handles)
+if ~isfield(handles, 'tf')
+    warndlg('No time frequency data found. Compute TF first.')
+    return
+end
+handles.tf.data = mean(handles.tf.data,4);
+handles.trial.String = num2str(1); % reset trial number to 1
+guidata(hObject,handles);
+plotTF(hObject, eventdata, handles)
+averagePower_Callback(hObject, eventdata, handles)
+
+% hObject    handle to computeAverage (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
