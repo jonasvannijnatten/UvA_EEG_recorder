@@ -19,3 +19,4 @@ NI_USB_6501_init.m
 Functions/data_generator3.m
 Functions/data_generator.m
 Functions/data_generator3.m
+*.daq
