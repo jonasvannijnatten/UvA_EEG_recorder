@@ -348,7 +348,7 @@ if ~(isnumeric(onset_sample) && (mod(onset_sample,1)==0))
 end
 
 % get frequency range to plot
-ylimits = str2num(get(handles.YLim, 'String'));
+% ylimits = str2num(get(handles.YLim, 'String'));
 
 %% calculate time frequency representation
 wb = waitbar(0, 'Running fourier analysis');
@@ -398,15 +398,16 @@ guidata(hObject, handles);
 averagePower_Callback(hObject, eventdata, handles)
 plotTF(hObject, eventdata, handles)
 fprintf('---------------------------- \n')
-catch 
+catch ME
     errordlg('Some unexpected error occured, see matlab Command Window for more information')
     if ishandle(wb)
         close(wb)
     end
+    ME.rethrow
 end
 
 function plotTF(hObject, eventdata, handles)
-if isfield(data,'tfdata')
+if isfield(handles,'tfdata')
     tf  = handles.tfdata.tf;
     T   = handles.tfdata.T;
     F   = handles.tfdata.F;
