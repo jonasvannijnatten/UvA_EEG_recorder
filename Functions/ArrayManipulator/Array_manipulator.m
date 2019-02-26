@@ -367,13 +367,13 @@ end
 
 if (get(handles.col_row,'Value') == get(handles.col_row,'Max'))
     handles.data = permute(handles.data,[2 1 3]);
-    fprintf('transposed rows and columns')
+    fprintf('transposed rows and columns\n')
 elseif (get(handles.col_third,'Value') == get(handles.col_third,'Max'))
     handles.data = permute(handles.data,[3 2 1]);
-    fprintf('transposed columns and third dimension')
+    fprintf('transposed columns and third dimension\n')
 elseif (get(handles.row_thrid,'Value') == get(handles.row_thrid,'Max'))
     handles.data = permute(handles.data,[1 3 2]);
-    fprintf('transposed rows and third dimension')
+    fprintf('transposed rows and third dimension\n')
 end
 
 [d1, d2, d3] = size(handles.data); % determine the data dimensions
@@ -433,8 +433,8 @@ if any(filename) % check is any file was selected
     if isnumeric(data)
         handles.data = data;
         [d1, d2, d3] = size(data);  % determine the data dimensions   
-        if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
         % remove any old time frequency data set
+        if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
         
         % if it is a struct (time-frequency data) save data to handles
     elseif isstruct(data)
@@ -442,6 +442,7 @@ if any(filename) % check is any file was selected
         [d1, d2, d3] = size(data.data); % determine the data dimensions
         % remove any old data set
         if isfield(handles,'data'); handles = rmfield(handles,'data'); end
+        
     end
     handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
 else % if no file was selected, clear data and display 'No data'
