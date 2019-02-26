@@ -22,7 +22,7 @@ function varargout = TF_Analysis(varargin)
 
 % Edit the above text to modify the response to help TF_Analysis
 
-% Last Modified by GUIDE v2.5 29-Jan-2019 00:13:32
+% Last Modified by GUIDE v2.5 19-Feb-2019 16:37:35
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -257,20 +257,33 @@ end
 
 % --------------------------------------------------------------------
 function Load_Callback(hObject, eventdata, handles)
-[filename, data] = EEGLoadData(handles);
-if any(filename)
-    handles.filename.String = ['filename: ' filename];
-    handles.filesize.String = ['filesize: ' num2str(size(data))];
-    handles.data = data;
-else
+[filename, data] = EEGLoadData(handles, 1);
+if any(filename) % check is any file was selected
+    handles.filename.String = ['filename: ' filename]; % display filename
+    
+    % if it is a matrix (regular EEG data) save data to handles   
+    if isnumeric(data)
+        handles.data = data;
+        [d1, d2, d3] = size(data);  % determine the data dimensions
+        % remove any old time frequency data set
+        if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
+        
+    % if it is a struct (time-frequency data) save data to handles 
+    elseif isstruct(data)
+        handles.tf = data;
+        [d1, d2, d3] = size(data.data); % determine the data dimensions
+        % remove any old data set
+        if isfield(handles,'data'); handles = rmfield(handles,'data'); end
+        
+    end
+    handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
+else % if no file was selected, clear data and display 'No data'
     handles.filename.String = 'No data';
     handles.filesize.String = ' ';
     handles.data = [];
 end
+
 guidata(hObject,handles)
-% hObject    handle to Load (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
 % --- Executes on button press in computeTF.
@@ -354,24 +367,58 @@ end
 
 % get frequency range to plot
 % ylimits = str2num(get(handles.YLim, 'String'));
-
-
+[~, sys] = memory;
+ramusage = round((sys.PhysicalMemory.Total - sys.PhysicalMemory.Available )/ sys.PhysicalMemory.Total * 100,2);
 %% calculate time frequency representation
 wb = waitbar(0, 'Running fourier analysis');
+
 numtrials = size(data,3);
+
+% hard-coded setting whether to analyse all channels at once or one at a
+% time
+allchans = 0;
+if allchans == 1
+    chans = 1:numchans;
+    totaltrials = numtrials*numchans;
+else
+    chans = chan;
+    totaltrials = numtrials;
+end
+
 count = 0;
-powermatrix = [];
-% for ichan = 1:numchans
+% powermatrix = [];
+for ichan = chans
     for itrial=1:numtrials
         count = count+1;
-        waitbar(count/numtrials,wb,['Running fourier analysis ' num2str(count) ' / ' num2str(numtrials)])
-        [~,F,T,P] = spectrogram(data(:,chan,itrial),window,noverlap,nfft,Fs);
+        waitbar(count/totaltrials,wb, { ...
+            ['Running fourier analysis  (RAM usage: ' num2str(ramusage) '%)']; ...
+            ['channel: ' num2str(ichan) ', trial: ' num2str(count) ' / ' num2str(numtrials)]; ...
+            })
+        [~,F,T,P] = spectrogram(data(:,ichan,itrial),window,noverlap,nfft,Fs);
         %mp = min(P);
-        tf(:,:,chan,itrial)=cfilter2(log10(abs(P)),filter); % original code
+        tf(:,:,ichan,itrial)=cfilter2(log10(abs(P)),filter); % original code
         %     tf=cfilter2((abs(P)),filter);
 %         powermatrix = cat(5,powermatrix,tf);
+
+        %% monitor RAM usage       
+        [~, sys] = memory;
+        ramusage = round((sys.PhysicalMemory.Total - sys.PhysicalMemory.Available )/ sys.PhysicalMemory.Total * 100,2);
+        if ramusage > 95 % quit the proces if RAM is overloading
+            warndlg({ ...
+                'The time-frequency analysis is aborted because the computer is running out of working memory.';...
+                'Try one or more of the following options to reduce working memory load:';...
+                '1. Free up working memory by closing other applications';...
+                '2. Adjust the analysis parameters to reduce temporal or spectral resolution'; ...
+                '3. Run analyse on shorter time-windows'; ...
+                '4. Use a computer with more working memory'; ...
+                },'RAM overload')
+            clearvars('T','F','P','tf')
+            break
+        end
     end
-% end
+    % reset trial counter for each channel
+    count = 0;
+end
 
 %% determine baseline samples
 if any(str2num(get(handles.bsl, 'String')))
@@ -417,7 +464,7 @@ catch ME
     if exist('wb','var') && ishandle(wb)
         close(wb)
     end
-    errordlg('Some unexpected error occured, see matlab Command Window for more information')
+    errordlg('Some unexpected error occured, see matlab Command Window for more information','Unexpected error')
     ME.rethrow
 end
 
@@ -709,5 +756,17 @@ plotTF(hObject, eventdata, handles)
 averagePower_Callback(hObject, eventdata, handles)
 
 % hObject    handle to computeAverage (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function Save_Callback(hObject, eventdata, handles)
+if isfield(handles, 'tf')
+    EEGSaveData(handles, handles.tf);
+else
+    warndlg('There is no time-frequency data to save.')
+end
+% hObject    handle to Save (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
