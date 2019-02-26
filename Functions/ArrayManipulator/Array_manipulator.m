@@ -247,8 +247,8 @@ end
 set(handles.filesize,'string',str);
 
 function conca_Callback(hObject, eventdata, handles)
-[filename, addData] = EEGLoadData(handles, 1);
-if any(filename) % check is any file was selected
+[addFilename, addData] = EEGLoadData(handles, 1);
+if any(addFilename) % check is any file was selected
     % check if originally loaded file and added file are the same format
     if isfield(handles,'data') && isstruct(addData)
         errordlg('Cannot combine EEG data with time-frequency data')
@@ -294,7 +294,7 @@ if isstruct(addData)
     addData = addData.data;
 end
 [d, e, f] = size(addData);
-% check if the other dimensions sizes match.
+% check if the other dimensions sizes match, if so, combine data sets
 if concatDim == 1
     if b ~= e || c~=f % check if 2nd & 3rd dimension are equal
         errordlg('2nd or 3rd dimensions dont agree','Dimension mismatch error');
@@ -317,6 +317,7 @@ elseif concatDim == 3
         data = cat(3,originalData,addData);
     end
 end
+fprintf('%s added along dimension %i\n', handles.filename.String, concatDim)
 
 % save concatenated data to handles
 if isfield(handles,'data')
