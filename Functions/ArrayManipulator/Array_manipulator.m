@@ -22,7 +22,7 @@ function varargout = Array_manipulator(varargin)
 
 % Edit the above text to modify the response to help Array_manipulator
 
-% Last Modified by GUIDE v2.5 08-Mar-2018 18:28:11
+% Last Modified by GUIDE v2.5 26-Feb-2019 15:48:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -212,7 +212,7 @@ if length(str1) == 3
 elseif length(str1) <= 3
     str = [num2str(str1(1)) ' - ' num2str(str1(2))];
 end
-set(handles.file_size,'string',str);
+set(handles.filesize,'string',str);
 
 function resiz_Callback(hObject, eventdata, handles)
 global array_data
@@ -244,58 +244,92 @@ if length(str1) == 3
 elseif length(str1) <= 3
     str = [num2str(str1(1)) ' - ' num2str(str1(2))];
 end
-set(handles.file_size,'string',str);
+set(handles.filesize,'string',str);
 
 function conca_Callback(hObject, eventdata, handles)
-global con_row; global col_dim; global thrid_dim;global array_data
+[filename, addData] = EEGLoadData(handles, 1);
+if any(filename) % check is any file was selected
+    % check if originally loaded file and added file are the same format
+    if isfield(handles,'data') && isstruct(addData)
+        errordlg('Cannot combine EEG data with time-frequency data')
+        return
+    elseif isfield(handles,'tf') && isnumeric(addData)
+        errordlg('Cannot combine time-frequency data with EEG data')
+        return
+    end
+    % if both files are time-frequency data, check if the time and
+    % frequency axes match. If not, check the analysis settings.
+    if isfield(handles,'tf') && isstruct(addData)
+        if any(size(handles.tf.T) ~= size(addData.T)) || sum(~any(handles.tf.T == addData.T))
+            errordlg(['Trying to combine two time-frequency data sets' ...
+                'but the time axes do not match.'])
+            return
+        end
+        if any(size(handles.tf.F) ~= size(addData.F)) || sum(~any(handles.tf.F == addData.F))
+            errordlg(['Trying to combine two time-frequency data sets' ...
+                'but the frequency axes do not match.'])
+            return
+        end
+    end
+end
+% determine along which dimension to concatenate the data sets
 if (get(handles.con_row,'Value') == get(handles.con_row,'Max'))
-    con_row =1;
-else
-    con_row=0;
+    concatDim = 1;
+elseif (get(handles.col_dim,'Value') == get(handles.col_dim,'Max'))
+    concatDim = 2;
+elseif (get(handles.thrid_dim,'Value') == get(handles.thrid_dim,'Max'))
+    concatDim = 3;
 end
-if (get(handles.col_dim,'Value') == get(handles.col_dim,'Max'))
-    col_dim =1;
-else
-    col_dim =0;
+
+% get data dimensions of the original file
+if isfield(handles,'data')
+    originalData = handles.data;
+elseif isfield(handles,'tf')
+    originalData = handles.tf.data;
 end
-if (get(handles.thrid_dim,'Value') == get(handles.thrid_dim,'Max'))
-    thrid_dim =1;
-else
-    thrid_dim =0;
+[a, b, c] = size(originalData);
+
+% get data dimensions of the new file
+if isstruct(addData)
+    addData = addData.data;
 end
-[filename2, pathname] = ...
-    uigetfile({'*.mat';},'Select an array');
-load(filename2); data6 = data;
-[a b c] = size(data6);
-[d e f] = size(array_data);
-if con_row ==1
-    if b~=e || c~=f % a ~= d;
-        errordlg('Row dimensions dont agree','Dimension error');
+[d, e, f] = size(addData);
+% check if the other dimensions sizes match.
+if concatDim == 1
+    if b ~= e || c~=f % check if 2nd & 3rd dimension are equal
+        errordlg('2nd or 3rd dimensions dont agree','Dimension mismatch error');
+        return
     else
-        array_data = cat(1,array_data,data6);
+        data = cat(1,originalData,addData);
+    end
+elseif concatDim == 2
+    if a~=d || c ~= f % check if 1st & 3rd dimension are equal
+        errordlg('1st or 3rd dimensions dont agree','Dimension mismatch error');
+        return
+    else
+        data = cat(2,originalData,addData);
+    end
+elseif concatDim == 3
+    if a ~= d || b ~= e % check if 1st & 2nd dimension are equal
+        errordlg('1st or 2nd dimensions dont agree','Dimension mismatch error');
+        return
+    else
+        data = cat(3,originalData,addData);
     end
 end
-if col_dim ==1
-    if a~=d || c ~= f % e ~= b;
-        errordlg('Collumn dimensions dont agree','Dimension error');
-    else
-        array_data = cat(2,array_data,data6);
-    end
+
+% save concatenated data to handles
+if isfield(handles,'data')
+    handles.data = data;
+elseif isfield(handles,'tf')
+    handles.tf.data = data;
 end
-if thrid_dim ==1
-    if a ~= d || b ~= e % f ~= c ;
-        errordlg('Third dimensions dont agree','Dimension error');
-    else
-        array_data = cat(3,array_data,data6);
-    end
-end
-[str1] = size(array_data);
-if length(str1) == 3
-    str = [num2str(str1(1)) ' - ' num2str(str1(2)) ' - ' num2str(str1(3))];
-elseif length(str1) <= 3
-    str = [num2str(str1(1)) ' - ' num2str(str1(2))];
-end
-set(handles.file_size,'string',str);
+
+[d1, d2, d3] = size(data); % determine the data dimensions
+handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
+
+guidata(hObject,handles)
+
 
 function con_row_Callback(hObject, eventdata, handles)
 global con_row;
@@ -326,40 +360,26 @@ return
 
 
 function Transp_Callback(hObject, eventdata, handles)
-global array_data; global col_row;global col_third;global row_thrid
+if isfield(handles,'tf')
+    errordlg('This function is not applicable to time frequency data')
+    return
+end
+
 if (get(handles.col_row,'Value') == get(handles.col_row,'Max'))
-    col_row =1;
-else
-    col_row =0;
-end
-if (get(handles.col_third,'Value') == get(handles.col_third,'Max'))
-    col_third =1;
-else
-    col_third =0;
-end
-if (get(handles.row_thrid,'Value') == get(handles.row_thrid,'Max'))
-    row_thrid =1;
-else
-    row_thrid =0;
-end
-if col_row == 1
-    array_data = permute(array_data,[2 1 3]);
+    handles.data = permute(handles.data,[2 1 3]);
+    fprintf('transposed rows and columns')
+elseif (get(handles.col_third,'Value') == get(handles.col_third,'Max'))
+    handles.data = permute(handles.data,[3 2 1]);
+    fprintf('transposed columns and third dimension')
+elseif (get(handles.row_thrid,'Value') == get(handles.row_thrid,'Max'))
+    handles.data = permute(handles.data,[1 3 2]);
+    fprintf('transposed rows and third dimension')
 end
 
-if col_third == 1
-    array_data = permute(array_data,[3 2 1]);
-end
+[d1, d2, d3] = size(handles.data); % determine the data dimensions
+handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
 
-if row_thrid == 1
-    array_data = permute(array_data,[1 3 2]);
-end
-[str1] = size(array_data);
-if length(str1) == 3
-    str = [num2str(str1(1)) ' - ' num2str(str1(2)) ' - ' num2str(str1(3))];
-elseif length(str1) <= 3
-    str = [num2str(str1(1)) ' - ' num2str(str1(2))];
-end
-set(handles.file_size,'string',str);
+guidata(hObject,handles)
 
 function average_data_Callback(hObject, eventdata, handles)
 global array_data; global av_dim_1; global av_dim_2; global av_dim_3;
@@ -400,29 +420,37 @@ if length(str1) == 3
 elseif length(str1) <= 3
     str = [num2str(str1(1)) ' - ' num2str(str1(2))];
 end
-set(handles.file_size,'string',str);
+set(handles.filesize,'string',str);
 
 
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-global filename;global array_data;
-curdir = cd;
-cd([curdir filesep 'data']);
-[filename, pathname] = ...
-    uigetfile({'*.mat';},'Select an array');
-cd(curdir);
-if any(filename)
-    load([pathname filename]);
-    array_data = data;
-    [str1] = size(array_data);
-    if length(str1) == 3
-        str = [num2str(str1(1)) ' - ' num2str(str1(2)) ' - ' num2str(str1(3))];
-    elseif length(str1) <= 3
-        str = [num2str(str1(1)) ' - ' num2str(str1(2))];
+[filename, data] = EEGLoadData(handles, 1);
+if any(filename) % check is any file was selected
+    handles.filename.String = ['filename: ' filename]; % display filename
+    
+    % if it is a matrix (regular EEG data) save data to handles
+    if isnumeric(data)
+        handles.data = data;
+        [d1, d2, d3] = size(data);  % determine the data dimensions   
+        if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
+        % remove any old time frequency data set
+        
+        % if it is a struct (time-frequency data) save data to handles
+    elseif isstruct(data)
+        handles.tf = data;
+        [d1, d2, d3] = size(data.data); % determine the data dimensions
+        % remove any old data set
+        if isfield(handles,'data'); handles = rmfield(handles,'data'); end
     end
-    set(handles.file_name,'string',filename);
-    set(handles.file_size,'string',str);
+    handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
+else % if no file was selected, clear data and display 'No data'
+    handles.filename.String = 'No data';
+    handles.filesize.String = ' ';
+    handles.data = [];
 end
+
+guidata(hObject,handles)
 
 % --------------------------------------------------------------------
 function save_Callback(hObject, eventdata, handles)
@@ -436,8 +464,8 @@ clear data;
 clear -global array_data
 % clear filename; clear data; clear data4;
 % str = ' ';
-% set(handles.file_name,'string',str);
-% set(handles.file_size,'string',str);
+% set(handles.filename,'string',str);
+% set(handles.filesize,'string',str);
 
 function col_row_Callback(hObject, eventdata, handles)
 global col_row
