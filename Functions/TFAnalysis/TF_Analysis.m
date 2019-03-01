@@ -267,20 +267,23 @@ if any(filename) % check is any file was selected
         [d1, d2, d3] = size(data);  % determine the data dimensions
         % remove any old time frequency data set
         if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
-        
+        cla(handles.tfPlot); cla(handles.powSpec); cla(handles.tpPlot);
+        handles.bsl.String = ' ';
+        handles.filesize.String = sprintf('file size: %i - %i - %i',d1,d2,d3); % display filesize        
+        handles.filesizeTF.String = ' ';
     % if it is a struct (time-frequency data) save data to handles 
     elseif isstruct(data)
         handles.tf = data;
         [d1, d2, d3] = size(data.data); % determine the data dimensions
         % remove any old data set
         if isfield(handles,'data'); handles = rmfield(handles,'data'); end
-        
+        plotTF(hObject, eventdata, handles)
+        averagePower_Callback(hObject, eventdata, handles)
+        handles.filesizeTF.String = sprintf('TF filesize: %i - %i - %i',d1,d2,d3); % display filesize 
+        handles.filesize.String = ' ';
     end
-    handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
-else % if no file was selected, clear data and display 'No data'
-    handles.filename.String = 'No data';
-    handles.filesize.String = ' ';
-    handles.data = [];
+    handles.chan.String = 1;
+    handles.trial.String = 1;
 end
 
 guidata(hObject,handles)
@@ -445,6 +448,13 @@ fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
 % rereference the X-axis to the event onset
 T = T-(onset_sample/Fs);
 
+% reduce data size from 4 to 3 dimensions
+% 3rd dimension (channel) is always 1 after TF computation
+tf = squeeze(tf);
+
+[d1, d2, d3] = size(tf);
+handles.filesizeTF.String = sprintf('TF file size: %i - %i - %i',d1,d2,d3); % display filesize
+
 %% store variables to handles
 handles.tf.data   = tf;
 handles.tf.F    = F;
@@ -483,7 +493,7 @@ ylimits = str2num(handles.YLim.String);
 Fselect = F> ylimits(1) & F < ylimits(2);
 %% plot results    
 % surf(handles.tfPlot,T,F(Fselect),mean(tf(Fselect,:,:),3),'EdgeColor','none');
-surf(handles.tfPlot,T,F(Fselect),tf(Fselect,:,1,trial),'EdgeColor','none');
+surf(handles.tfPlot,T,F(Fselect),tf(Fselect,:,trial),'EdgeColor','none');
 colormap(handles.tfPlot,jet(30)); % set colormap
 view(handles.tfPlot,0,90); % set view from xy-axis angle
 axis(handles.tfPlot,'xy'); 
@@ -610,13 +620,17 @@ catch
     warndlg('Invalid channel selection')
     return
 end
-if chan == 1
-    chan = size(handles.data,2);
-else
-    chan = chan-1;
+if isfield(handles,'data')
+    if chan == 1
+        chan = size(handles.data,2);
+    else
+        chan = chan-1;
+    end    
+    handles.chan.String = num2str(chan);
+    computeTF_Callback(hObject, eventdata, handles)
+elseif isfield(handles,'tf')
+    warndlg('this only applies to time-series data, but does not work for TF data')
 end
-handles.chan.String = num2str(chan);
-computeTF_Callback(hObject, eventdata, handles)
 % hObject    handle to prevChan (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -630,13 +644,19 @@ catch
     warndlg('Invalid channel selection')
     return
 end
-if chan == size(handles.data,2)
-    chan = 1;
-else
-    chan = chan+1;
+
+if isfield(handles,'data')
+    if chan == size(handles.data,2)
+        chan = 1;
+    else
+        chan = chan+1;
+    end
+    handles.chan.String = num2str(chan);
+    computeTF_Callback(hObject, eventdata, handles)
+elseif isfield(handles,'tf')
+    warndlg('this only applies to time-series data, but does not work for TF data')
 end
-handles.chan.String = num2str(chan);
-computeTF_Callback(hObject, eventdata, handles)
+
 % hObject    handle to nextChan (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -649,18 +669,25 @@ catch
     warndlg('Invalid channel selection')
     return
 end
-if trial == 1
-    trial = size(handles.tf.data,4);
-else
-    trial = trial-1;
-end
-handles.trial.String = num2str(trial);
-if isfield(handles,'tf')
+if isfield(handles,'data') && ~isfield(handles,'tf')
+    if trial == 1
+        trial = size(handles.data,3);
+    else
+        trial = trial-1;
+    end
+    handles.trial.String = num2str(trial);
+    computeTF_Callback(hObject, eventdata, handles)
+elseif isfield(handles,'tf')
+    if trial == 1
+        trial = size(handles.tf.data,3);
+    else
+        trial = trial-1;
+    end
+    handles.trial.String = num2str(trial);
     plotTF(hObject, eventdata, handles)
     averagePower_Callback(hObject, eventdata, handles)
-else
-    computeTF_Callback(hObject, eventdata, handles)
 end
+
 % hObject    handle to prevTrial (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -674,10 +701,18 @@ catch
     warndlg('Invalid channel selection')
     return
 end
-if trial == size(handles.tf.data,4)
-    trial = 1;
-else
-    trial = trial+1;
+if isfield(handles,'data') && ~isfield(handles,'tf')
+    if trial == size(handles.data,3)
+        trial = 1;
+    else
+        trial = trial+1;
+    end
+elseif isfield(handles,'tf')
+    if trial == size(handles.tf.data,3)
+        trial = 1;
+    else
+        trial = trial+1;
+    end
 end
 handles.trial.String = num2str(trial);
 if isfield(handles,'tf')
@@ -706,7 +741,7 @@ toi = str2num(handles.toi.String);
 Tselect = T>toi(1) & T<toi(2);
 ylimits = str2num(handles.YLim.String);
 Fselect = F>ylimits(1) & F<ylimits(2);
-plot(powspec,F(Fselect),mean(tf(Fselect,Tselect,1,trial),2))
+plot(powspec,F(Fselect),mean(tf(Fselect,Tselect,trial),2))
 axis(powspec, 'tight');
 powspec.XLabel.String = 'Frequency (Hz)';
 powspec.YLabel.String = 'Power / baseline';
@@ -719,7 +754,7 @@ powspec.Title.String = ['Power during ' num2str(toi(1)) 's to ' num2str(toi(2)) 
 tpPlot = handles.tpPlot;
 foi = str2num(handles.foi.String);
 Fselect = F>foi(1) & F<foi(2);
-plot(tpPlot, T,mean(tf(Fselect,:,1,trial),1));
+plot(tpPlot, T,mean(tf(Fselect,:,trial),1));
 axis(tpPlot, 'tight');
 tpPlot.XLabel.String = 'Time (s)';
 tpPlot.YLabel.String = 'Relative power';
@@ -735,7 +770,7 @@ tois = str2num(handles.toi.String);
 foi = str2num(handles.foi.String);
 Tselect = T>tois(1) & T<tois(2);
 Fselect = F>foi(1) & F<foi(2);
-selection = tf(Fselect,Tselect,1,trial);
+selection = tf(Fselect,Tselect,trial);
 handles.meanPower.String = num2str(mean(selection(:)));
 
 % hObject    handle to averagePower (see GCBO)
@@ -749,8 +784,10 @@ if ~isfield(handles, 'tf')
     warndlg('No time frequency data found. Compute TF first.')
     return
 end
-handles.tf.data = mean(handles.tf.data,4);
+handles.tf.data = mean(handles.tf.data,3);
 handles.trial.String = num2str(1); % reset trial number to 1
+[d1, d2, d3] = size(handles.tf.data);
+handles.filesizeTF.String = sprintf('TF filesize: %i - %i - %i',d1,d2,d3); % display filesize 
 guidata(hObject,handles);
 plotTF(hObject, eventdata, handles)
 averagePower_Callback(hObject, eventdata, handles)
