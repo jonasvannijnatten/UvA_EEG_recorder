@@ -155,64 +155,68 @@ else
 end
 
 function trial_selection_Callback(hObject, eventdata, handles)
-global array_data; % global trial_dim_1; global trial_dim_2; global trial_dim_3;
+% check which data type is loaded
+if isfield(handles,'tf')
+  data = handles.tf.data;
+elseif isfield(handles,'data')
+  data = handles.data;
+else
+  errordlg('some went wrong, somehow no correct data type has been recognized')
+  return
+end
+
+% determine selection to keep / discard
 selection = str2num(get(handles.selection_list,'String'));
+% determine largest element index of  selection
 trialnrs = max(selection);
-[a b c] = size(array_data);
-if get(handles.keep, 'Value')
-    if get(handles.trial_dim_1, 'Value') == get(handles.trial_dim_1, 'Max')
-        if trialnrs > a
-            errordlg('the selection list is bigger than the number of trials');
-        else
-            array_data = array_data(selection,:,:);
-        end
-    elseif get(handles.trial_dim_2, 'Value') == get(handles.trial_dim_2, 'Max')
-        if trialnrs > b
-            errordlg('the selection list is bigger than the number of trials');
-        else
-            array_data = array_data(:,selection,:);
-        end
-    elseif get(handles.trial_dim_3, 'Value') == get(handles.trial_dim_3, 'Max')
-        if trialnrs > c
-            errordlg('the selection list is bigger than the number of trials');
-        else
-            array_data = array_data(:,:,selection);
-        end
-    end
-elseif get(handles.discard, 'Value')
-    if get(handles.trial_dim_1, 'Value') == get(handles.trial_dim_1, 'Max')
-        if trialnrs > a
-            errordlg('the selection list is bigger than the number of trials');
-        else
-            alltrials = 1:a;
-            selection = setdiff(alltrials, selection);
-            array_data = array_data(selection,:,:);
-        end
-    elseif get(handles.trial_dim_2, 'Value') == get(handles.trial_dim_2, 'Max')
-        if trialnrs > b
-            errordlg('the selection list is bigger than the number of trials');
-        else
-            alltrials = 1:b;
-            selection = setdiff(alltrials, selection);
-            array_data = array_data(:,selection,:);
-        end
-    elseif get(handles.trial_dim_3, 'Value') == get(handles.trial_dim_3, 'Max')
-        if trialnrs > c
-            errordlg('the selection list is bigger than the number of trials');
-        else
-            alltrials = 1:c;
-            selection = setdiff(alltrials, selection);
-            array_data = array_data(:,:,selection);
-        end
-    end
+% detemine data size
+[a, b, c] = size(data);
+
+% determine in which dimension the selection is made
+if get(handles.trial_dim_1, 'Value') == get(handles.trial_dim_1, 'Max')
+      dim = 1;
+elseif get(handles.trial_dim_2, 'Value') == get(handles.trial_dim_2, 'Max')
+      dim = 2;
+elseif get(handles.trial_dim_3, 'Value') == get(handles.trial_dim_3, 'Max')
+      dim = 3;
 end
-[str1] = size(array_data);
-if length(str1) == 3
-    str = [num2str(str1(1)) ' - ' num2str(str1(2)) ' - ' num2str(str1(3))];
-elseif length(str1) <= 3
-    str = [num2str(str1(1)) ' - ' num2str(str1(2))];
+
+% check if the selection exceeds the data size    
+if trialnrs > size(data,dim)
+    errordlg('the selection list exceeds the size of the data set');
 end
-set(handles.filesize,'string',str);
+
+% determine whether selection is kept or discarded
+% when discarded inverse the selection
+if get(handles.discard, 'Value')
+    alltrials = 1:size(data,dim);
+    selection = setdiff(alltrials, selection);
+end
+
+% apply selection
+if dim == 1
+    data = data(selection,:,:);
+    disp(['Selection kept in the 1st dimension: ' num2str(selection)])
+elseif dim == 2
+    data = data(:,selection,:);
+    disp(['Selection kept in the 2nd dimension: ' num2str(selection)])
+elseif dim == 3
+    data = data(:,:,selection);
+    disp(['Selection kept in the 3rd dimension: ' num2str(selection)])
+end
+
+
+% save concatenated data to handles
+if isfield(handles,'data')
+    handles.data = data;
+elseif isfield(handles,'tf')
+    handles.tf.data = data;
+end
+
+[d1, d2, d3] = size(data); % determine the data dimensions
+handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
+
+guidata(hObject,handles)
 
 function resiz_Callback(hObject, eventdata, handles)
 global array_data
@@ -317,7 +321,7 @@ elseif concatDim == 3
         data = cat(3,originalData,addData);
     end
 end
-fprintf('%s added along dimension %i\n', handles.filename.String, concatDim)
+fprintf('added: %s along dimension %i\n', addFilename, concatDim)
 
 % save concatenated data to handles
 if isfield(handles,'data')
@@ -383,45 +387,43 @@ handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
 guidata(hObject,handles)
 
 function average_data_Callback(hObject, eventdata, handles)
-global array_data; global av_dim_1; global av_dim_2; global av_dim_3;
+% check which data type is loaded
+if isfield(handles,'tf')
+  data = handles.tf.data;
+elseif isfield(handles,'data')
+  data = handles.data;
+else
+  errordlg('some went wrong, somehow no correct data type has been recognized')
+  return
+end
+  
+% average data in selected dimensions
 if (get(handles.av_dim_1,'Value') == get(handles.av_dim_1,'Max'))
-    av_dim_1 = 1;
+  data = mean(data,1);
+  disp('averaged over 1st dimension')
+elseif (get(handles.av_dim_2,'Value') == get(handles.av_dim_2,'Max'))
+  data = mean(data,2);
+  disp('averaged over 2nd dimension')
+elseif (get(handles.av_dim_3,'Value') == get(handles.av_dim_3,'Max'))
+  data = mean(data,3);
+  disp('averaged over 3rd dimension')
 else
-    av_dim_1 = 0;
+    errordlg('oops, something went wrong')
 end
-if (get(handles.av_dim_2,'Value') == get(handles.av_dim_2,'Max'))
-    av_dim_2 = 1;
-else
-    av_dim_2 = 0;
+
+% determine and display new data size
+[d1, d2, d3] = size(data); 
+handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); 
+
+% return data to handles
+if isfield(handles,'tf')
+  handles.tf.data = data;
+elseif isfield(handles,'data')
+  handles.data = data;
 end
-if (get(handles.av_dim_3,'Value') == get(handles.av_dim_3,'Max'))
-    av_dim_3 = 1;
-else
-    av_dim_3 = 0;
-end
-[a b c] = size(array_data);
-if av_dim_1 == 1 && a >= 1
-    array_data = mean(array_data,1);
-elseif av_dim_1 && (isempty(a) || a == 1)
-    errordlg('there is no first dimension to average');
-end
-if av_dim_2 == 1 && b >= 1
-    array_data = mean(array_data,2);
-elseif av_dim_2 && (isempty(b) || b == 1)
-    errordlg('there is no second dimension to average');
-end
-if (av_dim_3 == 1) && (c > 1 )
-    array_data = mean(array_data,3);
-elseif av_dim_3 && (isempty(c) || c == 1)
-    errordlg('there is no third dimension to average');
-end
-[str1] = size(array_data);
-if length(str1) == 3
-    str = [num2str(str1(1)) ' - ' num2str(str1(2)) ' - ' num2str(str1(3))];
-elseif length(str1) <= 3
-    str = [num2str(str1(1)) ' - ' num2str(str1(2))];
-end
-set(handles.filesize,'string',str);
+
+
+guidata(hObject,handles)
 
 
 % --------------------------------------------------------------------
@@ -446,28 +448,19 @@ if any(filename) % check is any file was selected
         
     end
     handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
-else % if no file was selected, clear data and display 'No data'
-    handles.filename.String = 'No data';
-    handles.filesize.String = ' ';
-    handles.data = [];
 end
 
 guidata(hObject,handles)
 
 % --------------------------------------------------------------------
 function save_Callback(hObject, eventdata, handles)
-global array_data
-data = array_data;
-curdir = cd;
-cd([curdir filesep 'Data']);
-uisave({'data'},'Name');
-cd(curdir);
-clear data;
-clear -global array_data
-% clear filename; clear data; clear data4;
-% str = ' ';
-% set(handles.filename,'string',str);
-% set(handles.filesize,'string',str);
+if isfield(handles, 'tf')
+    EEGSaveData(handles, handles.tf);
+elseif isfield(handles,'data')
+    EEGSaveData(handles, handles.data);
+else
+    warndlg('No data to save')
+end
 
 function col_row_Callback(hObject, eventdata, handles)
 global col_row
