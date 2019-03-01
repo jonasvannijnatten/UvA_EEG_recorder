@@ -32,7 +32,7 @@ if any(filename)
         errordlg('you tried to load an unsupported data format')
     end
 else
-    data = [];
+    return
 end
 
 end % function end
