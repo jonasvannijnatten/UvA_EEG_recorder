@@ -137,7 +137,11 @@ end
 
 
 function XLim_Callback(hObject, eventdata, handles)
-computeTF_Callback(hObject, eventdata, handles)
+if ~isfield(handles,'tf') && isfield(handles,'data')
+    computeTF_Callback(hObject, eventdata, handles)
+elseif isfield(handles,'tf')
+    plotTF(handles)
+end
 % hObject    handle to XLim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -161,7 +165,11 @@ end
 
 
 function YLim_Callback(hObject, eventdata, handles)
-computeTF_Callback(hObject, eventdata, handles)
+if ~isfield(handles,'tf') && isfield(handles,'data')
+    computeTF_Callback(hObject, eventdata, handles)
+elseif isfield(handles,'tf')
+    plotTF(handles)
+end
 % hObject    handle to YLim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -185,7 +193,11 @@ end
 
 
 function ZLim_Callback(hObject, eventdata, handles)
-computeTF_Callback(hObject, eventdata, handles)
+if ~isfield(handles,'tf') && isfield(handles,'data')
+    computeTF_Callback(hObject, eventdata, handles)
+elseif isfield(handles,'tf')
+    plotTF(handles)
+end
 % hObject    handle to ZLim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -407,11 +419,11 @@ guidata(hObject, handles);
 % close waitbar
 close(wb)
 
-% calculate average power for the time- and freq of interest
+%% calculate average power for the time- and freq of interest
 averagePower_Callback(hObject, eventdata, handles)
 
-% plot the results
-plotTF(hObject, eventdata, handles)
+%% plot the results
+plotTF(handles)
 fprintf('---------------------------- \n')
 catch ME
     if exist('wb','var') && ishandle(wb)
@@ -421,7 +433,7 @@ catch ME
     ME.rethrow
 end
 
-function plotTF(hObject, eventdata, handles)
+function plotTF(handles)
 if isfield(handles,'tf')
     tf  = handles.tf.data;
     T   = handles.tf.T;
@@ -609,7 +621,7 @@ else
 end
 handles.trial.String = num2str(trial);
 if isfield(handles,'tf')
-    plotTF(hObject, eventdata, handles)
+    plotTF(handles)
     averagePower_Callback(hObject, eventdata, handles)
 else
     computeTF_Callback(hObject, eventdata, handles)
@@ -634,7 +646,7 @@ else
 end
 handles.trial.String = num2str(trial);
 if isfield(handles,'tf')
-    plotTF(hObject, eventdata, handles)
+    plotTF(handles)
     averagePower_Callback(hObject, eventdata, handles)
 else
     computeTF_Callback(hObject, eventdata, handles)
@@ -705,7 +717,7 @@ end
 handles.tf.data = mean(handles.tf.data,4);
 handles.trial.String = num2str(1); % reset trial number to 1
 guidata(hObject,handles);
-plotTF(hObject, eventdata, handles)
+plotTF(handles)
 averagePower_Callback(hObject, eventdata, handles)
 
 % hObject    handle to computeAverage (see GCBO)
