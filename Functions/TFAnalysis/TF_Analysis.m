@@ -137,7 +137,11 @@ end
 
 
 function XLim_Callback(hObject, eventdata, handles)
-computeTF_Callback(hObject, eventdata, handles)
+if ~isfield(handles, 'tf') && isfield(handles, 'data')
+    computeTF_Callback(hObject, eventdata, handles)
+elseif isfield(handles, 'tf')
+    plotTF(handles)
+end
 % hObject    handle to XLim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -161,7 +165,11 @@ end
 
 
 function YLim_Callback(hObject, eventdata, handles)
-computeTF_Callback(hObject, eventdata, handles)
+if ~isfield(handles, 'tf') && isfield(handles, 'data')
+    computeTF_Callback(hObject, eventdata, handles)
+elseif isfield(handles, 'tf')
+    plotTF(handles)
+end
 % hObject    handle to YLim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -185,7 +193,11 @@ end
 
 
 function ZLim_Callback(hObject, eventdata, handles)
-computeTF_Callback(hObject, eventdata, handles)
+if ~isfield(handles, 'tf') && isfield(handles, 'data')
+    computeTF_Callback(hObject, eventdata, handles)
+elseif isfield(handles, 'tf')
+    plotTF(handles)
+end
 % hObject    handle to ZLim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -277,7 +289,7 @@ if any(filename) % check is any file was selected
         [d1, d2, d3] = size(data.data); % determine the data dimensions
         % remove any old data set
         if isfield(handles,'data'); handles = rmfield(handles,'data'); end
-        plotTF(hObject, eventdata, handles)
+        plotTF(handles)
         averagePower_Callback(hObject, eventdata, handles)
         handles.filesizeTF.String = sprintf('TF filesize: %i - %i - %i',d1,d2,d3); % display filesize 
         handles.filesize.String = ' ';
@@ -468,7 +480,7 @@ close(wb)
 averagePower_Callback(hObject, eventdata, handles)
 
 % plot the results
-plotTF(hObject, eventdata, handles)
+plotTF(handles)
 fprintf('---------------------------- \n')
 catch ME
     if exist('wb','var') && ishandle(wb)
@@ -478,7 +490,7 @@ catch ME
     ME.rethrow
 end
 
-function plotTF(hObject, eventdata, handles)
+function plotTF(handles)
 if isfield(handles,'tf')
     tf  = handles.tf.data;
     T   = handles.tf.T;
@@ -684,7 +696,7 @@ elseif isfield(handles,'tf')
         trial = trial-1;
     end
     handles.trial.String = num2str(trial);
-    plotTF(hObject, eventdata, handles)
+    plotTF(handles)
     averagePower_Callback(hObject, eventdata, handles)
 end
 
@@ -716,7 +728,7 @@ elseif isfield(handles,'tf')
 end
 handles.trial.String = num2str(trial);
 if isfield(handles,'tf')
-    plotTF(hObject, eventdata, handles)
+    plotTF(handles)
     averagePower_Callback(hObject, eventdata, handles)
 else
     computeTF_Callback(hObject, eventdata, handles)
@@ -789,7 +801,7 @@ handles.trial.String = num2str(1); % reset trial number to 1
 [d1, d2, d3] = size(handles.tf.data);
 handles.filesizeTF.String = sprintf('TF filesize: %i - %i - %i',d1,d2,d3); % display filesize 
 guidata(hObject,handles);
-plotTF(hObject, eventdata, handles)
+plotTF(handles)
 averagePower_Callback(hObject, eventdata, handles)
 
 % hObject    handle to computeAverage (see GCBO)
