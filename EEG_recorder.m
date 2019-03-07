@@ -52,7 +52,7 @@ if ~(exist([cd filesep 'Backup'],'dir')==7) % create 'Backup' directory if neces
     mkdir('Backup')
     fprintf('created Backup directory\n')
 end
-if ~(exist([cd filesep 'Data'],'dir')==7) % create 'Data' directory if necessary
+if ~(exist([cd filesep 'Data'],'dir')==7) % create 'Backup' directory if necessary
     mkdir('Data');
     fprintf('created Data directory\n')
 end
@@ -160,6 +160,7 @@ global dur_aq
 global Fs
 global num_chan
 global data; data = [];
+global chan_d
 global fft_l
 global preview
 global ai
@@ -186,7 +187,7 @@ try
     fprintf('setting viewing parameters\n')
     dur_aq      = str2double(get(handles.dur_aq,'String'));
     Fs          = str2double(get(handles.Fs_vak,'String'));
-    % chan_space      = str2double(get(handles.chan_space,'String'));
+    % chan_d      = str2double(get(handles.chan_d,'String'));
     fft_l       = str2double(get(handles.fft_ll,'String'));
     preview     = str2double(get(handles.prev_t,'String'));
     manualstop  = 0;
@@ -299,7 +300,6 @@ try
 catch ME
     delete(handles.wb)
     errordlg('Initialization failed! see command window for more information.')
-    set(handles.stop_recording,'Enable','on')
     rethrow(ME)
 end
 
@@ -309,8 +309,14 @@ try
     fprintf('Recording started at: %s \n', datestr(now))
     start(ai)
     waitbar(.8,handles.wb,'recording started. Getting data to plot');
-    pause(.1);
-    set(handles.stop_recording,'Enable','on')       
+    set(handles.stop_recording,'Enable','on')
+    
+    while ai.SamplesAcquired <= preview && manualstop == 0
+        %Wait for samples
+        if (ai.SamplesAcquired) == preview/2
+            waitbar(.9,handles.wb,'recording started. Getting data to plot');
+        end
+    end
     delete(handles.wb);
 catch ME
     delete(handles.wb);
@@ -319,43 +325,24 @@ catch ME
 end
 ai.SamplesAcquired;
 while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
-    %% get latest data to plot
-    samps = ai.SamplesAcquired;  % how many samples are acquired in total
-    
-    % get the proportion of the preview time
-    tempSample = mod(samps-1, preview)+1;
-    
-    % calculate samples to time for x-axis
-    tempTime = (samps-tempSample+1:samps-tempSample+preview)/256 ;
-    
-    % get most recent data to plot
-    tempData = peekdata(ai,tempSample);
-    
-    %% get plotting setting
-    data = zeros(preview,num_chan_plot);
-    data(1:tempSample,:) = tempData;
+    data = peekdata(ai,preview);
+    %         b = wrev(a);
     digicounter  = 0;
-
-    chan_space = str2double(get(handles.chan_space,'String'))/1000;
-    a = linspace(-chan_space,chan_space,num_chan_plot);
-
+    a = linspace(-str2double(get(handles.chan_d,'String'))/1000,str2double(get(handles.chan_d,'String'))/1000,num_chan_plot);
     b=sort(a,'descend');
-    
-    %% plot live signal
     for ichan=1:num_chan_plot
         if channel_selection(ichan)<9
-            plot(handles.axes1,tempTime,data(:,channel_selection(ichan))+b(ichan),'b'); hold(handles.axes1,'on')
+            plot(handles.axes1,data(:,channel_selection(ichan))+b(ichan),'b'); hold(handles.axes1,'on')
         else
             digicounter = digicounter + 1;
-            plot(handles.axes1,tempTime,data(:,(8+digicounter))./100000+b(ichan),'r'); hold(handles.axes1,'on')
+            plot(handles.axes1,data(:,(8+digicounter))./100000+b(ichan),'r'); hold(handles.axes1,'on')
         end
+        %         set(handles.axes1, 'Ylim', [min(b)-0.001  max(b)+.001])
     end
     grid(handles.axes1,'on');
     drawnow; hold(handles.axes1,'off');
-    xlim([min(tempTime) max(tempTime)]);
+    %     end
     
-    
-    %% plot power spectrum
     minfreq = str2double(get(handles.minfreq, 'String'));
     maxfreq = str2double(get(handles.maxfreq, 'String'));
     
@@ -390,20 +377,21 @@ elseif save_disk
 end
 
 [~, nrofchans] = size(data);
-chan_space = chan_space_Callback([],[],handles);;
-a = linspace(-chan_space,chan_space,num_chan);
+%         b = wrev(a);
+chan_d = str2double(get(handles.chan_d, 'String'))/1000;
+a = linspace(-chan_d,chan_d,num_chan);
 b=sort(a,'descend');
 for k=1:nrofchans
     if k<9
         plot(handles.axes1,data(:,k)+b(k),'b'); hold(handles.axes1,'on')
     else
-        plot(handles.axes1,data(:,k)./5000+b(k),'r'); hold(handles.axes1,'on')
+        plot(handles.axes1,data(:,k)./10000+b(k),'r'); hold(handles.axes1,'on')
     end
 end
 grid(handles.axes1,'on')
 drawnow; hold(handles.axes1,'off');
 % end
-a = linspace(-chan_space,chan_space,8);
+a = linspace(-chan_d,chan_d,8);
 disp('Plotting data')
 plot_counter = 0;
 for ichan = 1:8
@@ -450,11 +438,12 @@ end
 delete(ai)
 clear ai
 
-function chan_space = chan_space_Callback(hObject, eventdata, handles)
-    chan_space = str2double(get(handles.chan_space, 'String'))/1000;
+function chan_d_Callback(hObject, eventdata, handles)
+global chan_d
+chan_d = str2double(get(hObject,'String'));
 return
 
-function chan_space_CreateFcn(hObject, eventdata, handles)
+function chan_d_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -504,7 +493,8 @@ global dur_aq
 dur_aq = str2double(get(handles.dur_aq,'String'));
 global Fs
 Fs = str2double(get(handles.Fs_vak,'String'));
-chan_space = chan_space_Callback([],[],handles);
+global chan_d
+chan_d = str2double(get(handles.chan_d,'String'))/10000;
 global fft_l
 fft_l = str2double(get(handles.fft_l,'String'));
 global preview
@@ -519,7 +509,7 @@ if any(filename)
         warndlg('You are trying to load 3D data, the EEG_recorder is not able to display this.')
     else
         [~, nrofchans] = size(data);
-        a = linspace(-chan_space,chan_space,nrofchans);
+        a = linspace(-chan_d,chan_d,nrofchans);
         
         for ichan=1:nrofchans
             b=sort(a,'descend');
@@ -577,13 +567,11 @@ Spectral_analysis(handles)
 % --------------------------------------------------------------------
 function ERP_tool_Callback(hObject, eventdata, handles)
 ERP_tool(handles)
-% --------------------------------------------------------------------
 function Data_plotter_Callback(hObject, eventdata, handles)
 Data_plotter(handles)
 % --------------------------------------------------------------------
 function Event_cutter_Callback(hObject, eventdata, handles)
 Event_cutter(handles)
-% --------------------------------------------------------------------
 
 function prev_t_Callback(hObject, eventdata, handles)
 global preview
@@ -640,13 +628,5 @@ function File_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 function Info_Callback(hObject, eventdata, handles)
 % hObject    handle to Info (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function TF_analysis_Callback(hObject, eventdata, handles)
-TF_Analysis(handles)
-% hObject    handle to TF_analysis (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
