@@ -438,11 +438,13 @@ end
 %% determine baseline samples
 if any(str2num(get(handles.bsl, 'String')))
     bsl = str2num(get(handles.bsl, 'String'));
-    if numel(bsl) > 1 % in case of two values, use this sample range
+    if numel(bsl) == 2 % in case of two values, use this sample range
         bslT = T>bsl(1)/Fs & T < bsl(2)/Fs;
-    else % in case of a single value, use sample 1 till bsl
+    elseif numel(bsl) == 1  % in case of a single value, use sample 1 till bsl
         bsl = [1 bsl];
         bslT = T<bsl(2)/Fs;
+    else
+        warndlg('Invalid baseline provided. Provide either a single or two samples numbers as baseline.')
     end
 else % in case no baseline samples are provided, average over all samples
     bsl = [1 size(data,1)];
@@ -454,7 +456,7 @@ fprintf('Baseline in seconds: %4.2f : %4.2f \n', bsl(1)/Fs, bsl(2)/Fs)
 
 %% apply baseline correction
 bslP = mean(tf(:,bslT,chan,:),2);
-tf = bsxfun(@rdivide, tf(:,:,chan,:), bslP);
+tf = bsxfun(@ldivide, tf(:,:,chan,:), bslP);
 fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
 
 % rereference the X-axis to the event onset
