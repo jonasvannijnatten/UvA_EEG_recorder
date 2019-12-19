@@ -296,20 +296,12 @@ try
     % check which DIO channels are activated
     num_TTLs = 0;
     for ichan = 9:14
-<<<<<<< Updated upstream
-        if eval(['handles.ch' num2str(ichan) '_on.Value']) == 1; 
-=======
-        if eval(['get(handles.ch' num2str(ichan) '_on, ''Value'')']) == 1; 
->>>>>>> Stashed changes
+        if eval(['get(handles.ch' num2str(ichan) '_on, ''Value'')']) == 1 
             addchannel(ai,ichan);  
             num_chan = num_chan+1;
             num_TTLs = num_TTLs + 1;
         end
-<<<<<<< Updated upstream
-        eval(['chan' num2str(ichan) '_on = handles.ch' num2str(ichan) '_on.Value'])
-=======
         eval(['chan' num2str(ichan) '_on = get(handles.ch' num2str(ichan) '_on, ''Value'')'])
->>>>>>> Stashed changes
     end
     
     analog_channels_on = [handles.channel_1.Value, handles.channel_2.Value, handles.channel_3.Value, handles.channel_4.Value, handles.channel_5.Value,handles.channel_6.Value];
@@ -535,11 +527,7 @@ clear ai
 cla(handles.axes1,'reset')
 cla(handles.axes2,'reset')
 set(handles.start_recording, 'Enable','on')
-<<<<<<< Updated upstream
-for i = 1:length(handles.TTL_panel.Children)s
-=======
 for i = 1:length(handles.TTL_panel.Children)
->>>>>>> Stashed changes
     set(handles.TTL_panel.Children(i), 'Enable','on')
 end
 
