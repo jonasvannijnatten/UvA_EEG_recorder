@@ -641,7 +641,8 @@ function Load_Callback(hObject, eventdata, handles)
 [filename, data] = EEGLoadData(handles, 1);
 if any(filename) % check is any file was selected
     handles.filename.String = ['filename: ' filename]; % display filename
-    
+    handles.trial.String = '1';
+    handles.chan.String = '1';
     % if it is a matrix (regular EEG data) save data to handles
     if isnumeric(data)
         handles.data = data;
