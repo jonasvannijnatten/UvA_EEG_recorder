@@ -884,7 +884,7 @@ plot(powspec,F(Fselect),mean(tf(Fselect,Tselect,trial),2))
 
 axis(powspec, 'tight');
 powspec.XLabel.String = 'Frequency (Hz)';
-powspec.YLabel.String = 'Power / baseline';
+powspec.YLabel.String = 'Power';
 powspec.Title.String = ['Power during ' num2str(toi(1)) 's to ' num2str(toi(2)) 's'];
 
 %% power vs over time plot
