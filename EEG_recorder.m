@@ -442,6 +442,7 @@ for k=1:nrofchans
         plot(handles.axes1,data(:,k)./5000+b(k),'k'); hold(handles.axes1,'on')
     end
 end
+legend(handles.axes1, channelLabels(channel_selection));
 grid(handles.axes1,'on')
 drawnow; hold(handles.axes1,'off');
 % end
@@ -824,8 +825,22 @@ function maxfreq_Callback(hObject, eventdata, handles)
 function minfreq_Callback(hObject, eventdata, handles)
 
 function axes1_CreateFcn(hObject, eventdata, handles)
+hObject.Title.String = 'Recorded Signal';
+hObject.Title.FontSize = 14;
+hObject.Title.FontWeight = 'bold';
 hObject.XLim = [0 4];
+hObject.XTick = 0:.5:4;
+hObject.XLabel.String = 'time (s)';
+hObject.YTick = [];
+hObject.YLabel.String = 'Voltage';
 
 function axes2_CreateFcn(hObject, eventdata, handles)
+hObject.Title.String = 'Powerspectrum (FFT)';
+hObject.Title.FontSize = 14;
+hObject.Title.FontWeight = 'bold';
 hObject.XLim = [.1 128];
+hObject.XLabel.String = 'Frequency (Hz)';
+hObject.YTick = [];
+hObject.YLabel.String = 'Power';
+
 
