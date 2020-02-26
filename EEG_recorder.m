@@ -65,9 +65,16 @@ handles.dir.data     = [handles.dir.main filesep 'Data'];
 handles.dir.functions = [handles.dir.main filesep 'Functions'];
 addpath(handles.dir.backup, genpath(handles.dir.data), genpath(handles.dir.functions));
 
-handles.plotColors = [0 0.4470 0.7410 ;0.8500 0.3250 0.0980; 0.9290 0.6940 0.1250; 0.4940 0.1840 0.5560; ...
-    0.4660 0.6740 0.1880; 0.3010 0.7450 0.9330; 0.6350 0.0780 0.1840; 1 0 1];
-
+handles.plotColors = [    ...
+    0      0.4470 0.7410; ...
+    0.8500 0.3250 0.0980; ...
+    0.9290 0.6940 0.1250; ...
+    0.4940 0.1840 0.5560; ...
+    0.4660 0.6740 0.1880; ...
+    0.3010 0.7450 0.9330; ...
+    0.6350 0.0780 0.1840; ...
+    1      0      1       ...    
+    ];
 
 handles.output = hObject;
 guidata(hObject, handles);
@@ -293,27 +300,39 @@ try
     channelLabels = {'chan1','chan2','chan3','chan4','chan5','chan6','chan7','chan8','DIO1','DIO2','DIO3','DIO4','DIO5','DIO6'};
 %     legend(handles.axes1,channelLabels, 'Location','SouthEast');
     
+    extraChan = 0;
+    
     % check which DIO channels are activated
     num_TTLs = 0;
     for ichan = 9:14
-        if eval(['get(handles.ch' num2str(ichan) '_on, ''Value'')']) == 1 
-            addchannel(ai,ichan);  
+        if ichan == 11
+            extraChan = 1;
+        end
+        if eval(['get(handles.ch' num2str(ichan) '_on, ''Value'')']) == 1;
+            addchannel(ai,ichan+extraChan);
             num_chan = num_chan+1;
             num_TTLs = num_TTLs + 1;
         end
-        eval(['chan' num2str(ichan) '_on = get(handles.ch' num2str(ichan) '_on, ''Value'')'])
     end
     
-    analog_channels_on = [handles.channel_1.Value, handles.channel_2.Value, handles.channel_3.Value, handles.channel_4.Value, handles.channel_5.Value,handles.channel_6.Value];
-    digital_channels_on = [chan9_on chan10_on chan11_on chan12_on chan13_on chan14_on];
-    num_dig_chan = length(find(digital_channels_on));
+    analog_channels_on = [handles.channel_1.Value, handles.channel_2.Value, handles.channel_3.Value, handles.channel_4.Value, ...
+        handles.channel_5.Value, handles.channel_6.Value, handles.channel_7.Value, handles.channel_8.Value];
+    digital_channels_on = [ ...
+        handles.ch9_on.Value, ...
+        handles.ch10_on.Value, ...
+        handles.ch11_on.Value, ...
+        handles.ch12_on.Value, ...
+        handles.ch13_on.Value, ...
+        handles.ch14_on.Value, ...
+        ];
     
-    channels_on = [analog_channels_on digital_channels_on];
-    
+    num_dig_chan = length(find(digital_channels_on));    
+    channels_on = [analog_channels_on digital_channels_on];    
     channel_selection = find(channels_on);
     num_chan_plot = length(channel_selection);
     
     fprintf('nr of channels: %d \n', num_chan);
+    
     set(ai,'SamplesPerTrigger',dur_aq*Fs);
     global a
     
@@ -361,7 +380,6 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     channels_on = [analog_channels_on digital_channels_on];
     channel_selection = find(channels_on);
     num_chan_plot = length(channel_selection);
-%     num_chan_plot = sum(handles.channel_1.Value, handles.channel_2.Value, handles.channel_3.Value, handles.channel_4.Value, handles.channel_5.Value,handles.channel_6.Value, num_TTLs);
     chan_space = str2double(get(handles.chan_space,'String'))/1000;
     a = linspace(-chan_space,chan_space,num_chan_plot);
     b = sort(a,'descend');
