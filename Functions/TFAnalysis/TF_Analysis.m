@@ -119,7 +119,8 @@ try
     fprintf('settings used for time-frequency analysis: \n');
     % window = str2double(get(handles.window,'String'));
     window = 256; % move settings to GUI
-    fprintf('FFT window-size = %i samples \n', window);
+    fprintf('FFT window-size = %i samples \n', window);    
+    fprintf('FFT window-shape = Hamming \n');
     % noverlap = str2double(get(handles.noverlap,'String'));
     nrsamples = size(data,1);
     if nrsamples  < 1280
@@ -349,7 +350,7 @@ end
 
 % add colorbar and Z-axis label
 cb = colorbar(handles.tfPlot);
-ztitle = 'power/baseline';
+ztitle = 'Power';
 ylabel(cb, ztitle);
 
 % set z limits
@@ -894,7 +895,7 @@ Fselect = F>foi(1) & F<foi(2);
 plot(tpPlot, T,mean(tf(Fselect,:,trial),1));
 axis(tpPlot, 'tight');
 tpPlot.XLabel.String = 'Time (s)';
-tpPlot.YLabel.String = 'Relative power';
+tpPlot.YLabel.String = 'Power';
 tpPlot.Title.String = ['Power in ' num2str(foi(1)) 'Hz to ' num2str(foi(2)) 'Hz band'];
 % set y limits
 if str2num(handles.XLim.String)==0
