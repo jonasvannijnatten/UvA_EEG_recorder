@@ -263,10 +263,10 @@ try
         % normalized power       
         % make sure all values are positive for correct normalization
         tf = tf + abs(min(tf(:)));
-        % power normalization: power / total power
-        tf = bsxfun(@rdivide,tf,sum(tf,1));
+        % power normalization: power / average power
+        tf = bsxfun(@rdivide,tf,mean(tf,1));
         %     tf = bsxfun(@times,sum(tf,1),bsxfun(@rdivide,tf,sum(tf,1)));
-        fprintf('Power normalized per time point(power/total power)\n')
+        fprintf('Power normalized per time point(power/average power)\n')
         
     elseif handles.bslmethod.Value == 1
         fprintf('no baseline correction has been applied\n')
