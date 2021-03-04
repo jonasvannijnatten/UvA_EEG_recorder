@@ -981,7 +981,7 @@ copyobj(handles.tpPlot, tpFig);
 % --- Executes on button press in Export_tpPlot_data.
 function Export_tpPlot_data_Callback(hObject, eventdata, handles)
 data = handles.tpPlot.Children(2).YData';
-EEGSaveData(handles, data, 'TimePowerData');
+EEGSaveData(handles, data, 'TimePowerData.mat');
 
 % --- Executes on button press in Export_powSpec_fig.
 function Export_powSpec_fig_Callback(hObject, eventdata, handles)
@@ -992,7 +992,7 @@ copyobj(handles.powSpec, powSpecFig);
 % --- Executes on button press in Export_powSpec_data.
 function Export_powSpec_data_Callback(hObject, eventdata, handles)
 data = handles.powSpec.Children(2).YData' ;
-EEGSaveData(handles, data, 'PowerSpectrum');
+EEGSaveData(handles, data, 'PowerSpectrum.mat');
 
 
 % --- Executes on button press in Export_TF_fig.
