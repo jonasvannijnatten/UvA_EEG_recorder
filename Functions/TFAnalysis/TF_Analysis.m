@@ -268,6 +268,11 @@ try
         %     tf = bsxfun(@times,sum(tf,1),bsxfun(@rdivide,tf,sum(tf,1)));
         fprintf('Power normalized per time point(power/average power)\n')
         
+    elseif handles.bslmethod.Value == 5
+        % relative baseline correction: 10*log10(power/baseline power)
+        tf = 10*log10(bsxfun(@ldivide, tf, bslP));
+        fprintf('Decibel baseline correction applied per frequency 10*log10(power/baseline power)\n')
+        
     elseif handles.bslmethod.Value == 1
         fprintf('no baseline correction has been applied\n')
     else
@@ -969,7 +974,7 @@ function Help_Callback(hObject, eventdata, handles)
 % hObject    handle to Help (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-web('TF_Analysis_help.htm', '-helpbrowser')
+web('TF_Analysis_help.html', '-helpbrowser')
 
 
 % --- Executes on button press in Export_tpPlot_fig.
