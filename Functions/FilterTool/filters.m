@@ -45,7 +45,7 @@ end
 
 function filters_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
-
+handles.dir = varargin{1}.dir;
 guidata(hObject, handles);
 % UIWAIT makes filters wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -72,6 +72,7 @@ global l1; global h1;
 global filter_data; 
 global Fs; Fs = 256;
 global power;
+power = [];
 global stop_on; global pass_on; global plot_on;
 l1 = str2double(get(handles.l1,'String'));
 h1 = str2double(get(handles.h1,'String'));
@@ -168,12 +169,12 @@ msgbox('Data filtered')
 
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-global filename;
 global filter_data
 curdir = cd;
-cd([curdir filesep 'data']);
+cd([curdir filesep 'Data']);
 [filename, pathname] = ...
     uigetfile({'*.mat';},'Select a 2D array');
+cd(curdir);
 if any(filename)
     set(handles.fi_name,'string',filename);
     load([pathname filename]);
@@ -183,25 +184,24 @@ if any(filename)
     set(handles.fi_size,'string',str);
     clear data
 end
-cd(curdir);
 
 function save_Callback(hObject, eventdata, handles)
 global filter_data;
 global power;
 data = filter_data;
 curdir = cd;
-cd([curdir filesep 'data']);
+cd([curdir filesep 'Data']);
 uisave({'data'},'Name');
 cd(curdir);
-clear filename; clear data; clear filter_data;
+clear filename; clear data; clearvars -global filter_data;
 str = ' ';
 set(handles.fi_name,'string',str);
 set(handles.fi_size,'string',str);
 curdir = cd;
-cd([curdir filesep 'data']);
+cd([curdir filesep 'Data']);
 uisave({'power'},'Power');
 cd(curdir);
-clear power;
+clearvars -global power
 
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)

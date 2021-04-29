@@ -22,7 +22,7 @@ function varargout = Data_plotter(varargin)
 
 % Edit the above text to modify the response to help Data_plotter
 
-% Last Modified by GUIDE v2.5 12-Jun-2013 23:54:42
+% Last Modified by GUIDE v2.5 20-Dec-2018 15:05:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -54,44 +54,48 @@ function Data_plotter_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for Data_plotter
 handles.output = hObject;
-
+if isempty(varargin)
+    warndlg('Unable to open this tool directly, open it from the EEG_recorder main function')
+    handles.closeFigure = true;
+else
+    handles.dir = varargin{1}.dir;
+end
 % Update handles structure
 guidata(hObject, handles);
 
 % UIWAIT makes Data_plotter wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
-
+function varargout = Data_plotter_CloseRequestFcn(hObject, eventdata, handles)
+delete(hObject)
 
 % --- Outputs from this function are returned to the command line.
 function varargout = Data_plotter_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
-
+if (isfield(handles,'closeFigure') && handles.closeFigure)
+      Data_plotter_CloseRequestFcn(hObject, eventdata, handles)
+end
 
 
 function Fs_Callback(hObject, eventdata, handles)
-global Fsp
-Fsp = str2double(get(hObject,'String'));
 return
 function Fs_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
 function chan2plot_Callback(hObject, eventdata, handles)
-global strp
-strp = get(hObject,'String');
 return
 function chan2plot_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
 function plot_Callback(hObject, eventdata, handles)
-global strp;global Fsp;global row_on; global Collumns_on; % global filenamep;
-global x_ax; global y_ax; global plotter_data; global axx; global filenamep;
-x_ax = get(handles.x_ax,'String');
-y_ax = get(handles.y_ax,'String');
-strp = get(handles.chan2plot,'String');
-Fsp = str2double(get(handles.Fs,'String'));
-onset = str2num(get(handles.onset, 'String'));
+x_ax = get(handles.x_ax,'String'); % get x limits
+y_ax = get(handles.y_ax,'String'); % get y limits
+strp = get(handles.chan2plot,'String'); % get selection to plot
+Fsp = str2double(get(handles.Fs,'String')); % get sampling rate
+onset = str2double(get(handles.onset, 'String')); % get stim-onset sample
 if isempty(onset)
     onset = 0;
 end
@@ -109,15 +113,15 @@ end
 if isempty(strp)
     errordlg('Select rows/columns to plot')
 else
-    [a b c] = size(plotter_data);
+    [a b c] = size(handles.data);
     ka = [eval(strp)];
     h = figure;
-    for A = 1:length(strp)
+    for A = 1:length(ka)
         if Collumns_on == 1
             time = ((1:a)./Fsp)-onset;
-            plot(time,plotter_data(:,ka).*10^6);hold on %plot signal in microvolts
+            plot(time,handles.data(:,ka(A)).*10^6);hold on %plot signal in microvolts
         elseif row_on == 1
-            plot((1:b)./Fsp,plotter_data(ka,:).*10^6);hold on %plot signal in microvolts
+            plot((1:b)./Fsp,handles.data(ka(A),:).*10^6);hold on %plot signal in microvolts
         else
             errordlg('select if rows or collums should be plotted','Please select');
             A = length(strp)+1;
@@ -150,48 +154,28 @@ else
     labeling = labels(ka);
     legend(labeling,'Location','NorthEastOutside');
     hold off
-    title(filenamep,'Interpreter','none')
+    title(handles.filename,'Interpreter','none')
     xlabel('Time (s)')
     ylabel('EEG Amplitude (microvolts)')
 end
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-global filenamep;
-global plotter_data
-curdir = cd;
-cd([curdir filesep 'data']);
-[filenamep, ] = ...
-    uigetfile({'*.mat';},'Select a 2D array');
-cd(curdir);
-if any(filenamep)
-%     [filenamep, pathname] = ...
-%         uigetfile({'*.mat';},'Select a 2D array');
-    set(handles.l_data,'string',filenamep);
-    load(filenamep);
-    plotter_data = data;
-    [str1] = size(plotter_data);
-    str = num2str(str1);
-    set(handles.l_size,'string',str);
-    clear data
+[filename, data] = EEGLoadData(handles);
+if any(filename)
+    handles.data = data;
+    handles.filename= filename;
+    set(handles.filename_txt,'string',filename);
+    set(handles.filesize_txt,'string',num2str(size(handles.data)));
 end
+ guidata(hObject,handles);
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
 web('Plotter_help.htm', '-helpbrowser')
 
 function row_on_Callback(hObject, eventdata, handles)
-global row_on
-if (get(hObject,'Value') == get(hObject,'Max'))
-    row_on =1;
-else
-    row_on =0;
-end
+
 function Collumns_on_Callback(hObject, eventdata, handles)
-global Collumns_on
-if (get(hObject,'Value') == get(hObject,'Max'))
-    Collumns_on =1;
-else
-    Collumns_on =0;
-end
+
 function x_ax_Callback(hObject, eventdata, handles)
 global x_ax
 x_ax = str2double(get(hObject,'String')); return

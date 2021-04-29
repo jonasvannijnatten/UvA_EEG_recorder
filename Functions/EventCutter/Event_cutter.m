@@ -17,6 +17,7 @@ else
 end
 function Event_cutter_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
+handles.dir = varargin{1}.dir;
 guidata(hObject, handles);
 function varargout = Event_cutter_OutputFcn(hObject, eventdata, handles) 
 varargout{1} = handles.output;
@@ -65,13 +66,10 @@ col_nr = str2double(get(handles.col_nr,'String'));
 % gr_dan = str2double(get(handles.gr_dan,'String'));
 beg = str2double(get(handles.beg,'String'));
 eind = str2double(get(handles.eind,'String'));
-if size(data9,2) > 8
-    data9(1:end-1,9:end) = diff(data9(:,9:end)); % jonas edit: replace TLL signal by differentiated signal
-end
 
 gr_dan = 4; % hoogte van TTLs, kan aangepast worden
-for i = 1:length(data9)
-    if data9(i,col_nr) >= gr_dan
+for i = 2:length(data9)
+    if diff(data9(i-1:i,col_nr)) >= gr_dan
         sec = data9(i-beg:i+eind,:);
         if isempty(cut_sections )==1
             cut_sections  = sec;
@@ -83,7 +81,7 @@ end
 
 data = cut_sections;
 curdir = cd;
-cd([curdir filesep 'data']);
+cd([curdir filesep 'Data']);
 uisave({'data'},'Name');
 cd(curdir);
 % cut_sections = [];
@@ -102,19 +100,26 @@ global filename; global data9
 curdir = cd;
 cd([curdir filesep 'data']);
 [filename, pathname] = ...
-     uigetfile({'*.mat';},'Select a 2D array');
-  load(filename);
-  data9 = data;
- [a b c] = size(data9);
-if c>1
-    errordlg('This function only accepts 2D input','Dimension error');
-end
+    uigetfile({'*.mat';},'Select a 2D array');
 cd(curdir);
-set(handles.load_name,'string',filename)
- [str1] = size(data9);
- str = num2str(str1);
-set(handles.file_size_old,'string',str);
-set(handles.file_size_new,'string',' ');
+if ~isempty(filename)
+    load([pathname filename]);
+    data9 = data;
+    [a b c] = size(data9);
+    if c>1
+        errordlg('This function only accepts 2D input','Dimension error');
+        clear data;
+        set(handles.file_size_old,'string',' ');
+        set(handles.file_size_new,'string',' ');
+        set(handles.load_name,'string',' ');
+    end
+    set(handles.load_name,'string',filename)
+    [str1] = size(data9);
+    str = num2str(str1);
+    set(handles.file_size_old,'string',str);
+    set(handles.file_size_new,'string',' ');
+end
+
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
 web('Event_cutter_help.htm', '-helpbrowser')

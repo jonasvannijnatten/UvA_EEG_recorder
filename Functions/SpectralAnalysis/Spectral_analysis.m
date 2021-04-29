@@ -116,14 +116,16 @@ curdir = cd;
 cd([curdir filesep 'data']);
 [filenameq, pathname] = ...
     uigetfile({'*.mat';},'Select a 2D array');
-set(handles.f_name,'string',filenameq);
-load(filenameq);
-data2 = data;
-[str1] = size(data2);
-str = num2str(str1);
-set(handles.f_size,'string',str);
-clear data;
 cd(curdir);
+if any(filenameq)
+    set(handles.f_name,'string',filenameq);
+    load([pathname filenameq]);
+    data2 = data;
+    [str1] = size(data2);
+    str = num2str(str1);
+    set(handles.f_size,'string',str);
+    clear data;
+end
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
 web('Spectral_help.htm', '-helpbrowser')

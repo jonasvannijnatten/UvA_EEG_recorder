@@ -9,3 +9,15 @@ Functions/Config_dio.fig
 Functions/Frequency readout per trial.asv
 Help_figs/set_DIO.png
 Functions/Help_figs/set_DIO.png
+*.mat
+Functions/data_generator5.m
+Functions/data_generator4.m
+Functions/data_generator3.m
+Functions/data_generator.m
+Functions/noisy_data_generator.m
+NI_USB_6501_init.m
+Functions/data_generator3.m
+Functions/data_generator.m
+Functions/data_generator3.m
+*.daq
+*.asv
