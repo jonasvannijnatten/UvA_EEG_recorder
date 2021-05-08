@@ -94,9 +94,9 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 
 %--- Loading the datafile and resets the parameters
 
-global filename;
-global ecg_data;
-global ECG_Channel2plot;
+global filename
+global ecg_data
+global ECG_Channel2plot
 global Max_xvalue
 global Max_xvalue_current
 global Min_xvalue
@@ -114,9 +114,9 @@ if any(filename)
     if size(ecg_data,3) > 1   %check if the file is 2D
         warndlg('You are trying to load 3D data, the EEG_recorder is not able to display this.')
     else
-    [Max_xvalue,No_channels] = size(ecg_data);   %get the size of the data file
-    Max_xvalue_current = Max_xvalue;
-    Min_xvalue = 1;
+        [Max_xvalue,No_channels] = size(ecg_data);   %get the size of the data file
+        Max_xvalue_current = Max_xvalue;
+        Min_xvalue = 1;
     end
 end
 
@@ -182,8 +182,8 @@ function plot_ecg_Callback(hObject, eventdata, handles)
 %--- with or without the notch filter
 %--- and sets some values
 
-global ECG_Channel2plot;
-global ecg_data;
+global ECG_Channel2plot
+global ecg_data
 global Max_xvalue
 global Max_xvalue_current
 global Min_xvalue
@@ -200,7 +200,7 @@ if notch == 0
     xlim([Min_xvalue Max_xvalue_current]); % limits the plot to min and max x bounderies
     plot(handles.axes1,ecg_data(:,ECG_Channel2plot),'b'); hold(handles.axes1,'on'); % plots the original file
     hold on
-   grid(handles.axes1,'on');
+    grid(handles.axes1,'on');
     title('Original ECG recording');
     xlabel('samples'); 
     ylabel('Voltage(V)');
@@ -249,6 +249,16 @@ global MinX_Man_set
 global Max_Manual_xvalue
 global MaxX_Man_set
 
+% Sets variables MinX_Man_set and MaxX_Man_set to zero if no value was
+% manually filled in
+if isempty(MinX_Man_set)
+    MinX_Man_set = 0;
+end
+
+if isempty(MaxX_Man_set)
+    MaxX_Man_set = 0;
+end
+
 %%Detect R waves
 min_sample_interval = (256/(max_heartbeat_freq/60)); % sets the minimum distance (in samples) before a new peak is detected, default = 200 bpm
 
@@ -268,7 +278,7 @@ if selection2remove == 1 %--- if selection is made (cut the end), find the remai
     locations_Rwave = locations_Rwave_selection; 
 end
 
-if (MinX_Man_set == 1 && MaxX_Man_set == 1) %--- if manual selection is made, find the remaining peaks with current threshold
+if MinX_Man_set == 1 && MaxX_Man_set == 1 %--- if manual selection is made, find the remaining peaks with current threshold
     [values_Rwave,locations_Rwave_selection] = findpeaks(ecg_data(Min_Manual_xvalue:Max_Manual_xvalue,ECG_Channel2plot),'MinPeakHeight',threshold_level,'MinPeakDistance',min_sample_interval);
     locations_Rwave = locations_Rwave_selection + Min_Manual_xvalue;
 end
@@ -314,19 +324,19 @@ end
         hold on
     else %--- updates the plot after each selection
         cla
-    xlim([Min_xvalue Max_xvalue_current]);
-    plot(handles.axes1,ecg_data(:,ECG_Channel2plot),'b');
-    grid(handles.axes1,'on');
-    title('ECG recording');
-    xlabel('samples'); 
-    ylabel('Voltage(V)');
-    hold on
-    plot(locations_Rwave,values_Rwave,'rv', 'MarkerFaceColor', 'r');
-    hold on
-    xlim([Min_xvalue Max_xvalue_current]);
-    y = threshold_level;
-    plot(handles.axes1,[Min_xvalue,Max_xvalue_current],[y,y],'r');
-    hold on
+        xlim([Min_xvalue Max_xvalue_current]);
+        plot(handles.axes1,ecg_data(:,ECG_Channel2plot),'b');
+        grid(handles.axes1,'on');
+        title('ECG recording');
+        xlabel('samples'); 
+        ylabel('Voltage(V)');
+        hold on
+        plot(locations_Rwave,values_Rwave,'rv', 'MarkerFaceColor', 'r');
+        hold on
+        xlim([Min_xvalue Max_xvalue_current]);
+        y = threshold_level;
+        plot(handles.axes1,[Min_xvalue,Max_xvalue_current],[y,y],'r');
+        hold on
     end
 %end
 
@@ -385,7 +395,7 @@ a = zeros(1,2);
 threshold_level = a(1); %--- get the threshold level
 
 %--- the first time the threshold is plotted
-if reset_threshold == 0 && rethreshold == 0;
+if reset_threshold == 0 && rethreshold == 0
     y = threshold_level;
     hold on
     plot(handles.axes1,[Min_xvalue,Max_xvalue_current],[y,y],'r');
@@ -394,13 +404,12 @@ if reset_threshold == 0 && rethreshold == 0;
     rethreshold = 1;
     
 %--- if a threshold exists, a new one is plotted    
-else if reset_threshold == 1 && rethreshold == 1;
+elseif reset_threshold == 1 && rethreshold == 1
     y = threshold_level;
     hold on
     plot(handles.axes1,[Min_xvalue,Max_xvalue_current],[y,y],'r');
     hold on
     reset_threshold = 1;
-    end
 end
  
 %--- gets the start x value for the replot
@@ -525,17 +534,16 @@ global MaxX_Man_set
 if (selection2remove == 1 || selection_made == 1)
     uiwait(msgbox('First reset the selection'))
 else
+    uiwait(msgbox('Select a start and finish point of your selection'))
 
-uiwait(msgbox('Select a start and finish point of your selection'))
-
-%--- this is where the actual new selection is made
-a = zeros(1,2);
-[a,~] = ginput(2);
+    %--- this is where the actual new selection is made
+    a = zeros(1,2);
+    [a,~] = ginput(2);
 
     Keep_xStart = a(1);
     Keep_xFinish = a(2);
     
-%setting the new bounderies for the analysis
+    %setting the new bounderies for the analysis
     ylimits = ylim; % current y-axis limits
     hold on
     plot(handles.axes1,[Keep_xStart,Keep_xStart],[ylimits(1) ylimits(2)],'r');
@@ -562,16 +570,15 @@ global MaxX_Man_set
 if (selection2remove == 1 || selection_made == 1)
     uiwait(msgbox('First reset the selection'))
 else
+    Min_Manual_xvalue = str2double(get(handles.MinX_ManSelect, 'string'));
 
-Min_Manual_xvalue = str2double(get(handles.MinX_ManSelect, 'string'));
-
-%setting the new bounderies for the analysis
+    %setting the new bounderies for the analysis
     ylimits = ylim; % current y-axis limits
     hold on
     plot(handles.axes1,[Min_Manual_xvalue,Min_Manual_xvalue],[ylimits(1) ylimits(2)],'r');
     hold on
        
-   MinX_Man_set = 1;
+    MinX_Man_set = 1;
 end
 
 % Hints: get(hObject,'String') returns contents of MinX_ManSelect as text
@@ -605,16 +612,15 @@ global MinX_Man_set
 if (selection2remove == 1 || selection_made == 1)
     uiwait(msgbox('First reset the selection'))
 else
-
-Max_Manual_xvalue = str2double(get(handles.MaxX_ManSelect, 'string'));
-
-%setting the new bounderies for the analysis
+    Max_Manual_xvalue = str2double(get(handles.MaxX_ManSelect, 'string'));
+    
+    %setting the new bounderies for the analysis
     ylimits = ylim; % current y-axis limits
     hold on
     plot(handles.axes1,[Max_Manual_xvalue,Max_Manual_xvalue],[ylimits(1) ylimits(2)],'r');
     hold on
        
-   MaxX_Man_set = 1;
+    MaxX_Man_set = 1;
 end
 % Hints: get(hObject,'String') returns contents of MaxX_ManSelect as text
 %        str2double(get(hObject,'String')) returns contents of MaxX_ManSelect as a double
@@ -651,11 +657,11 @@ global MinX_Man_set
 
 if selection_made == 1
 
-%--- stores the current values as the previous values
-Previous_Keep_xStart = Keep_xStart;
-Previous_Keep_xFinish = Keep_xFinish;
+    %--- stores the current values as the previous values
+    Previous_Keep_xStart = Keep_xStart;
+    Previous_Keep_xFinish = Keep_xFinish;
 
-%--- plots the thresholds to be replaced in blue 
+    %--- plots the thresholds to be replaced in blue 
     ylimits = ylim; % current y-axis limits
     hold on
     plot(handles.axes1,[Previous_Keep_xStart,Previous_Keep_xStart],[ylimits(1) ylimits(2)],'b');
@@ -700,11 +706,6 @@ selection2remove = 0;
 selection_made = 0;
 MinX_Man_set = 0;
 MaxX_Man_set = 0;
-
-
-
-
-
 
 
 % --- Executes on button press in apply_notch_filter.
