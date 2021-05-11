@@ -122,7 +122,7 @@ end
  replay_data(:,9:available_channels) = replay_data(:,9:available_channels)/200000;
  
  for a = 1:available_channels
-     Max_value(a) = max(replay_data(:,a))
+     Max_value(a) = max(replay_data(:,a));
  end
 
  size(data);
@@ -183,7 +183,7 @@ global plot_powerspectrum
 global plot_neurofeedback
 
 
-plot_selected_frequencies =0;
+plot_selected_frequencies = 0;
 
 plotColors = handles.plotColors;
 [0 0.4470 0.7410 ;0.8500 0.3250 0.0980; 0.9290 0.6940 0.1250; 0.4940 0.1840 0.5560; ...
@@ -191,38 +191,38 @@ plotColors = handles.plotColors;
 
 % fft_l = str2double(get(handles.fft_ll,'String'));
 %     preview     = str2double(get(handles.prev_t,'String'));
-     stop_replay = 0;
-     continue_replay = 0;
-     pause_replay = 0; 
+ stop_replay = 0;
+ continue_replay = 0;
+ pause_replay = 0; 
 
-    % adding channel labels
-    channelLabels = {'chan1','chan2','chan3','chan4','chan5','chan6','chan7','chan8','Marker1','Marker2','Marker3','Marker4','Marker5','Marker6'};
-    
-    
-    analog_channels_on = [handles.channel_1.Value, handles.channel_2.Value, handles.channel_3.Value, handles.channel_4.Value, ...
-        handles.channel_5.Value, handles.channel_6.Value, handles.channel_7.Value, handles.channel_8.Value];
-    digital_channels_on = [ ...
-        handles.ch9_on.Value, ...
-        handles.ch10_on.Value, ...
-        handles.ch11_on.Value, ...
-        handles.ch12_on.Value, ...
-        handles.ch13_on.Value, ...
-        handles.ch14_on.Value, ...
-        ];
-    
-    num_dig_chan = length(find(digital_channels_on));    
-    channels_on = [analog_channels_on digital_channels_on];    
-    channel_selection = find(channels_on);
-    num_chan_plot = length(channel_selection);
-    
-    % get default settings
-    plot_powerspectrum = handles.plot_powerspectrum.Value;
-    plot_neurofeedback = handles.plot_neurofeedback.Value;
-    samples2plot = str2double(get(handles.samples2plot,'String'))*256;
-    
-    %reset some default settings
-    set(handles.stop_replay, 'String','Stop Replay');
-    set(handles.feedback2user,'visible','off');
+% adding channel labels
+channelLabels = {'chan1','chan2','chan3','chan4','chan5','chan6','chan7','chan8','Marker1','Marker2','Marker3','Marker4','Marker5','Marker6'};
+
+
+analog_channels_on = [handles.channel_1.Value, handles.channel_2.Value, handles.channel_3.Value, handles.channel_4.Value, ...
+    handles.channel_5.Value, handles.channel_6.Value, handles.channel_7.Value, handles.channel_8.Value];
+digital_channels_on = [ ...
+    handles.ch9_on.Value, ...
+    handles.ch10_on.Value, ...
+    handles.ch11_on.Value, ...
+    handles.ch12_on.Value, ...
+    handles.ch13_on.Value, ...
+    handles.ch14_on.Value, ...
+    ];
+
+num_dig_chan = length(find(digital_channels_on));    
+channels_on = [analog_channels_on digital_channels_on];    
+channel_selection = find(channels_on);
+num_chan_plot = length(channel_selection);
+
+% get default settings
+plot_powerspectrum = handles.plot_powerspectrum.Value;
+plot_neurofeedback = handles.plot_neurofeedback.Value;
+samples2plot = str2double(get(handles.samples2plot,'String'))*256;
+
+%reset some default settings
+set(handles.stop_replay, 'String','Stop Replay');
+set(handles.feedback2user,'visible','off');
 
 
 Fs = 256; % sample frequency:256Hz
@@ -241,13 +241,13 @@ samples2plot_eachstep = samples2plot/plot_speed;
 
 
 for section_number = 1:number_of_sections
-
+    
     if stop_replay == 1
         set(handles.feedback2user,'visible','on','String','Replay has stopped');
         
         break
     end
-
+    
     if pause_replay == 1
         set(handles.feedback2user,'visible','on','String','Replay Paused');
         uiwait
@@ -257,120 +257,120 @@ for section_number = 1:number_of_sections
         set(handles.feedback2user,'visible','on','String','End of File is reached');
     end
     
-     % calculate samples to time for x-axis
+    % calculate samples to time for x-axis
     tempTime = (section_block_number*samples2plot+1:samples2plot+(samples2plot*section_block_number))/256;
     
     % initially set every value for the plot to zero
     data = zeros(samples2plot,available_channels);
-
+    
     for current_sample = 1:samples2plot_eachstep
-    
-    %% get latest data to plot
-    % get the proportion of the preview time
-    tempSample = mod((current_sample*plot_speed)-1, samples2plot)+1;
-  
-    % get most recent data to plot
-    data(1:tempSample,:) = replay_data(sample_block_number*samples2plot+1:tempSample+(samples2plot*sample_block_number),:);
-    
-    % to be used in FFT plot
-    last_sample2plot = tempSample+(samples2plot*sample_block_number);
-
-    chan_space = str2double(get(handles.chan_space,'String'))/1000;
-    a = linspace(-chan_space,chan_space,num_chan_plot);
-    b = sort(a,'descend');
- 
-    %% plot live signal
-    for ichan=1:num_chan_plot
         
-        if channel_selection(ichan)< 15
-            plot(handles.axes1,tempTime,data(:,channel_selection(ichan))+b(ichan), 'Color', plotColors(channel_selection(ichan),:)); 
-            hold(handles.axes1,'on');
-        end
-    end
-    grid(handles.axes1,'on');
-    drawnow; 
-    hold(handles.axes1,'off');
-    xlim([min(tempTime) max(tempTime)]);
-     
-    if plot_selected_frequencies == 0 & last_sample2plot>FFT_length_samples
+        %% get latest data to plot
+        % get the proportion of the preview time
+        tempSample = mod((current_sample*plot_speed)-1, samples2plot)+1;
         
-        if plot_powerspectrum == 1
-   
-            %% plot power spectrum
-            minfreq = str2double(get(handles.minfreq, 'String'));
-             maxfreq = str2double(get(handles.maxfreq, 'String'));
-    
-             %Start axis 2 plot   
-            fft_selection = sum(analog_channels_on);
-            plot_counter = 0;
-            for ichan=1:num_chan_plot
-                if analog_channels_on(ichan)
-    
-                    L       = FFT_length_samples;
-                    NFFT    = 2^nextpow2(L);
-                    Yo      = fft((replay_data(last_sample2plot-FFT_length_samples:last_sample2plot,channel_selection(ichan))-mean(data(:,channel_selection(ichan)))),NFFT)/NFFT;
-                    fo      = Fs/2*linspace(0,1,NFFT/2+1);
-                    spectraldata = 2*abs(Yo(1:NFFT/2+1));
-                    freqindex1 = find(fo>=minfreq,1);
-                    freqindex2 = find(fo>=maxfreq,1);
-                    plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10, 'Color', plotColors(ichan,:)); hold(handles.axes2,'on')
-                    plot_counter = plot_counter + 1;
-                end
-            end
-    
-            drawnow; hold(handles.axes2,'off');
-        end %plot power spectrum
-    
-        if plot_neurofeedback == 1
-           
-            feedback_channel = str2num(handles.feedback_channel.String);
-            freq_range1 = str2num(handles.freq_range1.String);
-            freq_range2 = str2num(handles.freq_range2.String);
-            freq_range3 = str2num(handles.freq_range3.String);
-            freq_range4 = str2num(handles.freq_range4.String);
-   
-            %Start axis 2 plot   
-
-            for ichan=feedback_channel
-                if analog_channels_on(ichan)
-                    L       = FFT_length_samples;
-                    NFFT    = 2^nextpow2(L);
-                    Yo      = fft((replay_data(last_sample2plot-FFT_length_samples:last_sample2plot,channel_selection(ichan))-mean(data(:,channel_selection(ichan)))),NFFT)/NFFT;
-                    fo      = Fs/2*linspace(0,1,NFFT/2+1);
-         
-                    selection_range1 = find(fo>freq_range1(1) & fo<freq_range1(2));
-                    power_range1= mean(2*abs(Yo(selection_range1)));
-                    selection_range2 = find(fo>freq_range2(1) & fo<freq_range2(2));
-                    power_range2= mean(2*abs(Yo(selection_range2)));
-                    selection_range3 = find(fo>freq_range3(1) & fo<freq_range3(2));
-                    power_range3= mean(2*abs(Yo(selection_range3)));
-                    selection_range4 = find(fo>freq_range4(1) & fo<freq_range4(2));
-                    power_range4= mean(2*abs(Yo(selection_range4)));
-                
-                    %x = [Range1 Range2 Range3 Range4];
-                   
-                    name = {'Range 1';'Range 2';'Range 3';'Range 4'};
-                    feedback_plot = [power_range1 power_range2 power_range3 power_range4];
-                    bar(handles.axes2,feedback_plot);
-                    set(handles.axes2,'xticklabel',name);
-                    ylim([0 0.000005]);
-
-                end
-            end
-    
-            drawnow; hold(handles.axes2,'off');
+        % get most recent data to plot
+        data(1:tempSample,:) = replay_data(sample_block_number*samples2plot+1:tempSample+(samples2plot*sample_block_number),:);
+        
+        % to be used in FFT plot
+        last_sample2plot = tempSample+(samples2plot*sample_block_number);
+        
+        chan_space = str2double(get(handles.chan_space,'String'))/1000;
+        a = linspace(-chan_space,chan_space,num_chan_plot);
+        b = sort(a,'descend');
+        
+        %% plot live signal
+        for ichan=1:num_chan_plot
             
+            if channel_selection(ichan)< 15
+                plot(handles.axes1,tempTime,data(:,channel_selection(ichan))+b(ichan), 'Color', plotColors(channel_selection(ichan),:));
+                hold(handles.axes1,'on');
+            end
+        end
+        grid(handles.axes1,'on');
+        drawnow;
+        hold(handles.axes1,'off');
+        xlim([min(tempTime) max(tempTime)]);
+        
+        if plot_selected_frequencies == 0 & last_sample2plot>FFT_length_samples
+            
+            if plot_powerspectrum == 1
                 
-        end % plot neurofeedback
-    
-    end
-   % END axis_2 plot 
-    
-    
+                %% plot power spectrum
+                minfreq = str2double(get(handles.minfreq, 'String'));
+                maxfreq = str2double(get(handles.maxfreq, 'String'));
+                
+                %Start axis 2 plot
+                fft_selection = sum(analog_channels_on);
+                plot_counter = 0;
+                for ichan=1:num_chan_plot
+                    if analog_channels_on(ichan)
+                        
+                        L       = FFT_length_samples;
+                        NFFT    = 2^nextpow2(L);
+                        Yo      = fft((replay_data(last_sample2plot-FFT_length_samples:last_sample2plot,channel_selection(ichan))-mean(data(:,channel_selection(ichan)))),NFFT)/NFFT;
+                        fo      = Fs/2*linspace(0,1,NFFT/2+1);
+                        spectraldata = 2*abs(Yo(1:NFFT/2+1));
+                        freqindex1 = find(fo>=minfreq,1);
+                        freqindex2 = find(fo>=maxfreq,1);
+                        plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+a(fft_selection-plot_counter)/10, 'Color', plotColors(ichan,:)); hold(handles.axes2,'on')
+                        plot_counter = plot_counter + 1;
+                    end
+                end
+                
+                drawnow; hold(handles.axes2,'off');
+            end %plot power spectrum
+            
+            if plot_neurofeedback == 1
+                
+                feedback_channel = str2num(handles.feedback_channel.String);
+                freq_range1 = str2num(handles.freq_range1.String);
+                freq_range2 = str2num(handles.freq_range2.String);
+                freq_range3 = str2num(handles.freq_range3.String);
+                freq_range4 = str2num(handles.freq_range4.String);
+                
+                %Start axis 2 plot
+                
+                for ichan=feedback_channel
+                    if analog_channels_on(ichan)
+                        L       = FFT_length_samples;
+                        NFFT    = 2^nextpow2(L);
+                        Yo      = fft((replay_data(last_sample2plot-FFT_length_samples:last_sample2plot,channel_selection(ichan))-mean(data(:,channel_selection(ichan)))),NFFT)/NFFT;
+                        fo      = Fs/2*linspace(0,1,NFFT/2+1);
+                        
+                        selection_range1 = find(fo>freq_range1(1) & fo<freq_range1(2));
+                        power_range1= mean(2*abs(Yo(selection_range1)));
+                        selection_range2 = find(fo>freq_range2(1) & fo<freq_range2(2));
+                        power_range2= mean(2*abs(Yo(selection_range2)));
+                        selection_range3 = find(fo>freq_range3(1) & fo<freq_range3(2));
+                        power_range3= mean(2*abs(Yo(selection_range3)));
+                        selection_range4 = find(fo>freq_range4(1) & fo<freq_range4(2));
+                        power_range4= mean(2*abs(Yo(selection_range4)));
+                        
+                        %x = [Range1 Range2 Range3 Range4];
+                        
+                        name = {'Range 1';'Range 2';'Range 3';'Range 4'};
+                        feedback_plot = [power_range1 power_range2 power_range3 power_range4];
+                        bar(handles.axes2,feedback_plot);
+                        set(handles.axes2,'xticklabel',name);
+                        ylim([0 0.000005]);
+                        
+                    end
+                end
+                
+                drawnow; hold(handles.axes2,'off');
+                
+                
+            end % plot neurofeedback
+            
+        end
+        % END axis_2 plot
+        
+        
     end
     section_block_number = section_block_number+1;
     sample_block_number = sample_block_number+1;
-
+    
 end
 
 
@@ -539,7 +539,7 @@ end
 % --- Executes on button press in pause.
 function pause_Callback(hObject, eventdata, handles)
 global pause_replay
-pause_replay = get(hObject,'Value')
+pause_replay = get(hObject,'Value');
 set(handles.pause, 'Enable','off','BackgroundColor', 'white');
 set(handles.continue_replay, 'Enable','on','BackgroundColor', 'green');
 
@@ -568,7 +568,7 @@ set(handles.stop_replay, 'String','Replay Stopped');
 
 function samples2plot_Callback(hObject, eventdata, handles)
 global samples2plot
-samples2plot = str2double(get(handles.samples2plot, 'String'))*256
+samples2plot = str2double(get(handles.samples2plot, 'String'))*256;
 
 
 % --- Executes during object creation, after setting all properties.
@@ -581,7 +581,7 @@ end
 % --- Executes on button press in plot_powerspectrum.
 function plot_powerspectrum_Callback(hObject, eventdata, handles)
 global plot_powerspectrum
-plot_powerspectrum = handles.plot_powerspectrum.Value
+plot_powerspectrum = handles.plot_powerspectrum.Value;
 % hObject    handle to plot_powerspectrum (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -591,7 +591,7 @@ plot_powerspectrum = handles.plot_powerspectrum.Value
 % --- Executes on button press in plot_neurofeedback.
 function plot_neurofeedback_Callback(hObject, eventdata, handles)
 global plot_neurofeedback
-plot_neurofeedback = handles.plot_neurofeedback.Value
+plot_neurofeedback = handles.plot_neurofeedback.Value;
 % hObject    handle to plot_neurofeedback (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -713,5 +713,25 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+function feedback2user_Callback(hObject, eventdata, handles)
+% hObject    handle to feedback_channel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of feedback_channel as text
+%        str2double(get(hObject,'String')) returns contents of feedback_channel as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function feedback2user_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to feedback_channel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
 
 
