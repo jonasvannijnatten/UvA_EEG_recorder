@@ -113,42 +113,42 @@ if any(filename)
         warndlg('You are trying to load 3D data, the EEG_recorder is not able to display this.')
     else
         set(handles.filename_txt,'string',filename);
-    set(handles.filesize_txt,'string',num2str(size(handles.data)));
-    available_channels = size(data,2);
+        set(handles.filesize_txt,'string',num2str(size(handles.data)));
+        available_channels = size(data,2);
     end
 end
 
 % reduce valus of marker channels from 5V to 25 microV to pit them into the same plotting range as the EEG channels 
- replay_data(:,9:available_channels) = replay_data(:,9:available_channels)/200000;
+replay_data(:,9:available_channels) = replay_data(:,9:available_channels)/200000;
  
- for a = 1:available_channels
-     Max_value(a) = max(replay_data(:,a));
- end
+for a = 1:available_channels
+    Max_value(a) = max(replay_data(:,a));
+end
 
- size(data);
- size(replay_data);
+size(data);
+size(replay_data);
 
-if available_channels >8
-for closechannels = available_channels+1:14
-    if closechannels == 9
-        set(handles.ch9_on, 'Enable','off');
+if available_channels > 8
+    for closechannels = available_channels+1:14
+        if closechannels == 9
+            set(handles.ch9_on, 'Enable','off');
+        end
+        if closechannels == 10
+            set(handles.ch10_on, 'Enable','off');
+        end
+        if closechannels == 11
+            set(handles.ch11_on, 'Enable','off');
+        end
+        if closechannels == 12
+            set(handles.ch12_on, 'Enable','off');
+        end
+        if closechannels == 13
+            set(handles.ch13_on, 'Enable','off');
+        end
+        if closechannels == 14
+            set(handles.ch14_on, 'Enable','off');
+        end
     end
-    if closechannels == 10
-        set(handles.ch10_on, 'Enable','off');
-    end
-    if closechannels == 11
-        set(handles.ch11_on, 'Enable','off');
-    end
-    if closechannels == 12
-        set(handles.ch12_on, 'Enable','off');
-    end
-    if closechannels == 13
-        set(handles.ch13_on, 'Enable','off');
-    end
-    if closechannels == 14
-        set(handles.ch14_on, 'Enable','off');
-    end
-end    
 end
 
 % Speeds2select = [1,2,4,8,16]
@@ -191,9 +191,9 @@ plotColors = handles.plotColors;
 
 % fft_l = str2double(get(handles.fft_ll,'String'));
 %     preview     = str2double(get(handles.prev_t,'String'));
- stop_replay = 0;
- continue_replay = 0;
- pause_replay = 0; 
+stop_replay = 0;
+continue_replay = 0;
+pause_replay = 0; 
 
 % adding channel labels
 channelLabels = {'chan1','chan2','chan3','chan4','chan5','chan6','chan7','chan8','Marker1','Marker2','Marker3','Marker4','Marker5','Marker6'};
@@ -227,18 +227,13 @@ set(handles.feedback2user,'visible','off');
 
 Fs = 256; % sample frequency:256Hz
 N = length(replay_data);
-number_of_sections =int16(N/samples2plot)-1;
+number_of_sections = int16(N/samples2plot)-1;
 
 % the number of sections to plot
 section_block_number = 0;
 
 % the number of samples in each plotting step
 sample_block_number = 0;
-
-%inbouwen variabele plotsnelheid, voor elk van de 1024 samples of bv voor
-%128 samples ineens.
-samples2plot_eachstep = samples2plot/plot_speed;
-
 
 for section_number = 1:number_of_sections
     
@@ -262,6 +257,10 @@ for section_number = 1:number_of_sections
     
     % initially set every value for the plot to zero
     data = zeros(samples2plot,available_channels);
+    
+    %inbouwen variabele plotsnelheid, voor elk van de 1024 samples of bv voor
+    %128 samples ineens.
+    samples2plot_eachstep = samples2plot/plot_speed;
     
     for current_sample = 1:samples2plot_eachstep
         
@@ -318,7 +317,8 @@ for section_number = 1:number_of_sections
                     end
                 end
                 
-                drawnow; hold(handles.axes2,'off');
+                drawnow; 
+                hold(handles.axes2,'off');
             end %plot power spectrum
             
             if plot_neurofeedback == 1
@@ -358,7 +358,8 @@ for section_number = 1:number_of_sections
                     end
                 end
                 
-                drawnow; hold(handles.axes2,'off');
+                drawnow; 
+                hold(handles.axes2,'off');
                 
                 
             end % plot neurofeedback
