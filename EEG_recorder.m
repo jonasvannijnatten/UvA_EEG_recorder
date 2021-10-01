@@ -903,15 +903,18 @@ ECG_Tool(handles)
 function ReplayData_Callback(hObject, eventdata, handles)
 ReplayData(handles)
 
+function artGui_Callback(hObject, eventdata, handles)
+artGui(handles)
+
 % --- Executes on button press in spectogram.
 function spectogram_Callback(hObject, eventdata, handles)
 global plot_spectogram
-plot_spectogram = get(hObject,'Value')
+plot_spectogram = get(hObject,'Value');
 
 % --- Executes on button press in neurofeedback.
 function neurofeedback_Callback(hObject, eventdata, handles)
 global plot_neurofeedback
-plot_neurofeedback = get(hObject,'Value')
+plot_neurofeedback = get(hObject,'Value');
 
 function freq_range1_Callback(hObject, eventdata, handles)
 % hObject    handle to freq_range1 (see GCBO)
