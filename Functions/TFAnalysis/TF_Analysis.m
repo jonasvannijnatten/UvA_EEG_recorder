@@ -263,10 +263,15 @@ try
         % normalized power       
         % make sure all values are positive for correct normalization
         tf = tf + abs(min(tf(:)));
-        % power normalization: power / total power
-        tf = bsxfun(@rdivide,tf,sum(tf,1));
+        % power normalization: power / average power
+        tf = bsxfun(@rdivide,tf,mean(tf,1));
         %     tf = bsxfun(@times,sum(tf,1),bsxfun(@rdivide,tf,sum(tf,1)));
-        fprintf('Power normalized per time point(power/total power)\n')
+        fprintf('Power normalized per time point(power/average power)\n')
+        
+    elseif handles.bslmethod.Value == 5
+        % relative baseline correction: 10*log10(power/baseline power)
+        tf = 10*log10(bsxfun(@ldivide, tf, bslP));
+        fprintf('Decibel baseline correction applied per frequency 10*log10(power/baseline power)\n')
         
     elseif handles.bslmethod.Value == 1
         fprintf('no baseline correction has been applied\n')
@@ -969,7 +974,7 @@ function Help_Callback(hObject, eventdata, handles)
 % hObject    handle to Help (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-web('TF_Analysis_help.htm', '-helpbrowser')
+web('TF_Analysis_help.html', '-helpbrowser')
 
 
 % --- Executes on button press in Export_tpPlot_fig.
@@ -981,7 +986,7 @@ copyobj(handles.tpPlot, tpFig);
 % --- Executes on button press in Export_tpPlot_data.
 function Export_tpPlot_data_Callback(hObject, eventdata, handles)
 data = handles.tpPlot.Children(2).YData';
-EEGSaveData(handles, data, 'TimePowerData');
+EEGSaveData(handles, data, 'TimePowerData.mat');
 
 % --- Executes on button press in Export_powSpec_fig.
 function Export_powSpec_fig_Callback(hObject, eventdata, handles)
@@ -992,7 +997,7 @@ copyobj(handles.powSpec, powSpecFig);
 % --- Executes on button press in Export_powSpec_data.
 function Export_powSpec_data_Callback(hObject, eventdata, handles)
 data = handles.powSpec.Children(2).YData' ;
-EEGSaveData(handles, data, 'PowerSpectrum');
+EEGSaveData(handles, data, 'PowerSpectrum.mat');
 
 
 % --- Executes on button press in Export_TF_fig.
