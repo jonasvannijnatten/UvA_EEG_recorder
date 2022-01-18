@@ -181,6 +181,8 @@ global fft_l
 global preview
 global ai
 global manualstop
+global plot_spectogram
+global plot_neurofeedback
 
 mainDir = handles.dir.main;
 
@@ -208,7 +210,7 @@ try
     dur_aq      = str2double(get(handles.dur_aq,'String'));
     Fs          = 256;
     % chan_space      = str2double(get(handles.chan_space,'String'));
-    fft_l       = str2double(get(handles.fft_ll,'String'));
+    fft_l = str2double(get(handles.fft_ll,'String'));
     preview     = str2double(get(handles.prev_t,'String'));
     manualstop  = 0;
     
@@ -383,6 +385,10 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     chan_space = str2double(get(handles.chan_space,'String'))/1000;
     a = linspace(-chan_space,chan_space,num_chan_plot);
     b = sort(a,'descend');
+    % get default settings
+    plot_spectogram = handles.spectogram.Value;
+    plot_neurofeedback = handles.neurofeedback.Value;
+    
     %% plot live signal
     for ichan=1:num_chan_plot
         if channel_selection(ichan)< 9
@@ -397,6 +403,7 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     xlim([min(tempTime) max(tempTime)]);
     
     
+    if plot_spectogram == 1;
     %% plot power spectrum
     minfreq = str2double(get(handles.minfreq, 'String'));
     maxfreq = str2double(get(handles.maxfreq, 'String'));
@@ -419,6 +426,50 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     end
     
     drawnow; hold(handles.axes2,'off');
+     
+    end
+    
+    if plot_neurofeedback == 1 %start plot neurofeedback
+       
+        feedback_channel = str2num(handles.feedback_channel.String);
+        freq_range1 = str2num(handles.freq_range1.String);
+        freq_range2 = str2num(handles.freq_range2.String);
+        freq_range3 = str2num(handles.freq_range3.String);
+        freq_range4 = str2num(handles.freq_range4.String);
+        
+        for ichan=feedback_channel
+                if analog_channels_on(ichan)
+                    L       = length(data(:,ichan));
+                    NFFT    = 2^nextpow2(L);
+                    Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/NFFT;
+                    fo      = Fs/2*linspace(0,1,NFFT/2+1);
+         
+                    selection_range1 = find(fo>freq_range1(1) & fo<freq_range1(2));
+                    power_range1= mean(2*abs(Yo(selection_range1)));
+                    selection_range2 = find(fo>freq_range2(1) & fo<freq_range2(2));
+                    power_range2= mean(2*abs(Yo(selection_range2)));
+                    selection_range3 = find(fo>freq_range3(1) & fo<freq_range3(2));
+                    power_range3= mean(2*abs(Yo(selection_range3)));
+                    selection_range4 = find(fo>freq_range4(1) & fo<freq_range4(2));
+                    power_range4= mean(2*abs(Yo(selection_range4)));
+                
+                    %x = [Range1 Range2 Range3 Range4];
+                   
+                    name = {'Range 1';'Range 2';'Range 3';'Range 4'};
+                    feedback_plot = [power_range1 power_range2 power_range3 power_range4];
+                    bar(handles.axes2,feedback_plot);
+                    set(handles.axes2,'xticklabel',name);
+                    %ylim([0 0.000005]);
+
+                end
+            end
+    
+            drawnow; hold(handles.axes2,'off')
+        
+        
+        
+    end %plot neurofeedback
+    
 end
 
 if manualstop == 0
@@ -844,3 +895,109 @@ hObject.YTick = [];
 hObject.YLabel.String = 'Power';
 
 
+
+% --------------------------------------------------------------------
+function ECG_Tool_Callback(hObject, eventdata, handles)
+ECG_Tool(handles)
+
+function ReplayData_Callback(hObject, eventdata, handles)
+ReplayData(handles)
+
+function artGui_Callback(hObject, eventdata, handles)
+artGui(handles)
+
+% --- Executes on button press in spectogram.
+function spectogram_Callback(hObject, eventdata, handles)
+global plot_spectogram
+plot_spectogram = get(hObject,'Value');
+
+% --- Executes on button press in neurofeedback.
+function neurofeedback_Callback(hObject, eventdata, handles)
+global plot_neurofeedback
+plot_neurofeedback = get(hObject,'Value');
+
+function freq_range1_Callback(hObject, eventdata, handles)
+% hObject    handle to freq_range1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% --- Executes during object creation, after setting all properties.
+function freq_range1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to freq_range1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function freq_range2_Callback(hObject, eventdata, handles)
+% hObject    handle to freq_range2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% --- Executes during object creation, after setting all properties.
+function freq_range2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to freq_range2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function freq_range3_Callback(hObject, eventdata, handles)
+% hObject    handle to freq_range3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% --- Executes during object creation, after setting all properties.
+function freq_range3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to freq_range3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function freq_range4_Callback(hObject, eventdata, handles)
+% hObject    handle to freq_range4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% --- Executes during object creation, after setting all properties.
+function freq_range4_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to freq_range4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function feedback_channel_Callback(hObject, eventdata, handles)
+% hObject    handle to feedback_channel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes during object creation, after setting all properties.
+function feedback_channel_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to feedback_channel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
