@@ -54,7 +54,7 @@ function TF_Analysis_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for TF_Analysis
 handles.output = hObject;
-if isempty(varargin)
+if isempty(handles)
     warndlg('Unable to open this tool directly, open it from the EEG_recorder main function')
     handles.closeFigure = true;
 else
