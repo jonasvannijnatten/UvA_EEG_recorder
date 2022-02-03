@@ -23,4 +23,5 @@ if any(filename)
     saved = 1;
 else
     saved = 0;
+    fprintf('saving data canceled')
 end
