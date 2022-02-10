@@ -686,6 +686,9 @@ Data_plotter(handles)
 function Event_cutter_Callback(hObject, eventdata, handles)
 Event_cutter(handles)
 % --------------------------------------------------------------------
+function TrialBrowser_Callback(hObject, eventdata, handles)
+TrialBrowser(handles)
+% --------------------------------------------------------------------
 
 function prev_t_Callback(hObject, eventdata, handles)
 global preview
