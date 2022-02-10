@@ -54,9 +54,15 @@ function cuttingMethod_Callback(hObject, eventdata, handles)
 if handles.cuttingMethod.Value == 1
     handles.markerPanel.ShadowColor = 'k';
     handles.timePanel.ShadowColor = [.7 .7 .7];
+    handles.manualPanel.ShadowColor = [.7 .7 .7];
 elseif handles.cuttingMethod.Value == 2
     handles.markerPanel.ShadowColor = [.7 .7 .7];
     handles.timePanel.ShadowColor = 'k';
+    handles.manualPanel.ShadowColor = [.7 .7 .7];
+elseif handles.cuttingMethod.Value == 3
+    handles.markerPanel.ShadowColor = [.7 .7 .7];
+    handles.timePanel.ShadowColor = [.7 .7 .7];
+    handles.manualPanel.ShadowColor = 'k';
 end
 
 
@@ -68,7 +74,6 @@ if ~isfield(handles, 'data')
 end
 ax1 = handles.axes1;
 Ylimits = ax1.YLim;
-cla(ax1)
 Fs = 256;
 
 data = handles.data;
@@ -126,10 +131,17 @@ elseif handles.cuttingMethod.Value == 2
     end
     
 elseif handles.cuttingMethod.Value == 3
-    opts.WindowStyle = 'modal';
-    opts.Interpreter = 'tex';
-    warndlg('\fontsize{15} This method is not implemented yet :(' , 'Method unavailable' , opts)
+    if ~isfield(handles, 'windowEdges')
+        opts.Interpreter = 'tex';
+        opts.WindowStyle = 'modal';
+        warndlg('\fontsize{16} Please select a time window first.', 'No Settings found', opts)
+        return
+    end
+    nrofevents = 1;
+    segmentStart = handles.windowEdges(1);
+    segmentEnd = handles.windowEdges(2);
 end
+cla(ax1)
 if ~isempty(segmentStart)
     handles.windowEdges = reshape([segmentStart segmentEnd]', 1, []);
     handles.windowEdges = [segmentStart segmentEnd];
@@ -162,18 +174,18 @@ cuts = zeros(windowEdges(1,2)-windowEdges(1,1), size(data,2), nrofcuts);
 % 1 = marker based cuts
 % 2 = time based cuts
 % 3 = manual selection (to be implemented)
-if handles.cuttingMethod.Value == 1 || handles.cuttingMethod.Value == 2
+% if handles.cuttingMethod.Value == 1 || handles.cuttingMethod.Value == 2
     for icut = 1:nrofcuts
         cut = data(windowEdges(icut,1):(windowEdges(icut,2)-1),:);
         cuts(:,:,icut) = cut;
     end
     
-elseif handles.cuttingMethod.Value == 3
-    opts.WindowStyle = 'modal';
-    opts.Interpreter = 'tex';
-    warndlg('\fontsize{15} This method is not implemented yet :(' , 'Method unavailable' , opts)
-end
-handles.file_size_new.String = ['new file size: ' num2str(size(cuts))];
+% elseif handles.cuttingMethod.Value == 3
+%     opts.WindowStyle = 'modal';
+%     opts.Interpreter = 'tex';
+%     warndlg('\fontsize{15} This method is not implemented yet :(' , 'Method unavailable' , opts)
+% end
+handles.file_size_new.String = sprintf('new file size: %d - %d - %d', size(data,[1 2 3]));
 
 % save the cut data
 data = cuts;
@@ -275,3 +287,12 @@ function cuttingMethod_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in selectManual.
+function handles = selectManual_Callback(hObject, eventdata, handles)
+handles.axes1
+[selection,~] = ginput(2);
+handles.windowEdges = selection';
+guidata(hObject,handles)
+
