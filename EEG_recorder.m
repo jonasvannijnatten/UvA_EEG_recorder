@@ -909,6 +909,9 @@ ReplayData(handles)
 function artGui_Callback(hObject, eventdata, handles)
 artGui(handles)
 
+function Cutting_tool_Callback(hObject, eventdata, handles)
+Cutting_tool(handles)
+
 % --- Executes on button press in spectogram.
 function spectogram_Callback(hObject, eventdata, handles)
 global plot_spectogram
