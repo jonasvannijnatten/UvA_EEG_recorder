@@ -1,11 +1,23 @@
-function data = import_data(old_data)
+function data = import_data()
 % this function takes a plain matrix and converts it to the new Fieldtrip
 % like format by running the user through a few questions
+
+
+%% actual code, temporarily commented for quick testing
+% [filename, filepath]= uigetfile();
+% if ~filename
+%     disp('No file selected')
+%     return
+% end
+% load([filepath filename], 'data');
+load 2022_inwerken_taak1_.mat
+old_data = data;
+clear data
 
 % check if the input data is a plain matrix
 if ~ismatrix(old_data)
     warndlg('The selected file does not contain a simple matrix and therefore can not be imported', 'Wrong data type')
-   return
+    return
 end
 
 
@@ -16,6 +28,12 @@ dlgpromt = { ...
     'what do the rows represent?'; ...
     'What do the columns represent?' ...
     };
+
+if size(old_data,3)>1
+    dlgpromt{end+1} = 'What does the tird dimension represent?';
+end
+
+
 
 formats = struct('type', {}, 'style', {}, 'items', {}, 'format', {}, 'limits', {}, 'size', {});
 
@@ -35,9 +53,16 @@ formats(3,1).style  = 'popupmenu';
 formats(3,1).items  = {'samples', 'channels'};
 
 formats(4,1).type  = 'list';
-formats(4,1).format = 'text'; 
+formats(4,1).format = 'text';
 formats(4,1).style  = 'popupmenu';
 formats(4,1).items  = {'samples', 'channels'};
+
+if size(old_data,3)>1
+    formats(5,1).type  = 'list';
+    formats(5,1).format = 'text';
+    formats(5,1).style  = 'popupmenu';
+    formats(5,1).items  = {trials', 'conditions'};
+end
 
 defaultAnswers = {256;'';'samples';'channels'};
 
@@ -56,6 +81,8 @@ else
     data.fsample = opts{1};
 end
 
+% save the data dimensions
+data.dims = convertCharsToStrings({opts{3}{1}, opts{4}{1}});
 
 % check if the data dimensions are different
 if strcmp(opts{3}{:}, opts{4}{:})
@@ -63,25 +90,25 @@ if strcmp(opts{3}{:}, opts{4}{:})
     return
 elseif strcmp(opts{3}{:}, 'samples') && strcmp(opts{4}{:},'channels')
     % use the data as it is
-    data.trial = {old_data'};
+    data.trial = old_data';
 elseif strcmp(opts{3}{:}, 'channels') && strcmp(opts{4}{:},'samples')
     % transpose the data to match the new format
-    data.trial = {old_data};
+    data.trial = old_data;
 else
     % this should not be able to happen
     warndlg('Hmm something strange happened.')
 end
-nrofchannels    = size(data.trial{1},1);
-nrofsamples     = size(data.trial{1},2);
+nrofchannels    = size(data.trial(:,:,1),1);
+nrofsamples     = size(data.trial(:,:,1),2);
 
 % check if the channel labes are chars
 if isempty(opts{2})
-    defaultLabels = strsplit(sprintf('channel%d ', 1:nrofchannels)); 
+    defaultLabels = convertCharsToStrings(strsplit(sprintf('channel_%d ', 1:nrofchannels)));
     defaultLabels(end) = [];
     data.label = defaultLabels';
 elseif length(strsplit(opts{2})) < nrofchannels
-    givenLabels = strsplit(opts{2});
-    defaultLabels = strsplit(sprintf('channel%d ', 1:nrofchannels)); 
+    givenLabels = convertCharsToStrings(strsplit(opts{2}));
+    defaultLabels = convertCharsToStrings(strsplit(sprintf('channel_%d ', 1:nrofchannels)));
     defaultLabels(end) = [];
     data.label = defaultLabels';
     for ichan = 1:length(givenLabels)
@@ -89,7 +116,7 @@ elseif length(strsplit(opts{2})) < nrofchannels
     end
 end
 
-data.time       = {(0:nrofsamples-1) / data.fsample};
+data.time       = (0:nrofsamples-1) / data.fsample;
 data.sampleinfo = [1 nrofsamples];
 
 % function end
