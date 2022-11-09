@@ -23,9 +23,10 @@ end
 
 dlgtitle = 'Provide information on your data';
 dlgpromt = { ...
-    'what is the sampling rate of the data?'; ...
-    'What are the names of the channels?'; ...
-    'what do the rows represent?'; ...
+    'What is the sampling rate of the data?'; ...
+    'What are the names of the channels? (optional)'; ...
+    'What are the signal types of the channels? (EEG/EOG/EMG/ECG/GRS/Marker)'; ...
+    'What do the rows represent?'; ...
     'What do the columns represent?' ...
     };
 
@@ -36,37 +37,56 @@ end
 
 
 formats = struct('type', {}, 'style', {}, 'items', {}, 'format', {}, 'limits', {}, 'size', {});
-
+% sampling rate
 formats(1,1).type   = 'edit';
 formats(1,1).format = 'integer';
 formats(1,1).style  = 'edit';
 formats(1,1).size   = [100 20];
+defaultAnswers      =  {256};
 
+% channel names (optional)
 formats(2,1).type   = 'edit';
 formats(2,1).format = 'text';
 formats(2,1).style  = 'edit';
 formats(2,1).size   = [600 20];
+defaultAnswers = [defaultAnswers; {''}];
 
-formats(3,1).type   = 'list';
+% channel types (optional)
+formats(3,1).type   = 'edit';
 formats(3,1).format = 'text';
-formats(3,1).style  = 'popupmenu';
-formats(3,1).items  = {'samples', 'channels'};
+formats(3,1).style  = 'edit';
+formats(3,1).size   = [600 20];
+defaultAnswers = [defaultAnswers; {''}];
 
-formats(4,1).type  = 'list';
+% representation of rows
+formats(4,1).type   = 'list';
 formats(4,1).format = 'text';
 formats(4,1).style  = 'popupmenu';
 formats(4,1).items  = {'samples', 'channels'};
+defaultAnswers = [defaultAnswers; {'samples'}];
 
+% representation of columns
+formats(5,1).type  = 'list';
+formats(5,1).format = 'text';
+formats(5,1).style  = 'popupmenu';
+formats(5,1).items  = {'samples', 'channels'};
+defaultAnswers = [defaultAnswers; {'channels'}];
+
+% if applicable, representation of 3rd dimension
 if size(old_data,3)>1
-    formats(5,1).type  = 'list';
-    formats(5,1).format = 'text';
-    formats(5,1).style  = 'popupmenu';
-    formats(5,1).items  = {trials', 'conditions'};
+    formats(6,1).type  = 'list';
+    formats(6,1).format = 'text';
+    formats(6,1).style  = 'popupmenu';
+    formats(6,1).items  = {'trials', 'subjects','conditions'};
+defaultAnswers = [defaultAnswers; {'trials'}];
 end
 
-defaultAnswers = {256;'';'samples';'channels'};
+% defaultAnswers = {256;'';'';'samples';'channels'};
 
-opts = inputsdlg(dlgpromt, dlgtitle, formats, defaultAnswers);
+Options.FontSize = 16;
+Options.Resize = 'on';
+
+opts = inputsdlg(dlgpromt, dlgtitle, formats, defaultAnswers, Options);
 
 %% input checks
 
@@ -82,42 +102,72 @@ else
 end
 
 % save the data dimensions
-data.dims = convertCharsToStrings({opts{3}{1}, opts{4}{1}});
+data.dims = convertCharsToStrings({opts{4}{1}, opts{5}{1}});
 
 % check if the data dimensions are different
-if strcmp(opts{3}{:}, opts{4}{:})
-    warndlg('The dimensions of the data can not be the same.')
-    return
-elseif strcmp(opts{3}{:}, 'samples') && strcmp(opts{4}{:},'channels')
+if strcmp(opts{4}{:}, opts{5}{:})
+    errordlg('The dimensions of the data can not be the same.')
+elseif strcmp(opts{4}{:}, 'samples') && strcmp(opts{5}{:},'channels')
     % use the data as it is
     data.trial = old_data';
-elseif strcmp(opts{3}{:}, 'channels') && strcmp(opts{4}{:},'samples')
+elseif strcmp(opts{4}{:}, 'channels') && strcmp(opts{5}{:},'samples')
     % transpose the data to match the new format
     data.trial = old_data;
 else
     % this should not be able to happen
     warndlg('Hmm something strange happened.')
 end
+% store the nr of channels and samples into separate variables for further
+% tools
 nrofchannels    = size(data.trial(:,:,1),1);
 nrofsamples     = size(data.trial(:,:,1),2);
 
-% check if the channel labes are chars
-if isempty(opts{2})
-    defaultLabels = convertCharsToStrings(strsplit(sprintf('channel_%d ', 1:nrofchannels)));
-    defaultLabels(end) = [];
-    data.label = defaultLabels';
-elseif length(strsplit(opts{2})) < nrofchannels
+%% Add channel labels
+% Default the channels are only numbered.
+% If channel labels are provided these are overwritten.
+% It is possible to label only a subset of channels.
+data.channelLabels= compose("Chan %02i",1:nrofchannels);
+if ~isempty(opts{2})
     givenLabels = convertCharsToStrings(strsplit(opts{2}));
-    defaultLabels = convertCharsToStrings(strsplit(sprintf('channel_%d ', 1:nrofchannels)));
-    defaultLabels(end) = [];
-    data.label = defaultLabels';
     for ichan = 1:length(givenLabels)
-        data.label(ichan) = givenLabels(ichan);
+        data.channelLabels(ichan) = givenLabels(ichan);
     end
 end
 
-data.time       = (0:nrofsamples-1) / data.fsample;
+%% Add channel types
+% Default the import tool labels everything EEG, except channels that
+% contain purely zeros or contain changes of more than 4 Volts.
+data.channelTypes = repelem("EEG",nrofchannels);
+if ~isempty(opts{3})
+    givenTypes = convertCharsToStrings(strsplit(opts{3}));
+    for ichan = 1:length(givenTypes)
+        data.channelTypes(ichan) = givenTypes(ichan);
+    end
+end
+
+if find(strcmp(data.dims,"channels")) == 1
+    for ichan = 1:nrofchannels
+        if max(diff(old_data(ichan,:,1)))>4
+            data.channelTypes(ichan) = "Marker";
+        end
+    end
+elseif find(strcmp(data.dims,"channels")) == 2
+    for ichan = 1:nrofchannels
+        if max(diff(old_data(:,ichan,1)))>4 || ~any(old_data(:,ichan,1))
+            data.channelTypes(ichan) = "Marker";
+        end
+    end
+end
+
+
+% store first and last sample nr of the trial
 data.sampleinfo = [1 nrofsamples];
+
+% convert sample numbers to time points
+data.time       = (0:nrofsamples-1) / data.fsample;
+
+% add importdate to history
+data.history = sprintf(['Data imported at ' datestr(datetime("now")) '\n\n' ]);
 
 % function end
 end
