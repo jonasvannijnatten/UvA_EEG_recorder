@@ -106,30 +106,30 @@ if handles.cuttingMethod.Value == 1
     end
     segmentStart = (markerOnsets-preOnset) / Fs;
     segmentEnd = (markerOnsets + postOnset) / Fs;
-    
+
 elseif handles.cuttingMethod.Value == 2
     firstEvent = str2double(handles.event_t.String);
     periodEvent = str2double(handles.per.String);
     nrofevents = str2double(handles.num_cuts.String);
     preOnset = str2double(handles.t_bev.String);
     postOnset = str2double(handles.t_aft.String);
-    
+
     if any(isnan([firstEvent periodEvent nrofevents preOnset postOnset]))
         opts.Interpreter = 'tex';
         opts.WindowStyle = 'modal';
         warndlg('\fontsize{16} Please fill in the cutting parameters.', 'No Settings found', opts)
         return
     end
-    
+
     segmentStart = [ [firstEvent firstEvent + (periodEvent * (1:(nrofevents-1)))] - preOnset ]';
     segmentEnd   = [ [firstEvent firstEvent + (periodEvent * (1:(nrofevents-1)))] + postOnset ]';
-    
+
     if any(segmentStart < 0)
         errordlg(sampleWarning)
     elseif any(segmentEnd > size(data,1))
         errordlg(sampleWarning)
     end
-    
+
 elseif handles.cuttingMethod.Value == 3
     if ~isfield(handles, 'windowEdges')
         opts.Interpreter = 'tex';
@@ -145,7 +145,7 @@ cla(ax1)
 if ~isempty(segmentStart)
     handles.windowEdges = reshape([segmentStart segmentEnd]', 1, []);
     handles.windowEdges = [segmentStart segmentEnd];
-    
+
     p = patch([segmentStart segmentStart segmentEnd segmentEnd]', ...
         repmat([Ylimits(1) Ylimits(2) Ylimits(2) Ylimits(1)]',[1 nrofevents ]), 'b');
     p.FaceAlpha = .2;
@@ -173,13 +173,13 @@ cuts = zeros(windowEdges(1,2)-windowEdges(1,1), size(data,2), nrofcuts);
 % cuttingMethods:
 % 1 = marker based cuts
 % 2 = time based cuts
-% 3 = manual selection (to be implemented)
+% 3 = manual selection
 % if handles.cuttingMethod.Value == 1 || handles.cuttingMethod.Value == 2
-    for icut = 1:nrofcuts
-        cut = data(windowEdges(icut,1):(windowEdges(icut,2)-1),:);
-        cuts(:,:,icut) = cut;
-    end
-    
+for icut = 1:nrofcuts
+    cut = data(windowEdges(icut,1):(windowEdges(icut,2)-1),:);
+    cuts(:,:,icut) = cut;
+end
+
 % elseif handles.cuttingMethod.Value == 3
 %     opts.WindowStyle = 'modal';
 %     opts.Interpreter = 'tex';
@@ -291,8 +291,9 @@ end
 
 % --- Executes on button press in selectManual.
 function handles = selectManual_Callback(hObject, eventdata, handles)
-handles.axes1
+handles.axes1;
 [selection,~] = ginput(2);
 handles.windowEdges = selection';
 guidata(hObject,handles)
+Preview_Callback(hObject, eventdata, handles)
 
