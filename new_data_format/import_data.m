@@ -15,7 +15,7 @@ old_data = data;
 clear data
 
 % check if the input data is a plain matrix
-if ~ismatrix(old_data)
+if ~isnumeric(old_data)
     warndlg('The selected file does not contain a simple matrix and therefore can not be imported', 'Wrong data type')
     return
 end
@@ -112,14 +112,18 @@ else
 end
 
 % save the data dimensions
-data.dims = convertCharsToStrings({opts{4}{1}, opts{5}{1}});
+if length(opts) == 5
+    data.dims = convertCharsToStrings({ opts{4}{1}, opts{5}{1} });
+elseif length(opts) == 6
+    data.dims = convertCharsToStrings({ opts{4}{1}, opts{5}{1}, opts{6}{1} });
+end
 
 % check if the data dimensions are different
 if strcmp(opts{4}{:}, opts{5}{:})
     errordlg('The dimensions of the data can not be the same.')
 elseif strcmp(opts{4}{:}, 'samples') && strcmp(opts{5}{:},'channels')
     % use the data as it is
-    data.trial = old_data';
+    data.trial = permute(old_data,[2 1 3]);
 elseif strcmp(opts{4}{:}, 'channels') && strcmp(opts{5}{:},'samples')
     % transpose the data to match the new format
     data.trial = old_data;
