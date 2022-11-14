@@ -4,13 +4,13 @@ function data = import_data()
 
 
 %% actual code, temporarily commented for quick testing
-% [filename, filepath]= uigetfile();
-% if ~filename
-%     disp('No file selected')
-%     return
-% end
-% load([filepath filename], 'data');
-load 2022_inwerken_taak1_.mat
+[filename, filepath]= uigetfile();
+if ~filename
+    disp('No file selected')
+    return
+end
+load([filepath filename], 'data');
+% load('2022_inwerken_taak1_.mat','data');
 old_data = data;
 clear data
 
@@ -23,9 +23,12 @@ end
 
 dlgtitle = 'Provide information on your data';
 dlgpromt = { ...
-    'What is the sampling rate of the data?'; ...
-    'What are the names of the channels? (optional)'; ...
-    'What are the signal types of the channels? (EEG/EOG/EMG/ECG/GRS/Marker)'; ...
+    'What is the sampling rate of the data (Hz)?'; ...
+    sprintf(['What are the names of the channels? (optional)\n'... 
+    'For example use 10-20 electrode locations as channel names.']); ...
+    sprintf(['What are the signal types of the channels? \n' ...
+    'The default (when left empty) tries to detect "Marker" channels and labels everything else "EEG"\n'...
+    'Choose any of the following options: EEG/EOG/EMG/ECG/GRS/Marker']); ...
     'What do the rows represent?'; ...
     'What do the columns represent?' ...
     };
@@ -34,28 +37,31 @@ if size(old_data,3)>1
     dlgpromt{end+1} = 'What does the tird dimension represent?';
 end
 
-
+inputBoxHeight = 26;
 
 formats = struct('type', {}, 'style', {}, 'items', {}, 'format', {}, 'limits', {}, 'size', {});
 % sampling rate
 formats(1,1).type   = 'edit';
 formats(1,1).format = 'integer';
 formats(1,1).style  = 'edit';
-formats(1,1).size   = [100 20];
+formats(1,1).size   = [100 inputBoxHeight];
+% formats(1,1).labelloc = 'topleft';
 defaultAnswers      =  {256};
 
 % channel names (optional)
 formats(2,1).type   = 'edit';
 formats(2,1).format = 'text';
 formats(2,1).style  = 'edit';
-formats(2,1).size   = [600 20];
+formats(2,1).size   = [600 inputBoxHeight];
+formats(2,1).labelloc = 'topleft';
 defaultAnswers = [defaultAnswers; {''}];
 
 % channel types (optional)
 formats(3,1).type   = 'edit';
 formats(3,1).format = 'text';
 formats(3,1).style  = 'edit';
-formats(3,1).size   = [600 20];
+formats(3,1).size   = [600 inputBoxHeight];
+formats(3,1).labelloc = 'topleft';
 defaultAnswers = [defaultAnswers; {''}];
 
 % representation of rows
@@ -63,6 +69,7 @@ formats(4,1).type   = 'list';
 formats(4,1).format = 'text';
 formats(4,1).style  = 'popupmenu';
 formats(4,1).items  = {'samples', 'channels'};
+% formats(4,1).labelloc = 'topleft';
 defaultAnswers = [defaultAnswers; {'samples'}];
 
 % representation of columns
@@ -70,6 +77,7 @@ formats(5,1).type  = 'list';
 formats(5,1).format = 'text';
 formats(5,1).style  = 'popupmenu';
 formats(5,1).items  = {'samples', 'channels'};
+% formats(5,1).labelloc = 'topleft';
 defaultAnswers = [defaultAnswers; {'channels'}];
 
 % if applicable, representation of 3rd dimension
@@ -78,13 +86,15 @@ if size(old_data,3)>1
     formats(6,1).format = 'text';
     formats(6,1).style  = 'popupmenu';
     formats(6,1).items  = {'trials', 'subjects','conditions'};
-defaultAnswers = [defaultAnswers; {'trials'}];
+%     formats(6,1).labelloc = 'topleft';
+    defaultAnswers = [defaultAnswers; {'trials'}];
 end
 
 % defaultAnswers = {256;'';'';'samples';'channels'};
 
 Options.FontSize = 16;
 Options.Resize = 'on';
+Options.Sep     = 10;
 
 opts = inputsdlg(dlgpromt, dlgtitle, formats, defaultAnswers, Options);
 
@@ -126,7 +136,7 @@ nrofsamples     = size(data.trial(:,:,1),2);
 % Default the channels are only numbered.
 % If channel labels are provided these are overwritten.
 % It is possible to label only a subset of channels.
-data.channelLabels= compose("Chan %02i",1:nrofchannels);
+data.channelLabels= compose("Chan%02i",1:nrofchannels);
 if ~isempty(opts{2})
     givenLabels = convertCharsToStrings(strsplit(opts{2}));
     for ichan = 1:length(givenLabels)
@@ -167,7 +177,7 @@ data.sampleinfo = [1 nrofsamples];
 data.time       = (0:nrofsamples-1) / data.fsample;
 
 % add importdate to history
-data.history = sprintf(['Data imported at ' datestr(datetime("now")) '\n\n' ]);
+data.history = sprintf(['Data imported at ' char(datetime("now")) '\n\n' ]);
 
 % function end
 end
