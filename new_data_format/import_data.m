@@ -173,6 +173,9 @@ elseif find(strcmp(data.dims,"channels")) == 2
     end
 end
 
+% specify in which domain the data is. For now only time domain is
+% accepted.
+data.domain = 'time';
 
 % store first and last sample nr of the trial
 data.sampleinfo = [1 nrofsamples];
