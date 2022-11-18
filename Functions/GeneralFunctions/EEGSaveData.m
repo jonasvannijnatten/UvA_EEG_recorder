@@ -27,4 +27,5 @@ if any(filename)
     % otherwise return 0
 else
     saved = 0;
+    fprintf('saving data canceled')
 end
