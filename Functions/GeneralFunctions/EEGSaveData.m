@@ -1,4 +1,4 @@
-function [saved] = EEGSaveData(data, addition)
+function [saved] = EEGSaveData(EEG, addition)
 
 % TO-DO: add input arg to whether to clear data after saving or not
 
@@ -10,8 +10,8 @@ elseif nargin == 2
 end
 
 % create new filename combining loaded file + addition
-if isfield(data,'filename')
-    newname = [cd filesep 'Data' filesep data.filename.String(1:end-4) addition];
+if ~isempty(EEG.filename)
+    newname = [cd filesep 'Data' filesep EEG.filename addition];
 else
     newname = [cd filesep 'Data' filesep ];
 end
@@ -21,11 +21,12 @@ end
 
 % if location is selected, save data
 if any(filename)
-    save([pathname filename], 'data');
+    EEG.filename = filename;
+    save([pathname filename], 'EEG');
     fprintf('file saved: %s%s\n', pathname, filename)
     saved = 1;
     % otherwise return 0
 else
     saved = 0;
-    fprintf('saving data canceled')
+    fprintf('saving data canceled\n')
 end
