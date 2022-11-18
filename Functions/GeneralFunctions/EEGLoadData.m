@@ -53,6 +53,9 @@ if ~strcmp(acceptedDataTypes, 'any')
             data.domain, acceptedDataTypes);
         errordlg(msg, 'Wrong data type selected.')
     end
+else
+    filename = [];
+    data = [];
 end
 
 end % function end
