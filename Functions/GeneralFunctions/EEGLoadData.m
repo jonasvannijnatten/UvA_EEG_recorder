@@ -1,4 +1,4 @@
-function [filename, data] = EEGLoadData(acceptedDataTypes)
+function [filename, EEG] = EEGLoadData(acceptedDataTypes)
 % This function lets you select a .mat file containing EEG data and returns
 % both the filename and the data struct.
 %
@@ -19,14 +19,14 @@ end
 % time-frequency)
 if ~any(filename)
     filename = [];
-    data = [];
+    EEG = [];
     return
 end
-load([pathname filename],'data');
+load([pathname filename],'EEG');
 fprintf('file loaded: %s%s\n', pathname, filename)
 
 %% Input check
-if ~exist('data','var') || ~isstruct(data)
+if ~exist('EEG','var') || ~isstruct(EEG)
     errordlg(['Selected file does not contain the right type of data.' ...
         'See the manual which data is accepted.'])
 end
@@ -36,26 +36,28 @@ end
 % frequency, time-frequency), and which data types are accepted by the
 % calling tool.
 % if any data is accepted, do nothing
-if ~strcmp(acceptedDataTypes, 'any')
+if strcmp(acceptedDataTypes, 'any')
+    fprintf('%s data loaded', EEG.domain)
     % check if data is in time domain
-    if strcmp(acceptedDataTypes,'time') && strcmp(data.domain, 'time')
-        fprintf('time series data loaded \n')
-        % check if data is in frequency domain
-    elseif strcmp(acceptedDataTypes,'frequency') && strcmp(data.domain, 'frequency')
-        fprintf('frequemcy data loaded \n')
-        % check if data is in time-frequency domain
-    elseif strcmp(acceptedDataTypes,'tf') && strcmp(data.domain, 'tf')
-        fprintf('time-frequemcy data loaded \n')
-        % in any other case
-    else
-        msg = sprintf(['You selected data of the type %s.\n ' ...
-            'This tool only accepts data of type %s.'], ...
-            data.domain, acceptedDataTypes);
-        errordlg(msg, 'Wrong data type selected.')
-    end
+elseif strcmp(acceptedDataTypes,'time') && strcmp(EEG.domain, 'time')
+    fprintf('time series data loaded \n')
+    % check if data is in frequency domain
+elseif strcmp(acceptedDataTypes,'frequency') && strcmp(EEG.domain, 'frequency')
+    fprintf('frequemcy data loaded \n')
+    % check if data is in time-frequency domain
+elseif strcmp(acceptedDataTypes,'tf') && strcmp(EEG.domain, 'tf')
+    fprintf('time-frequemcy data loaded \n')
+    % in any other case
 else
+    msg = sprintf(['You selected data of the type %s.\n ' ...
+        'This tool only accepts data of type %s.'], ...
+        EEG.domain, acceptedDataTypes);
+    fprintf(msg)
     filename = [];
-    data = [];
+    EEG = [];
+    errordlg(msg, 'Wrong data type selected.')
+
 end
+
 
 end % function end
