@@ -189,7 +189,7 @@ handles.file_size_new.String = sprintf('new file size: %d - %d - %d', size(data,
 
 % save the cut data
 data = cuts;
-EEGSaveData(handles, data);
+EEGSaveData(data);
 handles = rmfield(handles, 'windowEdges');
 guidata(hObject,handles)
 
