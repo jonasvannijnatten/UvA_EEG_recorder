@@ -95,6 +95,9 @@ if handles.cuttingMethod.Value == 1
     end
     markerOnsets = find(diff(EEG.data(:,selectedChan))>4);
     nrofevents = length(markerOnsets);
+    if nrofevents == 0
+        warndlg('No markers detected within this channel. Make sure to select a Marker channel containing event markers', 'No events detected.','non-modal')
+    end
     hold(handles.axes1, 'on')
     for imark = 1:nrofevents
         if markerOnsets(imark)-preOnset < 0
@@ -167,6 +170,10 @@ if ~isfield(handles, 'windowEdges')
 end
 windowEdges = ceil(handles.windowEdges * 256);
 nrofcuts = size(windowEdges,1);
+if nrofcuts == 0
+    warndlg('No events detected within this channel. Make sure to select a Marker channel containing event Markers', 'No events detected.')
+    return
+end
 
 cuts = zeros(windowEdges(1,2)-windowEdges(1,1), size(EEG.data,2), nrofcuts);
 % cuttingMethods:
