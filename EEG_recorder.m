@@ -686,6 +686,9 @@ Data_plotter(handles)
 function Event_cutter_Callback(hObject, eventdata, handles)
 Event_cutter(handles)
 % --------------------------------------------------------------------
+function TrialBrowser_Callback(hObject, eventdata, handles)
+TrialBrowser(handles)
+% --------------------------------------------------------------------
 
 function prev_t_Callback(hObject, eventdata, handles)
 global preview
@@ -905,6 +908,9 @@ ReplayData(handles)
 
 function artGui_Callback(hObject, eventdata, handles)
 artGui(handles)
+
+function Cutting_tool_Callback(hObject, eventdata, handles)
+Cutting_tool(handles)
 
 % --- Executes on button press in spectogram.
 function spectogram_Callback(hObject, eventdata, handles)
