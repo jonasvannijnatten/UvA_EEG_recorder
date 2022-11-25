@@ -18,7 +18,7 @@ end
 
 function Cutting_tool_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
-handles.dir = varargin{1}.dir;
+% handles.dir = varargin{1}.dir;
 guidata(hObject, handles);
 
 function varargout = Cutting_tool_OutputFcn(hObject, eventdata, handles)
@@ -27,14 +27,14 @@ varargout{1} = handles.output;
 
 % --------------------------------------------------------------------
 function Load_Callback(hObject, eventdata, handles)
-[filename, data] = EEGLoadData(handles, 0);
+[filename, EEG] = EEGLoadData('time');
 if any(filename) % check is any file was selected
     handles.filename.String = ['filename: ' filename]; % display filename
     handles.trial.String = '1';
     handles.chan.String = '1';
     % if it is a matrix (regular EEG data) save data to handles
-    handles.data = data;
-    [d1, d2, d3] = size(data);  % determine the data dimensions
+    handles.EEG = EEG;
+    [d1, d2, d3] = size(EEG.data);  % determine the data dimensions
     cla(handles.axes1);
     handles.filesize.String = sprintf('original file size: %i - %i - %i',d1,d2,d3); % display filesize
     handles.file_size_new.String = '';
@@ -68,15 +68,14 @@ end
 
 
 function handles = Preview_Callback(hObject, eventdata, handles)
-if ~isfield(handles, 'data')
+if ~isfield(handles, 'EEG')
     warndlg('No data available.')
     return
 end
+EEG = handles.EEG;
+
 ax1 = handles.axes1;
 Ylimits = ax1.YLim;
-Fs = 256;
-
-data = handles.data;
 
 sampleWarning = {'No samples available';'You are trying to cut samples outside of your dataset.';'Adjust your settings.'};
 % cuttingMethods:
@@ -94,18 +93,21 @@ if handles.cuttingMethod.Value == 1
         warndlg('\fontsize{16} Please fill in the cutting parameters.', 'No Settings found', opts)
         return
     end
-    markerOnsets = find(diff(data(:,selectedChan))>4);
+    markerOnsets = find(diff(EEG.data(:,selectedChan))>4);
     nrofevents = length(markerOnsets);
+    if nrofevents == 0
+        warndlg('No markers detected within this channel. Make sure to select a Marker channel containing event markers', 'No events detected.','non-modal')
+    end
     hold(handles.axes1, 'on')
     for imark = 1:nrofevents
         if markerOnsets(imark)-preOnset < 0
             errordlg(sampleWarning)
-        elseif markerOnsets(imark) + postOnset > size(data,1)
+        elseif markerOnsets(imark) + postOnset > size(EEG.data,1)
             errordlg(sampleWarning)
         end
     end
-    segmentStart = (markerOnsets-preOnset) / Fs;
-    segmentEnd = (markerOnsets + postOnset) / Fs;
+    segmentStart = (markerOnsets-preOnset) / EEG.fsample;
+    segmentEnd = (markerOnsets + postOnset) / EEG.fsample;
 
 elseif handles.cuttingMethod.Value == 2
     firstEvent = str2double(handles.event_t.String);
@@ -126,7 +128,7 @@ elseif handles.cuttingMethod.Value == 2
 
     if any(segmentStart < 0)
         errordlg(sampleWarning)
-    elseif any(segmentEnd > size(data,1))
+    elseif any(segmentEnd > size(EEG.data,1))
         errordlg(sampleWarning)
     end
 
@@ -154,12 +156,12 @@ plotData(handles)
 guidata(hObject,handles)
 
 function cut_Callback(hObject, eventdata, handles)
-if ~isfield(handles, 'data')
+if ~isfield(handles, 'EEG')
     warndlg('No data available.')
     return
 end
 handles = Preview_Callback(hObject, eventdata, handles);
-data = handles.data;
+EEG = handles.EEG;
 if ~isfield(handles, 'windowEdges')
     opts.Interpreter = 'tex';
     opts.WindowStyle = 'modal';
@@ -168,15 +170,19 @@ if ~isfield(handles, 'windowEdges')
 end
 windowEdges = ceil(handles.windowEdges * 256);
 nrofcuts = size(windowEdges,1);
+if nrofcuts == 0
+    warndlg('No events detected within this channel. Make sure to select a Marker channel containing event Markers', 'No events detected.')
+    return
+end
 
-cuts = zeros(windowEdges(1,2)-windowEdges(1,1), size(data,2), nrofcuts);
+cuts = zeros(windowEdges(1,2)-windowEdges(1,1), size(EEG.data,2), nrofcuts);
 % cuttingMethods:
 % 1 = marker based cuts
 % 2 = time based cuts
 % 3 = manual selection
 % if handles.cuttingMethod.Value == 1 || handles.cuttingMethod.Value == 2
 for icut = 1:nrofcuts
-    cut = data(windowEdges(icut,1):(windowEdges(icut,2)-1),:);
+    cut = EEG.data(windowEdges(icut,1):(windowEdges(icut,2)-1),:);
     cuts(:,:,icut) = cut;
 end
 
@@ -185,29 +191,34 @@ end
 %     opts.Interpreter = 'tex';
 %     warndlg('\fontsize{15} This method is not implemented yet :(' , 'Method unavailable' , opts)
 % end
-handles.file_size_new.String = sprintf('new file size: %d - %d - %d', size(data,[1 2 3]));
+handles.file_size_new.String = sprintf('new file size: %d - %d - %d', size(EEG.data,[1 2 3]));
 
 % save the cut data
-data = cuts;
-EEGSaveData(data);
+EEG.data = cuts;
+EEG.dims = [EEG.dims "trials"];
+%% TO DO
+% add time per trial
+% add sampleinfo per trial
+% add history --> do this in the cut_Callback
+EEGSaveData(EEG,'cut');
 handles = rmfield(handles, 'windowEdges');
 guidata(hObject,handles)
 
 
 function plotData(handles)
-Fs = 256;
-data = handles.data;
 
-[nrofsamples, nrofchans] = size(data);
+EEG = handles.EEG;
+
+[nrofsamples, nrofchans] = size(EEG.data);
 a = linspace(0,1,nrofchans);
 b = sort(a,'descend');
-t = (1:nrofsamples)/Fs;
+t = (1:nrofsamples)/EEG.fsample;
 hold(handles.axes1, 'on')
 for ichan=1:nrofchans
     if ichan<9
-        plot(handles.axes1,t,data(:,ichan)*100+b(ichan)); hold(handles.axes1,'on')
+        plot(handles.axes1,t,EEG.data(:,ichan)*100+b(ichan)); hold(handles.axes1,'on')
     else
-        plot(handles.axes1,t,data(:,ichan)./250+b(ichan),'k'); hold(handles.axes1,'on')
+        plot(handles.axes1,t,EEG.data(:,ichan)./250+b(ichan),'k'); hold(handles.axes1,'on')
     end
 end
 grid(handles.axes1,'on')
