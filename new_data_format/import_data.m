@@ -1,4 +1,4 @@
-function data = import_data()
+function EEG = import_data()
 % this function takes a plain matrix and converts it to the new Fieldtrip
 % like format by running the user through a few questions
 
@@ -6,7 +6,8 @@ function data = import_data()
 %% actual code, temporarily commented for quick testing
 [filename, filepath]= uigetfile();
 if ~filename
-    disp('No file selected')
+    EEG = [];
+    disp('No file selected')    
     return
 end
 load([filepath filename], 'data');
@@ -20,11 +21,25 @@ if ~isnumeric(old_data)
     return
 end
 
+%% To Do: Initialize EEG struct
+EEG = struct( ...
+    'filename',[], ...
+    'fsample',[], ...
+    'dims',[], ...
+    'domain',[], ...
+    'data',[], ...
+    'channelLabels',[], ...
+    'channelTypes',[], ...
+    'sampleinfo',[], ...
+    'time',[], ...
+    'history',[] ...
+    );
+
 
 dlgtitle = 'Provide information on your data';
 dlgpromt = { ...
     'What is the sampling rate of the data (Hz)?'; ...
-    sprintf(['What are the names of the channels? (optional)\n'... 
+    sprintf(['What are the names of the channels? (optional)\n'...
     'For example use 10-20 electrode locations as channel names.']); ...
     sprintf(['What are the signal types of the channels? \n' ...
     'The default (when left empty) tries to detect "Marker" channels and labels everything else "EEG"\n'...
@@ -86,7 +101,7 @@ if size(old_data,3)>1
     formats(6,1).format = 'text';
     formats(6,1).style  = 'popupmenu';
     formats(6,1).items  = {'trials', 'subjects','conditions'};
-%     formats(6,1).labelloc = 'topleft';
+    %     formats(6,1).labelloc = 'topleft';
     defaultAnswers = [defaultAnswers; {'trials'}];
 end
 
@@ -108,14 +123,14 @@ elseif ~isnumeric(opts{1}) || isnan(opts{1})
 elseif opts{1} <= 0 || mod(opts{1},1)~=0
     errordlg('please provide a positiver integer as sampling rate value.')
 else
-    data.fsample = opts{1};
+    EEG.fsample = opts{1};
 end
 
 % save the data dimensions
 if length(opts) == 5
-    data.dims = convertCharsToStrings({ opts{4}{1}, opts{5}{1} });
+    EEG.dims = convertCharsToStrings({ opts{4}{1}, opts{5}{1} });
 elseif length(opts) == 6
-    data.dims = convertCharsToStrings({ opts{4}{1}, opts{5}{1}, opts{6}{1} });
+    EEG.dims = convertCharsToStrings({ opts{4}{1}, opts{5}{1}, opts{6}{1} });
 end
 
 % check if the data dimensions are different
@@ -123,65 +138,74 @@ if strcmp(opts{4}{:}, opts{5}{:})
     errordlg('The dimensions of the data can not be the same.')
 elseif strcmp(opts{4}{:}, 'samples') && strcmp(opts{5}{:},'channels')
     % use the data as it is
-    data.trial = permute(old_data,[2 1 3]);
+    EEG.data = old_data;
+    % store the nr of channels and samples into separate variables for further
+    % tools
+    nrofchannels    = size(EEG.data(:,:,1),2);
+    nrofsamples     = size(EEG.data(:,:,1),1);
 elseif strcmp(opts{4}{:}, 'channels') && strcmp(opts{5}{:},'samples')
     % transpose the data to match the new format
-    data.trial = old_data;
+    EEG.data = permute(old_data,[2 1 3]);
+    % store the nr of channels and samples into separate variables for further
+    % tools
+    nrofchannels    = size(EEG.data(:,:,1),1);
+    nrofsamples     = size(EEG.data(:,:,1),2);
 else
     % this should not be able to happen
     warndlg('Hmm something strange happened.')
 end
-% store the nr of channels and samples into separate variables for further
-% tools
-nrofchannels    = size(data.trial(:,:,1),1);
-nrofsamples     = size(data.trial(:,:,1),2);
 
 %% Add channel labels
 % Default the channels are only numbered.
 % If channel labels are provided these are overwritten.
 % It is possible to label only a subset of channels.
-data.channelLabels= compose("Chan%02i",1:nrofchannels);
+EEG.channelLabels= compose("Chan%02i",1:nrofchannels);
 if ~isempty(opts{2})
     givenLabels = convertCharsToStrings(strsplit(opts{2}));
     for ichan = 1:length(givenLabels)
-        data.channelLabels(ichan) = givenLabels(ichan);
+        EEG.channelLabels(ichan) = givenLabels(ichan);
     end
 end
 
 %% Add channel types
 % Default the import tool labels everything EEG, except channels that
 % contain purely zeros or contain changes of more than 4 Volts.
-data.channelTypes = repelem("EEG",nrofchannels);
+EEG.channelTypes = repelem("EEG",nrofchannels);
 if ~isempty(opts{3})
     givenTypes = convertCharsToStrings(strsplit(opts{3}));
     for ichan = 1:length(givenTypes)
-        data.channelTypes(ichan) = givenTypes(ichan);
+        EEG.channelTypes(ichan) = givenTypes(ichan);
     end
 end
 
-if find(strcmp(data.dims,"channels")) == 1
+if find(strcmp(EEG.dims,"channels")) == 1
     for ichan = 1:nrofchannels
         if max(diff(old_data(ichan,:,1)))>4
-            data.channelTypes(ichan) = "Marker";
+            EEG.channelTypes(ichan) = "Marker";
         end
     end
-elseif find(strcmp(data.dims,"channels")) == 2
+elseif find(strcmp(EEG.dims,"channels")) == 2
     for ichan = 1:nrofchannels
         if max(diff(old_data(:,ichan,1)))>4 || ~any(old_data(:,ichan,1))
-            data.channelTypes(ichan) = "Marker";
+            EEG.channelTypes(ichan) = "Marker";
         end
     end
 end
 
+% specify in which domain the data is. For now only time domain is
+% accepted.
+EEG.domain = "time";
 
-% store first and last sample nr of the trial
-data.sampleinfo = [1 nrofsamples];
+% store first and last sample nr of the data
+EEG.sampleinfo = [1 nrofsamples];
 
 % convert sample numbers to time points
-data.time       = (0:nrofsamples-1) / data.fsample;
+EEG.time       = (0:nrofsamples-1) / EEG.fsample;
 
 % add importdate to history
-data.history = sprintf(['Data imported at ' char(datetime("now")) '\n\n' ]);
+EEG.history = sprintf(['Data imported at ' char(datetime("now")) '\n\n' ]);
+
+EEGSaveData(EEG);
 
 % function end
 end

@@ -1,39 +1,63 @@
-function [filename, data] = EEGLoadData(handles, acceptTF)
-% [filename, data] = EEGLoadData(handles, acceptTF)
-% This function takes the general GUI handles as input, and optionally an
-% argument indicating whether the calling function or tool accepts time
-% frequency data. The function returns the name of the loaded file and the
-% data. The data can either be time-series EEG data in the form of a matrix
-% or time-frequecy data in the form of a struct with the fields 'data','T'
-% and 'F'. See the TF-analysis tool for more information on time frequency
-% data.
+function [filename, EEG] = EEGLoadData(acceptedDataTypes)
+% This function lets you select a .mat file containing EEG data and returns
+% both the filename and the data struct.
+%
+% The input argument 'acceptedDataTypes' specifies which data types are
+% accepted. Input options are:
+% - 'time' for time series data
+% - 'frequency' for power spectrum data
+% - 'tf' for time-frequency data
 
-if nargin == 1 % by default don't accept time frequency data
-    acceptTF = 0;
+if nargin==0
+    acceptedDataTypes='any';
 end
+
 % look for data in the 'Data' directory, select a file and return to the
 % main directory
-cd(handles.dir.data);
-[filename, pathname] = uigetfile({'*.mat';},'Select a 2D array');
-cd(handles.dir.main);
+[filename, pathname] = uigetfile({'*.mat'},'Select an EEG data file.',[cd '/Data']);
 % if a file was selected, check which data format (time-series vs.
 % time-frequency)
-if any(filename)
-    load([pathname filename]);
-    fprintf('file loaded: %s%s\n', pathname, filename)
-    if exist('data','var') && isnumeric(data)
-        fprintf('time series loaded \n')
-    elseif isstruct(data) && acceptTF==1
-        fprintf('time-frequency data loaded\n')
-    elseif isstruct(data) && acceptTF==0
-        fprintf('Loaded file is time-frequency data. Unapropriate for current analyis tool. \n')
-        errordlg('You are trying to load a time-frequency data file. This is an unapropriate format for this tool \n')
-    else
-        errordlg('you tried to load an unsupported data format')
-    end
-else
+if ~any(filename)
     filename = [];
-    data = [];
+    EEG = [];
+    return
 end
+load([pathname filename],'EEG');
+fprintf('file loaded: %s%s\n', pathname, filename)
+
+%% Input check
+if ~exist('EEG','var') || ~isstruct(EEG)
+    errordlg(['Selected file does not contain the right type of data.' ...
+        'See the manual which data is accepted.'])
+end
+
+%% identify file type which is loaded
+% check which dimensions are present in the data (samples, time,
+% frequency, time-frequency), and which data types are accepted by the
+% calling tool.
+% if any data is accepted, do nothing
+if strcmp(acceptedDataTypes, 'any')
+    fprintf('%s data loaded', EEG.domain)
+    % check if data is in time domain
+elseif strcmp(acceptedDataTypes,'time') && strcmp(EEG.domain, 'time')
+    fprintf('time series data loaded \n')
+    % check if data is in frequency domain
+elseif strcmp(acceptedDataTypes,'frequency') && strcmp(EEG.domain, 'frequency')
+    fprintf('frequemcy data loaded \n')
+    % check if data is in time-frequency domain
+elseif strcmp(acceptedDataTypes,'tf') && strcmp(EEG.domain, 'tf')
+    fprintf('time-frequemcy data loaded \n')
+    % in any other case
+else
+    msg = sprintf(['You selected data of the type %s.\n ' ...
+        'This tool only accepts data of type %s.'], ...
+        EEG.domain, acceptedDataTypes);
+    fprintf(msg)
+    filename = [];
+    EEG = [];
+    errordlg(msg, 'Wrong data type selected.')
+
+end
+
 
 end % function end
