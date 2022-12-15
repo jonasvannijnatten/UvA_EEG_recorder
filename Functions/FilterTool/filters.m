@@ -169,7 +169,8 @@ msgbox('Data filtered')
 
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-global filter_data
+global filter_data; 
+global EEG;
 curdir = cd;
 cd([curdir filesep 'Data']);
 [filename, pathname] = ...
@@ -178,7 +179,7 @@ cd(curdir);
 if any(filename)
     set(handles.fi_name,'string',filename);
     load([pathname filename]);
-    filter_data = data;
+    filter_data = EEG.data;
     [str1] = size(filter_data);
     str = num2str(str1);
     set(handles.fi_size,'string',str);
@@ -188,12 +189,14 @@ end
 function save_Callback(hObject, eventdata, handles)
 global filter_data;
 global power;
-data = filter_data;
+global EEG;
+% CHECK save in struct?
+EEG.data = filter_data;
 curdir = cd;
 cd([curdir filesep 'Data']);
-uisave({'data'},'Name');
+uisave({'EEG'},'Name');
 cd(curdir);
-clear filename; clear data; clearvars -global filter_data;
+clear filename; clear EEG; clearvars -global filter_data;
 str = ' ';
 set(handles.fi_name,'string',str);
 set(handles.fi_size,'string',str);

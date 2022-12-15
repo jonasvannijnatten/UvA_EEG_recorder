@@ -172,22 +172,24 @@ end
 
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-global filename;global datas
+global filename;global datas; global EEG;
 [filename, pathname] = ...
  uigetfile({'*.mat';},'Select a 2D array');
  set(handles.fi_name,'string',filename);
  load(filename);
- datas = data;
+ datas = EEG.data;
  [str1] = size(datas);
  str = num2str(str1);
 set(handles.fi_size,'string',str);
 clear data
 
 function save_Callback(hObject, eventdata, handles)
-global datas
-data = datas;
-uisave({'data'},'Name');
-clear filename; clear data; clear datas;
+global datas;
+global EEG;
+% CHECK save in struct?
+EEG.data = datas;
+uisave({'EEG'},'Name');
+clear filename; clear EEG; clear datas;
 str = ' ';
 set(handles.fi_name,'string',str);
 set(handles.fi_size,'string',str);

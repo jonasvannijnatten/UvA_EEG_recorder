@@ -159,15 +159,16 @@ msgbox('Data filtered')
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
 global filename;
-global filter_data
+global filter_data; 
+global EEG;
 curdir = cd;
 cd([curdir filesep 'data']);
 [filename, pathname] = ...
     uigetfile({'*.mat';},'Select a 2D array');
 if any(filename)
     set(handles.fi_name,'string',filename);
-    load(filename);
-    filter_data = data;
+    load(filename);clear
+    filter_data = EEG.data;
     [str1] = size(filter_data);
     str = num2str(str1);
     set(handles.fi_size,'string',str);
@@ -176,13 +177,14 @@ end
 cd(curdir);
 
 function save_Callback(hObject, eventdata, handles)
-global filter_data;global energy;
-data = filter_data;
+global filter_data;global energy; global EEG;
+% CHECK save in struct?
+EEG.data = filter_data;
 curdir = cd;
-cd([curdir filesep 'data']);
-uisave({'data'},'Name');
+cd([curdir filesep 'EEG']);
+uisave({'EEG'},'Name');
 cd(curdir);
-clear filename; clear data; clear filter_data;
+clear filename; clear EEG; clear filter_data;
 str = ' ';
 set(handles.fi_name,'string',str);
 set(handles.fi_size,'string',str);
