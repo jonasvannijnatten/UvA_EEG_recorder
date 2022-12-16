@@ -156,6 +156,7 @@ function load_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global filenamep;
 global erp_data;
+global EEG;
 curdir = cd;
 cd([curdir filesep 'data']);
 [filenamep, pathname] = ...
@@ -163,13 +164,13 @@ cd([curdir filesep 'data']);
 cd(curdir);
 if any(filenamep)
     load([pathname filenamep]);
-    erp_data = data;
+    erp_data = EEG.data;
     set(handles.filename_txt, 'String', filenamep);
-    set(handles.filesize_txt, 'String', num2str(size(data)));
+    set(handles.filesize_txt, 'String', num2str(size(erp_data)));
     clear -global corrected_data
     set(handles.corrected_box, 'String', '')
 end
-clear data
+clear EEG
 
 
 % --- Executes on button press in baseline_correction.
@@ -297,15 +298,16 @@ end
 function save_Callback(hObject, eventdata, handles)
 
 global corrected_data;
+global EEG;
 if isempty(corrected_data)
     errordlg('There is no baseline corrected data. Apply correction first')
 elseif ~isempty(corrected_data)
-    data = corrected_data;
+    EEG.data = corrected_data;
     curdir = cd;
     cd([curdir filesep 'Data']);
-    uisave({'data'},'Name');
+    uisave({'EEG'},'Name');
     cd(curdir);
-    clear data;
+    clear EEG;
     clear -global corrected_data;
     set(handles.corrected_box, 'String', '')    
 end
