@@ -17,6 +17,10 @@ else
 end
 
 function Cutting_tool_OpeningFcn(hObject, eventdata, handles, varargin)
+set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'off')
+set(get(handles.timePanel, 'Children'), 'Enable', 'off')
+set(get(handles.manualPanel, 'Children'), 'Enable', 'off')
+
 handles.output = hObject;
 % handles.dir = varargin{1}.dir;
 guidata(hObject, handles);
@@ -52,54 +56,71 @@ web('Event_cutter_help.htm', '-helpbrowser')
 
 function cuttingMethod_Callback(hObject, eventdata, handles)
 if handles.cuttingMethod.Value == 1
+    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'on')
     handles.markerPanelTTL.ShadowColor = 'k';
     handles.markerPanelTTL.BorderWidth = 2;
-
+    
+    set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'off')
     handles.markerPanelSerial.ShadowColor = [.7 .7 .7];
     handles.markerPanelSerial.BorderWidth = 1;
 
+    set(get(handles.timePanel, 'Children'), 'Enable', 'off')
     handles.timePanel.ShadowColor = [.7 .7 .7];
     handles.timePanel.BorderWidth = 1;
 
-    handles.manualPanelTTL.ShadowColor = [.7 .7 .7];
+    set(get(handles.manualPanel, 'Children'), 'Enable', 'off')
+    handles.manualPanel.ShadowColor = [.7 .7 .7];
     handles.manualPanel.BorderWidth = 1;
 
 elseif handles.cuttingMethod.Value == 2
+
+    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
     handles.markerPanelTTL.ShadowColor = [.7 .7 .7];
     handles.markerPanelTTL.BorderWidth = 1;
 
+    set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'on')
     handles.markerPanelSerial.ShadowColor = 'k';
     handles.markerPanelSerial.BorderWidth = 2;
 
+    set(get(handles.timePanel, 'Children'), 'Enable', 'off')
     handles.timePanel.ShadowColor = [.7 .7 .7];
     handles.timePanel.BorderWidth = 1;
 
+    set(get(handles.manualPanel, 'Children'), 'Enable', 'off')
     handles.manualPanelTTL.ShadowColor = [.7 .7 .7];
     handles.manualPanel.BorderWidth = 1;
 
 elseif handles.cuttingMethod.Value == 3
+    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
     handles.markerPanelTTL.ShadowColor = [.7 .7 .7];
     handles.markerPanelTTL.BorderWidth = 1;
 
+    set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'off')
     handles.markerPanelSerial.ShadowColor = [.7 .7 .7];
     handles.markerPanelSerial.BorderWidth = 1;
 
+    set(get(handles.timePanel, 'Children'), 'Enable', 'on')
     handles.timePanel.ShadowColor = 'k';
     handles.timePanel.BorderWidth = 2;
 
+    set(get(handles.manualPanel, 'Children'), 'Enable', 'off')
     handles.manualPanel.ShadowColor = [.7 .7 .7];
     handles.manualPanel.BorderWidth = 1;
 
 elseif handles.cuttingMethod.Value == 4
+    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
     handles.markerPanelTTL.ShadowColor = [.7 .7 .7];
     handles.markerPanelTTL.BorderWidth = 1;
 
+    set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'off')
     handles.markerPanelSerial.ShadowColor = [.7 .7 .7];
     handles.markerPanelSerial.BorderWidth = 1;
 
+    set(get(handles.timePanel, 'Children'), 'Enable', 'off')
     handles.timePanel.ShadowColor = [.7 .7 .7];
     handles.timePanel.BorderWidth = 1;
 
+    set(get(handles.manualPanel, 'Children'), 'Enable', 'on')
     handles.manualPanel.ShadowColor = 'k';
     handles.manualPanel.BorderWidth = 2;
 end
@@ -135,9 +156,9 @@ if handles.cuttingMethod.Value == 1
         return
     end
     if handles.on_offset.Value == 1
-        markers = find(diff(EEG.data(:,selectedChan))>4);
+        markers = find(round(diff(EEG.data(:,selectedChan)))==5 );
     elseif handles.on_offset.Value == 2
-        markers = find(diff(EEG.data(:,selectedChan))<-4);  
+        markers = find(round(diff(EEG.data(:,selectedChan)))==-5);  
     end
     nrofevents = length(markers);
     if nrofevents == 0
