@@ -366,22 +366,30 @@ return
 
 
 function Transp_Callback(hObject, eventdata, handles)
+EEG = handles.EEG;
 if isfield(handles,'tf')
     errordlg('This function is not applicable to time frequency data')
     return
 end
-
+%Create third dimension in EEG.dims
+if length(EEG.dims) == 2
+    EEG.dims = [EEG.dims "trials"];
+end
 if (get(handles.col_row,'Value') == get(handles.col_row,'Max'))
     handles.data = permute(handles.data,[2 1 3]);
+    EEG.dims([2 1]) = EEG.dims([1 2]); %transpose dimension
     fprintf('transposed rows and columns\n')
 elseif (get(handles.col_third,'Value') == get(handles.col_third,'Max'))
     handles.data = permute(handles.data,[3 2 1]);
+    EEG.dims([3 1]) = EEG.dims([1 3]); %transpose dimension
     fprintf('transposed columns and third dimension\n')
 elseif (get(handles.row_thrid,'Value') == get(handles.row_thrid,'Max'))
     handles.data = permute(handles.data,[1 3 2]);
+    EEG.dims([3 2]) = EEG.dims([2 3]); %transpose dimension
     fprintf('transposed rows and third dimension\n')
 end
 
+handles.EEG = EEG;
 [d1, d2, d3] = size(handles.data); % determine the data dimensions
 handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
 
