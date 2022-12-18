@@ -154,18 +154,14 @@ function load_Callback(hObject, eventdata, handles)
 % hObject    handle to load (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global filenamep;
+global filename;
 global erp_data;
-curdir = cd;
-cd([curdir filesep 'data']);
-[filenamep, pathname] = ...
-    uigetfile({'*.mat';},'Select a 2D array');
-cd(curdir);
-if any(filenamep)
-    load([pathname filenamep]);
-    erp_data = data;
-    set(handles.filename_txt, 'String', filenamep);
-    set(handles.filesize_txt, 'String', num2str(size(data)));
+global EEG;
+[filename, EEG] = EEGLoadData('time');
+if any(filename) % check is any file was selected
+    erp_data = EEG.data;
+    set(handles.filename_txt, 'String', filename);
+    set(handles.filesize_txt, 'String', num2str(size(EEG.data)));
     clear -global corrected_data
     set(handles.corrected_box, 'String', '')
 end
@@ -297,14 +293,12 @@ end
 function save_Callback(hObject, eventdata, handles)
 
 global corrected_data;
+global EEG;
 if isempty(corrected_data)
     errordlg('There is no baseline corrected data. Apply correction first')
 elseif ~isempty(corrected_data)
-    data = corrected_data;
-    curdir = cd;
-    cd([curdir filesep 'Data']);
-    uisave({'data'},'Name');
-    cd(curdir);
+    EEG.data = corrected_data;
+    EEGSaveData(EEG,'ERP');
     clear data;
     clear -global corrected_data;
     set(handles.corrected_box, 'String', '')    
