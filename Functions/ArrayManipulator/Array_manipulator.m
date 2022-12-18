@@ -251,7 +251,8 @@ end
 set(handles.filesize,'string',str);
 
 function conca_Callback(hObject, eventdata, handles)
-[addFilename, addData] = EEGLoadData(handles, 1);
+[addFilename, addEEG] = EEGLoadData('any');
+addData = addEEG.data;
 if any(addFilename) % check is any file was selected
     % check if originally loaded file and added file are the same format
     if isfield(handles,'data') && isstruct(addData)
@@ -428,8 +429,10 @@ guidata(hObject,handles)
 
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-[filename, data] = EEGLoadData(handles, 1);
+[filename, EEG] = EEGLoadData('any');
 if any(filename) % check is any file was selected
+    data = EEG.data;
+    handles.EEG = EEG;
     handles.filename.String = ['filename: ' filename]; % display filename
     
     % if it is a matrix (regular EEG data) save data to handles
@@ -454,13 +457,17 @@ guidata(hObject,handles)
 
 % --------------------------------------------------------------------
 function save_Callback(hObject, eventdata, handles)
+EEG = handles.EEG;
 if isfield(handles, 'tf')
-    EEGSaveData(handles, handles.tf);
+    data = handles.tf.data;
+    EEG.data = data;
 elseif isfield(handles,'data')
-    EEGSaveData(handles, handles.data);
+    data = handles.data;
+    EEG.data = data;
 else
     warndlg('No data to save')
 end
+EEGSaveData(EEG, 'dims');
 
 function col_row_Callback(hObject, eventdata, handles)
 global col_row
