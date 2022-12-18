@@ -173,10 +173,8 @@ end
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
 global filename;global datas; global EEG;
-[filename, pathname] = ...
- uigetfile({'*.mat';},'Select a 2D array');
+[filename, EEG] = EEGLoadData('time');
  set(handles.fi_name,'string',filename);
- load(filename);
  datas = EEG.data;
  [str1] = size(datas);
  str = num2str(str1);
@@ -186,9 +184,8 @@ clear data
 function save_Callback(hObject, eventdata, handles)
 global datas;
 global EEG;
-% CHECK save in struct?
 EEG.data = datas;
-uisave({'EEG'},'Name');
+EEGSaveData(EEG, 'filter');
 clear filename; clear EEG; clear datas;
 str = ' ';
 set(handles.fi_name,'string',str);

@@ -161,29 +161,21 @@ function load_Callback(hObject, eventdata, handles)
 global filename;
 global filter_data; 
 global EEG;
-curdir = cd;
-cd([curdir filesep 'data']);
-[filename, pathname] = ...
-    uigetfile({'*.mat';},'Select a 2D array');
+[filename, EEG] = EEGLoadData('time');
 if any(filename)
     set(handles.fi_name,'string',filename);
-    load(filename);clear
     filter_data = EEG.data;
     [str1] = size(filter_data);
     str = num2str(str1);
     set(handles.fi_size,'string',str);
-    clear data
+    clear EEG
 end
 cd(curdir);
 
 function save_Callback(hObject, eventdata, handles)
 global filter_data;global energy; global EEG;
-% CHECK save in struct?
 EEG.data = filter_data;
-curdir = cd;
-cd([curdir filesep 'EEG']);
-uisave({'EEG'},'Name');
-cd(curdir);
+EEGSaveData(EEG, 'filter');
 clear filename; clear EEG; clear filter_data;
 str = ' ';
 set(handles.fi_name,'string',str);
