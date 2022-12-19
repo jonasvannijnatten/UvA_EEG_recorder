@@ -70,10 +70,10 @@ end
 function filterbank_Callback(hObject, eventdata, handles)
 global l1; global h1;
 global filter_data; 
-global Fs; Fs = 256;
-global power;
-power = [];
+global EEG;
+global Fs;
 global stop_on; global pass_on; global plot_on;
+Fs = EEG.fsample;
 l1 = str2double(get(handles.l1,'String'));
 h1 = str2double(get(handles.h1,'String'));
 if (get(handles.stop_on,'Value') == get(handles.stop_on,'Max'))
@@ -93,17 +93,14 @@ else
 end
 [a b c] = size(filter_data);
 
-if (get(handles.eight_chan, 'Value') == get(handles.eight_chan, 'Max')) && b>8
-    b = 8;
-    % If data contains digital input channels (triggers) only apply filter to analog input,
-    % Jonas
-end
+% Find non-marker channels
+noMarkerChannels = find(EEG.channelTypes~="Marker");
 
 if c>1
    errordlg('This function only accepts vectors or 2D arrays','File Error');
 else
     lb = l1/2; hb = h1/2;
-    for k = 1:b
+    for k = 1:length(noMarkerChannels)
         NFFT = 2^nextpow2(a); % Next power of 2 from length of y
         Y = fft(filter_data(:,k),NFFT)/a;
         f = Fs/2*linspace(0,1,NFFT/2+1);
@@ -161,47 +158,30 @@ else
                 end
                 Y2 = fft(fY,NFFT)/a;
                 selection = find(f>l1 & f<h1);
-                power(k)= mean(2*abs(Y2(selection)));
                 filter_data(:,k)= fY;
     end
 end
-msgbox('Data filtered')
-
-% --------------------------------------------------------------------
-function load_Callback(hObject, eventdata, handles)
-global filter_data
-curdir = cd;
-cd([curdir filesep 'Data']);
-[filename, pathname] = ...
-    uigetfile({'*.mat';},'Select a 2D array');
-cd(curdir);
-if any(filename)
-    set(handles.fi_name,'string',filename);
-    load([pathname filename]);
-    filter_data = data;
-    [str1] = size(filter_data);
-    str = num2str(str1);
-    set(handles.fi_size,'string',str);
-    clear data
-end
-
-function save_Callback(hObject, eventdata, handles)
-global filter_data;
-global power;
-data = filter_data;
-curdir = cd;
-cd([curdir filesep 'Data']);
-uisave({'data'},'Name');
-cd(curdir);
-clear filename; clear data; clearvars -global filter_data;
+% msgbox('Data filtered')
+EEG.data = filter_data;
+EEGSaveData(EEG, 'filter');
+clear filename; clear EEG; clearvars -global filter_data;
 str = ' ';
 set(handles.fi_name,'string',str);
 set(handles.fi_size,'string',str);
-curdir = cd;
-cd([curdir filesep 'Data']);
-uisave({'power'},'Power');
-cd(curdir);
-clearvars -global power
+
+% --------------------------------------------------------------------
+function load_Callback(hObject, eventdata, handles)
+global filter_data; 
+global EEG;
+[filename, EEG] = EEGLoadData('time');
+if any(filename) % check is any file was selected
+    set(handles.fi_name,'string',filename);
+    filter_data = EEG.data;
+    [str1] = size(filter_data);
+    str = num2str(str1);
+    set(handles.fi_size,'string',str);
+    clear EEG
+end
 
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)

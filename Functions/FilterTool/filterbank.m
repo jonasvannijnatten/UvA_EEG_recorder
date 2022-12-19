@@ -91,9 +91,11 @@ end
 
 function filterbank_Callback(hObject, eventdata, handles)
 global l1; global h1;
-global datas; global Fs; Fs = 256;
+global datas; global Fs;
+global EEG;
 global energy;
 global stop_on; global pass_on; global plot_on;
+Fs = EEG.fsample;
 l1 = str2double(get(handles.l1,'String'));
 h1 = str2double(get(handles.h1,'String'));
 if (get(handles.stop_on,'Value') == get(handles.stop_on,'Max'))
@@ -112,12 +114,16 @@ else
     plot_on=0;
 end
 [a b c] = size(datas);
+
+% Find non-marker channels
+noMarkerChannels = find(EEG.channelTypes~="Marker");
+
 if c>1
    errordlg('This function only exepts vectors or 2D arrays','File Error');
 else
         lb = l1/2; hb = h1/2;
                 
-    for k = 1:b
+    for k = 1:length(noMarkerChannels)
         NFFT = 2^nextpow2(a); % Next power of 2 from length of y
         Y = fft(datas(:,k),NFFT)/a;
         f = Fs/2*linspace(0,1,NFFT/2+1);
@@ -169,28 +175,23 @@ else
                   datas(:,k)= fY;
     end
 end
+EEG.data = datas;
+EEGSaveData(EEG, 'filter');
+clear filename; clear EEG; clear datas;
+str = ' ';
+set(handles.fi_name,'string',str);
+set(handles.fi_size,'string',str);
 
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-global filename;global datas
-[filename, pathname] = ...
- uigetfile({'*.mat';},'Select a 2D array');
+global filename;global datas; global EEG;
+[filename, EEG] = EEGLoadData('time');
  set(handles.fi_name,'string',filename);
- load(filename);
- datas = data;
+ datas = EEG.data;
  [str1] = size(datas);
  str = num2str(str1);
 set(handles.fi_size,'string',str);
 clear data
-
-function save_Callback(hObject, eventdata, handles)
-global datas
-data = datas;
-uisave({'data'},'Name');
-clear filename; clear data; clear datas;
-str = ' ';
-set(handles.fi_name,'string',str);
-set(handles.fi_size,'string',str);
 
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
