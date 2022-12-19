@@ -161,7 +161,7 @@ else
                 filter_data(:,k)= fY;
     end
 end
-msgbox('Data filtered')
+% msgbox('Data filtered')
 EEG.data = filter_data;
 EEGSaveData(EEG, 'filter');
 clear filename; clear EEG; clearvars -global filter_data;
