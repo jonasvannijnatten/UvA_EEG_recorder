@@ -298,7 +298,7 @@ if isempty(corrected_data)
     errordlg('There is no baseline corrected data. Apply correction first')
 elseif ~isempty(corrected_data)
     EEG.data = corrected_data;
-    EEGSaveData(EEG,'ERP');
+    EEGSaveData(EEG,'blc');
     clear data;
     clear -global corrected_data;
     set(handles.corrected_box, 'String', '')    
