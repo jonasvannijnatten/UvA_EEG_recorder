@@ -175,6 +175,12 @@ else
                   datas(:,k)= fY;
     end
 end
+EEG.data = datas;
+EEGSaveData(EEG, 'filter');
+clear filename; clear EEG; clear datas;
+str = ' ';
+set(handles.fi_name,'string',str);
+set(handles.fi_size,'string',str);
 
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
@@ -186,16 +192,6 @@ global filename;global datas; global EEG;
  str = num2str(str1);
 set(handles.fi_size,'string',str);
 clear data
-
-function save_Callback(hObject, eventdata, handles)
-global datas;
-global EEG;
-EEG.data = datas;
-EEGSaveData(EEG, 'filter');
-clear filename; clear EEG; clear datas;
-str = ' ';
-set(handles.fi_name,'string',str);
-set(handles.fi_size,'string',str);
 
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)

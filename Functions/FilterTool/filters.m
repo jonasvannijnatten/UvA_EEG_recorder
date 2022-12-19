@@ -162,6 +162,12 @@ else
     end
 end
 msgbox('Data filtered')
+EEG.data = filter_data;
+EEGSaveData(EEG, 'filter');
+clear filename; clear EEG; clearvars -global filter_data;
+str = ' ';
+set(handles.fi_name,'string',str);
+set(handles.fi_size,'string',str);
 
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
@@ -176,16 +182,6 @@ if any(filename) % check is any file was selected
     set(handles.fi_size,'string',str);
     clear EEG
 end
-
-function save_Callback(hObject, eventdata, handles)
-global filter_data;
-global EEG;
-EEG.data = filter_data;
-EEGSaveData(EEG, 'filter');
-clear filename; clear EEG; clearvars -global filter_data;
-str = ' ';
-set(handles.fi_name,'string',str);
-set(handles.fi_size,'string',str);
 
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
