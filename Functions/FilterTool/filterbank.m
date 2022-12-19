@@ -91,9 +91,11 @@ end
 
 function filterbank_Callback(hObject, eventdata, handles)
 global l1; global h1;
-global datas; global Fs; Fs = 256;
+global datas; global Fs;
+global EEG;
 global energy;
 global stop_on; global pass_on; global plot_on;
+Fs = EEG.fsample;
 l1 = str2double(get(handles.l1,'String'));
 h1 = str2double(get(handles.h1,'String'));
 if (get(handles.stop_on,'Value') == get(handles.stop_on,'Max'))

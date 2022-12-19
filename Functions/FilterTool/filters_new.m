@@ -70,9 +70,10 @@ end
 function filterbank_Callback(hObject, eventdata, handles)
 global l1; global h1;
 global filter_data; 
-global Fs; Fs = 256;
-global energy;
+global EEG;
+global Fs;
 global stop_on; global pass_on; global plot_on;
+Fs = EEG.fsample;
 l1 = str2double(get(handles.l1,'String'));
 h1 = str2double(get(handles.h1,'String'));
 if (get(handles.stop_on,'Value') == get(handles.stop_on,'Max'))
@@ -150,8 +151,7 @@ else
                     title('Filtered signal F(t)')
                     suptitle('Frequency domain')
                 end
-                  energy(k)= var(fY);
-                  filter_data(:,k)= fY;
+                    filter_data(:,k)= fY;
     end
 end
 msgbox('Data filtered')
@@ -173,18 +173,13 @@ end
 cd(curdir);
 
 function save_Callback(hObject, eventdata, handles)
-global filter_data;global energy; global EEG;
+global filter_data; global EEG;
 EEG.data = filter_data;
 EEGSaveData(EEG, 'filter');
 clear filename; clear EEG; clear filter_data;
 str = ' ';
 set(handles.fi_name,'string',str);
 set(handles.fi_size,'string',str);
-curdir = cd;
-cd([curdir filesep 'data']);
-uisave({'energy'},'Energy');
-cd(curdir);
-clear energy;
 
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
