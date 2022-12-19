@@ -93,17 +93,14 @@ else
 end
 [a b c] = size(filter_data);
 
-if (get(handles.eight_chan, 'Value') == get(handles.eight_chan, 'Max')) && b>8
-    b = 8;
-    % If data contains digital input channels (triggers) only apply filter to analog input,
-    % Jonas
-end
+% Find non-marker channels
+noMarkerChannels = find(EEG.channelTypes~="Marker");
 
 if c>1
    errordlg('This function only accepts vectors or 2D arrays','File Error');
 else
     lb = l1/2; hb = h1/2;
-    for k = 1:b
+    for k = 1:length(noMarkerChannels)
         NFFT = 2^nextpow2(a); % Next power of 2 from length of y
         Y = fft(filter_data(:,k),NFFT)/a;
         f = Fs/2*linspace(0,1,NFFT/2+1);

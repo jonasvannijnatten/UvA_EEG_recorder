@@ -114,12 +114,16 @@ else
     plot_on=0;
 end
 [a b c] = size(datas);
+
+% Find non-marker channels
+noMarkerChannels = find(EEG.channelTypes~="Marker");
+
 if c>1
    errordlg('This function only exepts vectors or 2D arrays','File Error');
 else
         lb = l1/2; hb = h1/2;
                 
-    for k = 1:b
+    for k = 1:length(noMarkerChannels)
         NFFT = 2^nextpow2(a); % Next power of 2 from length of y
         Y = fft(datas(:,k),NFFT)/a;
         f = Fs/2*linspace(0,1,NFFT/2+1);
