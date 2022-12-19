@@ -644,8 +644,10 @@ hObject.TooltipString = sprintf('The frequency band of interest over which to av
 
 % --------------------------------------------------------------------
 function Load_Callback(hObject, eventdata, handles)
-[filename, data] = EEGLoadData(handles, 1);
+[filename, EEG] = EEGLoadData('any');
 if any(filename) % check is any file was selected
+    data = EEG.data;
+    handles.EEG = EEG;
     handles.filename.String = ['filename: ' filename]; % display filename
     handles.trial.String = '1';
     handles.chan.String = '1';
@@ -929,7 +931,13 @@ addFrame(hObject, handles)
 % --------------------------------------------------------------------
 function Save_Callback(hObject, eventdata, handles)
 if isfield(handles, 'tf')
-    EEGSaveData(handles, handles.tf, 'TF');
+    EEG = handles.EEG;
+    % What to do with other info in handles.tf?
+    % History needs to be stored
+    EEG.data = handles.tf;
+    EEG.dims = ["times", "frequencies"];
+    EEG.domain = "tf";
+    EEGSaveData(EEG,'tf');
 else
     warndlg('There is no time-frequency data to save.')
 end
@@ -986,7 +994,10 @@ copyobj(handles.tpPlot, tpFig);
 % --- Executes on button press in Export_tpPlot_data.
 function Export_tpPlot_data_Callback(hObject, eventdata, handles)
 data = handles.tpPlot.Children(2).YData';
-EEGSaveData(handles, data, 'TimePowerData.mat');
+EEG = handles.EEG;
+EEG.data = data;
+EEG.dims = "times";
+EEGSaveData(EEG, 'TimePowerData');
 
 % --- Executes on button press in Export_powSpec_fig.
 function Export_powSpec_fig_Callback(hObject, eventdata, handles)
@@ -997,7 +1008,11 @@ copyobj(handles.powSpec, powSpecFig);
 % --- Executes on button press in Export_powSpec_data.
 function Export_powSpec_data_Callback(hObject, eventdata, handles)
 data = handles.powSpec.Children(2).YData' ;
-EEGSaveData(handles, data, 'PowerSpectrum.mat');
+EEG = handles.EEG;
+EEG.data = data;
+EEG.dims = "frequencies";
+EEG.domain = "frequency";
+EEGSaveData(EEG, 'PowerSpectrum');
 
 
 % --- Executes on button press in Export_TF_fig.
