@@ -95,7 +95,7 @@ cla(handles.tpPlot)
 
 try
     data = handles.data;
-    Fs = 256;
+    Fs = handles.EEG.fsample;
     
     fprintf('---------------------------- \nRUNNING TIME-FREQUENCY ANALYSYS\n')
     fprintf('data dimensions: %d - %d - %d \nFs: %d samples/second\n', size(data,1), size(data,2), size(data,3), Fs);
@@ -646,13 +646,13 @@ hObject.TooltipString = sprintf('The frequency band of interest over which to av
 function Load_Callback(hObject, eventdata, handles)
 [filename, EEG] = EEGLoadData('any');
 if any(filename) % check is any file was selected
-    data = EEG.data;
     handles.EEG = EEG;
     handles.filename.String = ['filename: ' filename]; % display filename
     handles.trial.String = '1';
     handles.chan.String = '1';
-    % if it is a matrix (regular EEG data) save data to handles
-    if isnumeric(data)
+    % if domain is time or frequency, data is a matrix (regular EEG data) -> save data to handles
+    if strcmp(EEG.domain, 'time') || strcmp(EEG.domain, 'frequency')
+        data = EEG.data;
         handles.data = data;
         [d1, d2, d3] = size(data);  % determine the data dimensions
         % remove any old time frequency data set
@@ -661,8 +661,11 @@ if any(filename) % check is any file was selected
         handles.bsl.String = ' ';
         handles.filesize.String = sprintf('file size: %i - %i - %i',d1,d2,d3); % display filesize
         handles.filesizeTF.String = ' ';
-        % if it is a struct (time-frequency data) save data to handles
-    elseif isstruct(data)
+        % if dmoain is tf, data is a struct (time-frequency data) -> save data to handles
+    elseif strcmp(EEG.domain, 'tf')
+        data.data = EEG.data;
+        data.T = EEG.time;
+        data.F = EEG.frequency;
         handles.tf = data;
         [d1, d2, d3] = size(data.data); % determine the data dimensions
         % remove any old data set
@@ -934,9 +937,11 @@ if isfield(handles, 'tf')
     EEG = handles.EEG;
     % What to do with other info in handles.tf?
     % History needs to be stored
-    EEG.data = handles.tf;
-    EEG.dims = ["times", "frequencies"];
+    EEG.data = handles.tf.data;
+    EEG.dims = ["frequencies", "times"];
     EEG.domain = "tf";
+    EEG.time = handles.tf.T;
+    EEG.frequency = handles.tf.F;
     EEGSaveData(EEG,'tf');
 else
     warndlg('There is no time-frequency data to save.')
@@ -997,6 +1002,8 @@ data = handles.tpPlot.Children(2).YData';
 EEG = handles.EEG;
 EEG.data = data;
 EEG.dims = "times";
+EEG.time = handles.tf.T;
+EEG.frequency = handles.tf.F;
 EEGSaveData(EEG, 'TimePowerData');
 
 % --- Executes on button press in Export_powSpec_fig.
@@ -1012,6 +1019,8 @@ EEG = handles.EEG;
 EEG.data = data;
 EEG.dims = "frequencies";
 EEG.domain = "frequency";
+EEG.time = handles.tf.T;
+EEG.frequency = handles.tf.F;
 EEGSaveData(EEG, 'PowerSpectrum');
 
 
