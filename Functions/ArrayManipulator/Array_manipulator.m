@@ -251,26 +251,26 @@ end
 set(handles.filesize,'string',str);
 
 function conca_Callback(hObject, eventdata, handles)
-[addFilename, addEEG] = EEGLoadData('any');
-addData = addEEG.data;
+[addFilename, addData] = EEGLoadData('any');
+%addData = addEEG.data;
 if any(addFilename) % check is any file was selected
     % check if originally loaded file and added file are the same format
-    if isfield(handles,'data') && isstruct(addData)
+    if isfield(handles,'data') && strcmp(addData.domain, 'tf')
         errordlg('Cannot combine EEG data with time-frequency data')
         return
-    elseif isfield(handles,'tf') && isnumeric(addData)
+    elseif isfield(handles,'tf') && strcmp(addData.domain, 'time')
         errordlg('Cannot combine time-frequency data with EEG data')
         return
     end
     % if both files are time-frequency data, check if the time and
     % frequency axes match. If not, check the analysis settings.
-    if isfield(handles,'tf') && isstruct(addData)
-        if any(size(handles.tf.T) ~= size(addData.T)) || sum(~any(handles.tf.T == addData.T))
+    if isfield(handles,'tf') && strcmp(addData.domain, 'tf')
+        if any(size(handles.tf.T) ~= size(addData.time)) || sum(~any(handles.tf.T == addData.time))
             errordlg(['Trying to combine two time-frequency data sets' ...
                 'but the time axes do not match.'])
             return
         end
-        if any(size(handles.tf.F) ~= size(addData.F)) || sum(~any(handles.tf.F == addData.F))
+        if any(size(handles.tf.F) ~= size(addData.frequency)) || sum(~any(handles.tf.F == addData.frequency))
             errordlg(['Trying to combine two time-frequency data sets' ...
                 'but the frequency axes do not match.'])
             return
@@ -439,19 +439,22 @@ guidata(hObject,handles)
 function load_Callback(hObject, eventdata, handles)
 [filename, EEG] = EEGLoadData('any');
 if any(filename) % check is any file was selected
-    data = EEG.data;
     handles.EEG = EEG;
     handles.filename.String = ['filename: ' filename]; % display filename
     
-    % if it is a matrix (regular EEG data) save data to handles
-    if isnumeric(data)
+    % if domain is time or frequency, data is a matrix (regular EEG data) -> save data to handles
+    if strcmp(EEG.domain, 'time') || strcmp(EEG.domain, 'frequency')
+        data = EEG.data;
         handles.data = data;
         [d1, d2, d3] = size(data);  % determine the data dimensions   
         % remove any old time frequency data set
         if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
         
-        % if it is a struct (time-frequency data) save data to handles
-    elseif isstruct(data)
+    % if domain is tf, data is a struct (time-frequency data) -> save data to handles
+    elseif strcmp(EEG.domain, 'tf')
+        data.data = EEG.data;
+        data.T = EEG.time;
+        data.F = EEG.frequency;
         handles.tf = data;
         [d1, d2, d3] = size(data.data); % determine the data dimensions
         % remove any old data set
@@ -467,11 +470,11 @@ guidata(hObject,handles)
 function save_Callback(hObject, eventdata, handles)
 EEG = handles.EEG;
 if isfield(handles, 'tf')
-    data = handles.tf.data;
-    EEG.data = data;
+    EEG.data = handles.tf.data;
+    EEG.time = handles.tf.T;
+    EEG.frequency = handles.tf.F;
 elseif isfield(handles,'data')
-    data = handles.data;
-    EEG.data = data;
+    EEG.data = handles.data;
 else
     warndlg('No data to save')
 end
