@@ -681,7 +681,7 @@ if any(filename) % check is any file was selected
         handles.bsl.String = ' ';
         handles.filesize.String = sprintf('file size: %i - %i - %i',d1,d2,d3); % display filesize
         handles.filesizeTF.String = ' ';
-        % if dmoain is tf, data is a struct (time-frequency data) -> save data to handles
+    % if dmoain is tf, data is a struct (time-frequency data) -> save data to handles
     elseif strcmp(EEG.domain, 'tf')
         data.data = EEG.data;
         data.T = EEG.time;
