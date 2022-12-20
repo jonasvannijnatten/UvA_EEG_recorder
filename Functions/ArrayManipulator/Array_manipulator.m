@@ -251,30 +251,35 @@ end
 set(handles.filesize,'string',str);
 
 function conca_Callback(hObject, eventdata, handles)
-[addFilename, addData] = EEGLoadData('any');
+[addFilename, addEEG] = EEGLoadData('any');
 %addData = addEEG.data;
 if any(addFilename) % check is any file was selected
     % check if originally loaded file and added file are the same format
-    if isfield(handles,'data') && strcmp(addData.domain, 'tf')
+    if isfield(handles,'data') && strcmp(addEEG.domain, 'tf')
         errordlg('Cannot combine EEG data with time-frequency data')
         return
-    elseif isfield(handles,'tf') && strcmp(addData.domain, 'time')
+    elseif isfield(handles,'tf') && strcmp(addEEG.domain, 'time')
         errordlg('Cannot combine time-frequency data with EEG data')
         return
     end
     % if both files are time-frequency data, check if the time and
     % frequency axes match. If not, check the analysis settings.
-    if isfield(handles,'tf') && strcmp(addData.domain, 'tf')
-        if any(size(handles.tf.T) ~= size(addData.time)) || sum(~any(handles.tf.T == addData.time))
+    if isfield(handles,'tf') && strcmp(addEEG.domain, 'tf')
+        addData.data = addEEG.data;
+        addData.T = addEEG.time;
+        addData.F = addEEG.frequency;
+        if any(size(handles.tf.T) ~= size(addData.T)) || sum(~any(handles.tf.T == addData.T))
             errordlg(['Trying to combine two time-frequency data sets' ...
                 'but the time axes do not match.'])
             return
         end
-        if any(size(handles.tf.F) ~= size(addData.frequency)) || sum(~any(handles.tf.F == addData.frequency))
+        if any(size(handles.tf.F) ~= size(addData.F)) || sum(~any(handles.tf.F == addData.F))
             errordlg(['Trying to combine two time-frequency data sets' ...
                 'but the frequency axes do not match.'])
             return
         end
+    elseif isfield(handles,'data') && strcmp(addEEG.domain, 'time')
+        addData = addEEG.data;
     end
 end
 % determine along which dimension to concatenate the data sets
@@ -333,6 +338,9 @@ end
 
 [d1, d2, d3] = size(data); % determine the data dimensions
 handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
+
+% Story manipulation in history
+%handles.history.concat = sprintf('Data of file %s and %s concatenated at %s\n\n', handles.EEG.filename, addEEG.filename, datetime);
 
 guidata(hObject,handles)
 
