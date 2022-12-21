@@ -7,6 +7,8 @@ function [filename, EEG] = EEGLoadData(acceptedDataTypes)
 % - 'time' for time series data
 % - 'frequency' for power spectrum data
 % - 'tf' for time-frequency data
+% - 'any' for any of the above types
+% - a string array combining any of the above types e.g. ['time' 'tf']
 
 if nargin==0
     acceptedDataTypes='any';
@@ -44,7 +46,7 @@ if any(strcmp(acceptedDataTypes, 'any'))
 elseif any(strcmp(EEG.domain, acceptedDataTypes))
     dataType = acceptedDataTypes(strcmp(acceptedDataTypes,EEG.domain));
     fprintf("%s data loaded\n", dataType)
-    % in any other case
+    % in any other case throw an error message
 else
     msg = sprintf(['You selected data of the type %s.\n' ...
         'This tool only accepts data of type "%s."\n'], ...
