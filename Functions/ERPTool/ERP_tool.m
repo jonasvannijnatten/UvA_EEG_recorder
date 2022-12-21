@@ -176,6 +176,7 @@ function baseline_correction_Callback(hObject, eventdata, handles)
 global erp_data;
 global onset;
 global corrected_data;
+global EEG;
 onset = str2num(get(handles.onset, 'String'));
 if onset == 0
     errordlg('Warning! The onset is set to 0, so baseline correction wont have any effect')
@@ -189,34 +190,31 @@ else
         baseline = zeros(size(erp_data,2),size(erp_data,3));
     end
     corrected_data = zeros(size(erp_data));
-    if size(erp_data,2)<9
-        baselinechannels = size(erp_data,2);
-    elseif size(erp_data,2)>8
-        baselinechannels = 8;
-    end
+    baselinechannels = find(EEG.channelTypes~="Marker"); %Select all non-marker channels for baseline
     baselinetrials = size(erp_data,3);
-    for ichan = 1:baselinechannels
+    for ichan = 1:length(baselinechannels)
         for itrial = 1:baselinetrials
-            corrected_data(:,ichan,itrial) = erp_data(:,ichan,itrial)-baseline(ichan,itrial);
+            corrected_data(:,baselinechannels(ichan),itrial) = ...
+                erp_data(:,baselinechannels(ichan),itrial)-baseline(baselinechannels(ichan),itrial);
         end
         if plot_figures
             nrofsamples     = size(erp_data,1);
             samples         = 1:nrofsamples;
             samples         = samples-onset;
-            samplingrate    = 256;
+            samplingrate    = EEG.fsample;
             time            = samples/samplingrate*1000;
-            raw_erp         = mean(erp_data(:,ichan,:),3);
-            base_erp        = mean(corrected_data(:,ichan,:),3);
+            raw_erp         = mean(erp_data(:,baselinechannels(ichan),:),3);
+            base_erp        = mean(corrected_data(:,baselinechannels(ichan),:),3);
             figure; subplot(5,1,1:2);
             for itrial = 1:baselinetrials
-                plot(time, erp_data(:,ichan,itrial).*10^6,'b'); hold on;
+                plot(time, erp_data(:,baselinechannels(ichan),itrial).*10^6,'b'); hold on;
             end
             plot(time, raw_erp.*10^6, 'r');
-            max_y1  = max(max(erp_data(:,ichan,:)));
-            max_y2  = max(max(corrected_data(:,ichan,:)));
+            max_y1  = max(max(erp_data(:,baselinechannels(ichan),:)));
+            max_y2  = max(max(corrected_data(:,baselinechannels(ichan),:)));
             max_y   = max([max_y1 max_y2]).*10^6;
-            min_y1  = min(min(erp_data(:,ichan,:)));
-            min_y2  = min(min(corrected_data(:,ichan,:)));
+            min_y1  = min(min(erp_data(:,baselinechannels(ichan),:)));
+            min_y2  = min(min(corrected_data(:,baselinechannels(ichan),:)));
             min_y   = min([min_y1 min_y2]).*10^6;
             ylim([min_y max_y])
             xlimit = get(gca, 'xlim');
@@ -233,7 +231,7 @@ else
             
             subplot(5,1,4:5);
             for itrial = 1:baselinetrials
-                plot(time, corrected_data(:,ichan,itrial).*10^6,'b'); hold on;
+                plot(time, corrected_data(:,baselinechannels(ichan),itrial).*10^6,'b'); hold on;
             end
             plot(time, base_erp.*10^6, 'r');
             ylim([min_y max_y])
@@ -244,7 +242,7 @@ else
             xlabel('time (ms)')
             ylabel('potential (microV)')
             title('after')
-            suptitle(['channel ' num2str(ichan)])
+            suptitle(['channel ' num2str(baselinechannels(ichan))])
         end
     end    
     set(handles.corrected_box, 'String', 'Baseline corrected', 'ForegroundColor', [0 1 0])
