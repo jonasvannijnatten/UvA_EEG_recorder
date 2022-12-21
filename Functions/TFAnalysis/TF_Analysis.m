@@ -118,18 +118,37 @@ try
     end
     fprintf('settings used for time-frequency analysis: \n');
     % window = str2double(get(handles.window,'String'));
-    window = 256; % move settings to GUI
+    window = handles.EEG.fsample; % move settings to GUI
     fprintf('FFT window-size = %i samples \n', window);    
     fprintf('FFT window-shape = Hamming \n');
     % noverlap = str2double(get(handles.noverlap,'String'));
     nrsamples = size(data,1);
-    if nrsamples  < 1280
-        noverlap = window-1;
-    elseif nrsamples >= 1280 && nrsamples < 7680
-        noverlap = 192;
-    else
-        noverlap = 128; % move settings to GUI
+    if Fs >= 1000
+        if nrsamples  < 2*Fs    
+            noverlap = window-1;
+        elseif nrsamples >= 1*Fs && nrsamples < 2*Fs
+            noverlap = 0.5*Fs;
+        else
+            noverlap = .1*Fs;
+        end
+    elseif Fs < 1000
+        if nrsamples  < 5*Fs
+            noverlap = window-1;
+        elseif nrsamples >= 5*Fs && nrsamples < 30*Fs
+            noverlap = .75*Fs;
+        else
+            noverlap = 0.5*Fs;
+        end
     end
+%     original method of determining noverlap
+%     if nrsamples  < 1280
+%         noverlap = window-1;
+%     elseif nrsamples >= 1280 && nrsamples < 7680
+%         noverlap = 192;
+%     else
+%         noverlap = 128; % move settings to GUI
+%     end
+
     fprintf('FFT window step = %i samples\n', window-noverlap);
     % nfft = str2double(get(handles.nfft,'String'));
     nfft = 1024; % move settings to GUI
