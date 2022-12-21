@@ -202,7 +202,7 @@ function [T, F, tf] = trial_TF_analysis(hObject, handles)
 
 try
     data = handles.data*1e6;
-    Fs = 256;
+    Fs = handles.EEG.fsample;
     
     fprintf('---------------------------- \nRUNNING TIME-FREQUENCY ANALYSYS\n')
     fprintf('data dimensions: %d - %d - %d \nFs: %d samples/second\n', size(data,1), size(data,2), size(data,3), Fs);    
