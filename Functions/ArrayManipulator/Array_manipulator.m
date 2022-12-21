@@ -250,7 +250,7 @@ else
     third_e = str2double(get(handles.third_e,'String'));
     third_b = str2double(get(handles.third_b,'String'));
     array_data = array_data(col_b:col_e, row_b:row_e, third_b:third_e);
-    handles.EEG.history = [handles.EEG.history sprintf('Data data resized to rows %d-%d, columns %d-%d and 3rd dimension %d-%d at %s\n\n',col_b,col_e,row_b,row_e,third_b,third_e, datetime)];
+    handles.EEG.history = [handles.EEG.history sprintf('Data resized to rows %d-%d, columns %d-%d and 3rd dimension %d-%d at %s\n\n',col_b,col_e,row_b,row_e,third_b,third_e, datetime)];
 end
 [str1] = size(array_data);
 if length(str1) == 3
