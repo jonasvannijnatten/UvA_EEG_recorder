@@ -1,4 +1,4 @@
-function [saved] = EEGSaveData(EEG, addition)
+function [saved, filename] = EEGSaveData(EEG, addition)
 
 % TO-DO: add input arg to whether to clear data after saving or not
 
