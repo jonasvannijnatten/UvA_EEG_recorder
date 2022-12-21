@@ -664,7 +664,7 @@ hObject.TooltipString = sprintf('The frequency band of interest over which to av
 
 % --------------------------------------------------------------------
 function Load_Callback(hObject, eventdata, handles)
-[filename, EEG] = EEGLoadData('any');
+[filename, EEG] = EEGLoadData('time','tf');
 if any(filename) % check is any file was selected
     handles.EEG = EEG;
     handles.filename.String = ['filename: ' filename]; % display filename
