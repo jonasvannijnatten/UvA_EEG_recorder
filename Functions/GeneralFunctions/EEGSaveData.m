@@ -1,6 +1,11 @@
-function [saved] = EEGSaveData(EEG, addition)
-
-% TO-DO: add input arg to whether to clear data after saving or not
+function [saved, filename] = EEGSaveData(EEG, addition)
+% [saved, filename] = EEGSaveData(EEG, addition)
+% Saves the EEG data set with the user provided file path and file name.
+% The addition input is a string wich will be appended to the filename of
+% the currently loaded EEG data file to indicate which processing step has
+% been applied
+% saved - Logical indicating whether the data has been succesfully saved
+% filename - returns the new filename as a string
 
 % check whether the calling function added a suggested filename addition
 if nargin == 1

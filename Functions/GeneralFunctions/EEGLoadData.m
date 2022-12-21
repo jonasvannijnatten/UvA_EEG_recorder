@@ -7,6 +7,8 @@ function [filename, EEG] = EEGLoadData(acceptedDataTypes)
 % - 'time' for time series data
 % - 'frequency' for power spectrum data
 % - 'tf' for time-frequency data
+% - 'any' for any of the above types
+% - a string array combining any of the above types e.g. ['time' 'tf']
 
 if nargin==0
     acceptedDataTypes='any';
@@ -27,8 +29,10 @@ fprintf('file loaded: %s%s\n', pathname, filename)
 
 %% Input check
 if ~exist('EEG','var') || ~isstruct(EEG)
-    errordlg(['Selected file does not contain the right type of data.' ...
-        'See the manual which data is accepted.'])
+    msg = ['Selected file does not contain the right type of data.' ...
+        'See the manual which data is accepted.'];
+    errordlg(msg)
+    disp(msg)
 end
 
 %% identify file type which is loaded
@@ -36,27 +40,21 @@ end
 % frequency, time-frequency), and which data types are accepted by the
 % calling tool.
 % if any data is accepted, do nothing
-if strcmp(acceptedDataTypes, 'any')
-    fprintf('%s data loaded', EEG.domain)
-    % check if data is in time domain
-elseif strcmp(acceptedDataTypes,'time') && strcmp(EEG.domain, 'time')
-    fprintf('time series data loaded \n')
-    % check if data is in frequency domain
-elseif strcmp(acceptedDataTypes,'frequency') && strcmp(EEG.domain, 'frequency')
-    fprintf('frequemcy data loaded \n')
-    % check if data is in time-frequency domain
-elseif strcmp(acceptedDataTypes,'tf') && strcmp(EEG.domain, 'tf')
-    fprintf('time-frequemcy data loaded \n')
-    % in any other case
+if any(strcmp(acceptedDataTypes, 'any'))
+    fprintf('%s data loaded\n', EEG.domain)
+    % check if data type mathces the accepted data types
+elseif any(strcmp(EEG.domain, acceptedDataTypes))
+    dataType = acceptedDataTypes(strcmp(acceptedDataTypes,EEG.domain));
+    fprintf("%s data loaded\n", dataType)
+    % in any other case throw an error message
 else
-    msg = sprintf(['You selected data of the type %s.\n ' ...
-        'This tool only accepts data of type %s.'], ...
-        EEG.domain, acceptedDataTypes);
+    msg = sprintf(['You selected data of the type %s.\n' ...
+        'This tool only accepts data of type "%s."\n'], ...
+        EEG.domain, join(acceptedDataTypes));
     fprintf(msg)
     filename = [];
     EEG = [];
     errordlg(msg, 'Wrong data type selected.')
-
 end
 
 
