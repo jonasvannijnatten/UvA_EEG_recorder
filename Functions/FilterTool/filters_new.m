@@ -150,6 +150,11 @@ else
                 end
                     filter_data(:,k)= fY;
     end
+    if stop_on == 1
+        EEG.history = [EEG.history sprintf('Data band-stop filtered at %d-%d Hz at %s\n\n',l1, h1, datetime)];
+    elseif pass_on == 1
+        EEG.history = [EEG.history sprintf('Data band-pass filtered at %d-%d Hz at %s\n\n',l1, h1, datetime)];
+    end
 end
 msgbox('Data filtered')
 EEG.data = filter_data;
