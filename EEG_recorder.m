@@ -910,7 +910,18 @@ function artGui_Callback(hObject, eventdata, handles)
 artGui(handles)
 
 function Cutting_tool_Callback(hObject, eventdata, handles)
-Cutting_tool(handles)
+vers = version('-release');
+vers = str2double(vers(1:4));
+if vers <= 2015
+    opts.WindowStyle = 'non-modal'; 
+    opts.Interpreter = 'tex';
+    msg = '\fontsize{18} A newer version of this function is avalaibe in Matlab version 2016a or higher';
+    warndlg(msg,'Latest vesrion unavailable in this Matlab version',opts)  
+    Cutting_tool(handles)
+elseif vers > 2015
+    Cutting_tool_App
+end
+
 
 function Import_data_Callback(hObject, eventdata, handles)
 vers = version('-release');
