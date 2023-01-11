@@ -701,7 +701,20 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function filter_Callback(hObject, eventdata, handles)
-filters(handles)
+vers = version('-release');
+vers = str2double(vers(1:4));
+if vers <= 2015
+    opts.WindowStyle = 'non-modal'; 
+    opts.Interpreter = 'tex';
+    msg = 'A newer version of this function is avalaibe in Matlab 2016a or later';
+    warndlg(['\fontsize{18}' msg],'Update available in newer Matlab version',opts)  
+    fprintf([msg '\n'])
+    filters(handles)
+    
+elseif vers > 2015
+    Filter_Tool
+end
+
 
 function Syllabus_Callback(hObject, eventdata, handles)
 web('Syllabus.htm', '-helpbrowser')
@@ -915,7 +928,7 @@ vers = str2double(vers(1:4));
 if vers <= 2015
     opts.WindowStyle = 'non-modal'; 
     opts.Interpreter = 'tex';
-    msg = '\fontsize{18} A newer version of this function is avalaibe in Matlab version 2016a or higher';
+    msg = '\fontsize{18} A newer version of this function is avalaibe in Matlab version 2016a or later';
     warndlg(msg,'Latest vesrion unavailable in this Matlab version',opts)  
     Cutting_tool(handles)
 elseif vers > 2015
@@ -929,8 +942,9 @@ vers = str2double(vers(1:4));
 if vers <= 2015
     opts.WindowStyle = 'non-modal'; 
     opts.Interpreter = 'tex';
-    msg = '\fontsize{18}This function is avalaibe in Matlab version 2016a or higher';
-    warndlg(msg,'Function unavailable in this Matlab version',opts)  
+    msg = 'This function is only avalaibe in Matlab version 2016a or later';
+    warndlg(['\fontsize{18}' msg],'Function unavailable in this Matlab version',opts)  
+    fprintf([msg '\n'])
     return
 elseif vers > 2015
     Import_tool
