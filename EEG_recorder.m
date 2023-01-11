@@ -912,6 +912,19 @@ artGui(handles)
 function Cutting_tool_Callback(hObject, eventdata, handles)
 Cutting_tool(handles)
 
+function Import_data_Callback(hObject, eventdata, handles)
+vers = version('-release');
+vers = str2double(vers(1:4));
+if vers <= 2015
+    opts.WindowStyle = 'non-modal'; 
+    opts.Interpreter = 'tex';
+    msg = '\fontsize{18}This function is avalaibe in Matlab version 2016a or higher';
+    warndlg(msg,'Function unavailable in this Matlab version',opts)  
+    return
+elseif vers > 2015
+    Import_tool
+end
+
 % --- Executes on button press in spectogram.
 function spectogram_Callback(hObject, eventdata, handles)
 global plot_spectogram
