@@ -151,7 +151,7 @@ try
 
     fprintf('FFT window step = %i samples\n', window-noverlap);
     % nfft = str2double(get(handles.nfft,'String'));
-    nfft = 1024; % move settings to GUI
+    nfft = Fs*4; % move settings to GUI
     nfft = pow2(nextpow2(nfft));
     fprintf('NFFT = %i samples\n', nfft);
     % filter = str2double(get(handles.filter,'String'));
