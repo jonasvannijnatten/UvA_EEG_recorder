@@ -44,8 +44,7 @@ if any(strcmp(acceptedDataTypes, 'any'))
     fprintf('%s data loaded\n', EEG.domain)
     % check if data type mathces the accepted data types
 elseif any(strcmp(EEG.domain, acceptedDataTypes))
-    dataType = acceptedDataTypes(strcmp(acceptedDataTypes,EEG.domain));
-    fprintf("%s data loaded\n", dataType)
+    fprintf("%s data loaded\n", EEG.domain)
     % in any other case throw an error message
 else
     msg = sprintf(['You selected data of the type %s.\n' ...
