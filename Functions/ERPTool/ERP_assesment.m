@@ -54,7 +54,7 @@ function ERP_assesment_OpeningFcn(hObject, eventdata, handles, varargin)
 global erp_data;
 global assesment_data; % assesment_data = .... (copy from ERP tool)
 % global corrected_data;
-global filenamep;
+global filename;
 global channelnr;
 global labels;
 global subjectcounter;
@@ -66,6 +66,7 @@ global nrofsamples;
 global samplingrate;
 global samples;
 global time;
+global EEG;
 % global browse_raw;
 % global browse_corrected;
 % global erp_std;
@@ -78,9 +79,9 @@ assesment_data = erp_data;
 subjectcounter = 1;
 totalnrofsubjects = size(assesment_data,3);
 nrofsamples = size(assesment_data,1);
-samplingrate = 256;
+samplingrate = EEG.fsample;
 set(handles.subject_indicator, 'String', [num2str(subjectcounter) ' / ' num2str(totalnrofsubjects)]);
-set(handles.filename,'string',filenamep);
+set(handles.filename,'string',filename);
 set(handles.channel_display,'string',num2str(channelnr));
 samples = 1:nrofsamples;
 samples = samples-onset;
@@ -356,12 +357,12 @@ up_limit =  round((upper_limit/1000+onset)*samplingrate);
 
 max_y = max(assesment_data(lo_limit:up_limit,channelnr,subjectcounter));
 max_x = find(assesment_data(lo_limit:up_limit,channelnr,subjectcounter) == max_y)+lo_limit-1;
-max_x_time = (max_x/256-onset)*1000;
+max_x_time = (max_x/samplingrate-onset)*1000;
 set(handles.xmax, 'String', num2str(max_x_time));
 set(handles.ymax, 'String', num2str(max_y*10^6));
 min_y = min(assesment_data(lo_limit:up_limit,channelnr,subjectcounter));
 min_x = find(assesment_data(lo_limit:up_limit,channelnr,subjectcounter) == min_y)+lo_limit-1;
-min_x_time = (min_x/256-onset)*1000;
+min_x_time = (min_x/samplingrate-onset)*1000;
 set(handles.xmin, 'String', num2str(min_x_time));
 set(handles.ymin, 'String', num2str(min_y*10^6));
 hold on
