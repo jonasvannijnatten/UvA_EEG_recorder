@@ -126,7 +126,9 @@ elseif handles.cuttingMethod.Value == 4
 end
 
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Preview function %%%
+%%%%%%%%%%%%%%%%%%%%%%%%
 function handles = Preview_Callback(hObject, eventdata, handles)
 if ~isfield(handles, 'EEG')
     warndlg('No data available.')
@@ -199,8 +201,8 @@ if handles.cuttingMethod.Value == 1
             errordlg(sampleWarning)
         end
     end
-    segmentStart = (markers-preMarker) / EEG.fsample;
-    segmentEnd = (markers + postMarker) / EEG.fsample;
+    segmentStart = (markers-preMarker); %/ EEG.fsample;
+    segmentEnd = (markers + postMarker); %/ EEG.fsample;
 
 %% Cut based on time periods
 elseif handles.cuttingMethod.Value == 3
@@ -234,7 +236,7 @@ elseif handles.cuttingMethod.Value == 4
         warndlg('\fontsize{16} Please select a time window first.', 'No Settings found', opts)
         return
     end
-    nrofevents = 1;
+    nrofevents = 1;    
     segmentStart = handles.windowEdges(1);
     segmentEnd = handles.windowEdges(2);
 end
@@ -243,13 +245,16 @@ if ~isempty(segmentStart)
     handles.windowEdges = reshape([segmentStart segmentEnd]', 1, []);
     handles.windowEdges = [segmentStart segmentEnd];
 
-    p = patch([segmentStart segmentStart segmentEnd segmentEnd]', ...
+    p = patch(([segmentStart segmentStart segmentEnd segmentEnd]./EEG.fsample)', ...
         repmat([Ylimits(1) Ylimits(2) Ylimits(2) Ylimits(1)]',[1 nrofevents ]), 'b');
     p.FaceAlpha = .2;
 end
 plotData(handles)
 guidata(hObject,handles)
 
+%%%%%%%%%%%%%%%%%%%%
+%%% Cut function %%%
+%%%%%%%%%%%%%%%%%%%%
 function cut_Callback(hObject, eventdata, handles)
 if ~isfield(handles, 'EEG')
     warndlg('No data available.')
@@ -263,21 +268,24 @@ if ~isfield(handles, 'windowEdges')
     warndlg('\fontsize{16} Please fill in the cutting parameters.', 'No Settings found', opts)
     return
 end
-windowEdges = ceil(handles.windowEdges * 256);
+windowEdges = handles.windowEdges;
+% if handles.cuttingMethod.Value==4
+%     windowEdges = windowEdges .* EEG.fsample;
+% end
 nrofcuts = size(windowEdges,1);
 if nrofcuts == 0
     warndlg('No events detected within this channel. Make sure to select a Marker channel containing event Markers', 'No events detected.')
     return
 end
 
-cuts = zeros(windowEdges(1,2)-windowEdges(1,1), size(EEG.data,2), nrofcuts);
+cuts = zeros(windowEdges(1,2)-windowEdges(1,1)+1, size(EEG.data,2), nrofcuts);
 % cuttingMethods:
 % 1 = marker based cuts
 % 2 = time based cuts
 % 3 = manual selection
 % if handles.cuttingMethod.Value == 1 || handles.cuttingMethod.Value == 2
 for icut = 1:nrofcuts
-    cut = EEG.data(windowEdges(icut,1):(windowEdges(icut,2)-1),:);
+    cut = EEG.data(windowEdges(icut,1):(windowEdges(icut,2)),:);
     cuts(:,:,icut) = cut;
 end
 
@@ -286,15 +294,52 @@ end
 %     opts.Interpreter = 'tex';
 %     warndlg('\fontsize{15} This method is not implemented yet :(' , 'Method unavailable' , opts)
 % end
-handles.file_size_new.String = sprintf('new file size: %d - %d - %d', size(EEG.data,[1 2 3]));
 
 % save the cut data
 EEG.data = cuts;
+
+handles.file_size_new.String = sprintf('new file size: %d - %d - %d', size(EEG.data,[1 2 3]));
+
+
+% add third dimension label
 EEG.dims = [EEG.dims "trials"];
+
+
+% % save original time fields
+% this would need to be saved per trial; really necessary??
+% EEG.urtime = EEG.time;
+
+
 %% TO DO
 % add time per trial
 % add sampleinfo per trial
 % add history --> do this in the cut_Callback
+%% For now, update time and samppleinfo the same for all trials
+
+% update time field
+cuttingMethod = handles.cuttingMethod.Value;
+
+if cuttingMethod == 1
+    % TTL based cuts
+    EEG.time = (((1:length(cut))-1) - str2double(handles.beg)) ./ EEG.fsample;
+    EEG.history = [ EEG.history  sprintf('Data was cut based on TTLs markers\n\n') ]; 
+    %% to-do: add cutting parameters
+elseif cuttingMethod == 2
+    % Serial based cuts
+    EEG.time = (((1:length(cut))-1) - str2double(handles.beginSerial.String)) ./ EEG.fsample;
+    EEG.history = [ EEG.history  sprintf('Data was cut based on Serial markers\n\n') ]; 
+    %% to-do: add cutting parameters
+%% to-do elseif cuttingMethod == 3
+
+elseif handles.cuttingMethod.Value == 4
+    % Manual cuts
+    EEG.time = ((1:length(cut))-1) ./ EEG.fsample;
+end
+
+
+% update sample info
+EEG.sampleinfo = [1 length(cut)];
+
 EEGSaveData(EEG,'cut');
 handles = rmfield(handles, 'windowEdges');
 guidata(hObject,handles)
@@ -426,7 +471,7 @@ end
 function handles = selectManual_Callback(hObject, eventdata, handles)
 handles.axes1;
 [selection,~] = ginput(2);
-handles.windowEdges = selection';
+handles.windowEdges = round(selection'*handles.EEG.fsample);
 guidata(hObject,handles)
 Preview_Callback(hObject, eventdata, handles)
 
