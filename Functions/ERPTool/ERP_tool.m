@@ -164,6 +164,7 @@ if any(filename) % check is any file was selected
     set(handles.filesize_txt, 'String', num2str(size(EEG.data)));
     clear -global corrected_data
     set(handles.corrected_box, 'String', '')
+    set(handles.onset, 'String', num2str(find(EEG.time==0)));
 end
 clear data
 
@@ -246,6 +247,8 @@ else
         end
     end    
     set(handles.corrected_box, 'String', 'Baseline corrected', 'ForegroundColor', [0 1 0])
+    handles.history_text = sprintf('Data baseline corrected with ERP tool at %s\n\n', datetime);
+    guidata(hObject, handles);
 end
 
 % erp_data = corrected_data;
@@ -296,6 +299,7 @@ if isempty(corrected_data)
     errordlg('There is no baseline corrected data. Apply correction first')
 elseif ~isempty(corrected_data)
     EEG.data = corrected_data;
+    EEG.history = [EEG.history handles.history_text];
     EEGSaveData(EEG,'blc');
     clear data;
     clear -global corrected_data;
