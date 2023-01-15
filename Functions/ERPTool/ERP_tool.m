@@ -164,6 +164,7 @@ if any(filename) % check is any file was selected
     set(handles.filesize_txt, 'String', num2str(size(EEG.data)));
     clear -global corrected_data
     set(handles.corrected_box, 'String', '')
+    set(handles.onset, 'String', num2str(find(EEG.time==0)));
 end
 clear data
 
