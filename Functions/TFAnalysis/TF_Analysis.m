@@ -312,7 +312,7 @@ try
     end
     % rereference the X-axis to the event onset
     T = T-(onset_sample/Fs);
-    
+
     % reduce data size from 4 to 3 dimensions
     % 3rd dimension (channel) is always 1 after TF computation
     tf = squeeze(tf);
@@ -698,6 +698,7 @@ if any(filename) % check is any file was selected
         data = EEG.data;
         handles.data = data;
         [d1, d2, d3] = size(data);  % determine the data dimensions
+        handles.onset.String = num2str(find(EEG.time==0));
         % remove any old time frequency data set
         if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
         cla(handles.tfPlot); cla(handles.powSpec); cla(handles.tpPlot);
