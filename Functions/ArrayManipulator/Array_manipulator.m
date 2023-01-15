@@ -197,12 +197,15 @@ end
 if dim == 1
     data = data(selection,:,:);
     disp(['Selection kept in the 1st dimension: ' num2str(selection)])
+    handles.EEG.history = [handles.EEG.history sprintf('Selection of data kept in 1st dimension: %s at %s\n\n',num2str(selection), datetime)];
 elseif dim == 2
     data = data(:,selection,:);
     disp(['Selection kept in the 2nd dimension: ' num2str(selection)])
+    handles.EEG.history = [handles.EEG.history sprintf('Selection of data kept in 2nd dimension: %s at %s\n\n',num2str(selection), datetime)];
 elseif dim == 3
     data = data(:,:,selection);
     disp(['Selection kept in the 3rd dimension: ' num2str(selection)])
+    handles.EEG.history = [handles.EEG.history sprintf('Selection of data kept in 3rd dimension: %s at %s\n\n',num2str(selection), datetime)];
 end
 
 
@@ -219,8 +222,14 @@ handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
 guidata(hObject,handles)
 
 function resiz_Callback(hObject, eventdata, handles)
-global array_data
-global col_b; global col_e;global row_b; global row_e; global third_e;global third_b;global filename
+global col_b; global col_e;global row_b; global row_e; global third_e;global third_b;
+filename = handles.filename;
+if isfield(handles,'tf')
+    array_data = handles.tf.data;
+else
+    array_data = handles.data;
+end
+
 if isempty(col_b)==1
     errordlg('PLease fill out all data fields','Error');
 elseif isempty(col_e)==1
@@ -240,7 +249,8 @@ else
     row_e = str2double(get(handles.row_e,'String'));
     third_e = str2double(get(handles.third_e,'String'));
     third_b = str2double(get(handles.third_b,'String'));
-    array_data = array_data(col_b:col_e,row_b:row_e, third_b:third_e);
+    array_data = array_data(col_b:col_e, row_b:row_e, third_b:third_e);
+    handles.EEG.history = [handles.EEG.history sprintf('Data resized to rows %d-%d, columns %d-%d and 3rd dimension %d-%d at %s\n\n',col_b,col_e,row_b,row_e,third_b,third_e, datetime)];
 end
 [str1] = size(array_data);
 if length(str1) == 3
@@ -249,21 +259,32 @@ elseif length(str1) <= 3
     str = [num2str(str1(1)) ' - ' num2str(str1(2))];
 end
 set(handles.filesize,'string',str);
+if isfield(handles,'tf')
+    handles.tf.data = array_data;
+else
+    handles.data = array_data;
+end
+
+guidata(hObject,handles)
 
 function conca_Callback(hObject, eventdata, handles)
-[addFilename, addData] = EEGLoadData(handles, 1);
+[addFilename, addEEG] = EEGLoadData('any');
+%addData = addEEG.data;
 if any(addFilename) % check is any file was selected
     % check if originally loaded file and added file are the same format
-    if isfield(handles,'data') && isstruct(addData)
+    if isfield(handles,'data') && strcmp(addEEG.domain, 'tf')
         errordlg('Cannot combine EEG data with time-frequency data')
         return
-    elseif isfield(handles,'tf') && isnumeric(addData)
+    elseif isfield(handles,'tf') && strcmp(addEEG.domain, 'time')
         errordlg('Cannot combine time-frequency data with EEG data')
         return
     end
     % if both files are time-frequency data, check if the time and
     % frequency axes match. If not, check the analysis settings.
-    if isfield(handles,'tf') && isstruct(addData)
+    if isfield(handles,'tf') && strcmp(addEEG.domain, 'tf')
+        addData.data = addEEG.data;
+        addData.T = addEEG.time;
+        addData.F = addEEG.frequency;
         if any(size(handles.tf.T) ~= size(addData.T)) || sum(~any(handles.tf.T == addData.T))
             errordlg(['Trying to combine two time-frequency data sets' ...
                 'but the time axes do not match.'])
@@ -274,6 +295,8 @@ if any(addFilename) % check is any file was selected
                 'but the frequency axes do not match.'])
             return
         end
+    elseif isfield(handles,'data') && strcmp(addEEG.domain, 'time')
+        addData = addEEG.data;
     end
 end
 % determine along which dimension to concatenate the data sets
@@ -333,6 +356,9 @@ end
 [d1, d2, d3] = size(data); % determine the data dimensions
 handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
 
+% Story manipulation in history
+handles.EEG.history = [handles.EEG.history sprintf('Data of file %s and %s concatenated at %s\n\n', handles.EEG.filename, addEEG.filename, datetime)];
+
 guidata(hObject,handles)
 
 
@@ -365,22 +391,33 @@ return
 
 
 function Transp_Callback(hObject, eventdata, handles)
+EEG = handles.EEG;
 if isfield(handles,'tf')
     errordlg('This function is not applicable to time frequency data')
     return
 end
-
+%Create third dimension in EEG.dims
+if length(EEG.dims) == 2
+    EEG.dims = [EEG.dims "trials"];
+end
 if (get(handles.col_row,'Value') == get(handles.col_row,'Max'))
     handles.data = permute(handles.data,[2 1 3]);
+    EEG.dims([2 1]) = EEG.dims([1 2]); %transpose dimension
     fprintf('transposed rows and columns\n')
+    EEG.history = [EEG.history sprintf('Rows and columns transposed at %s\n\n', datetime)];
 elseif (get(handles.col_third,'Value') == get(handles.col_third,'Max'))
     handles.data = permute(handles.data,[3 2 1]);
+    EEG.dims([3 1]) = EEG.dims([1 3]); %transpose dimension
     fprintf('transposed columns and third dimension\n')
+    EEG.history = [EEG.history sprintf('Columns and 3rd dimension transposed at %s\n\n', datetime)];
 elseif (get(handles.row_thrid,'Value') == get(handles.row_thrid,'Max'))
     handles.data = permute(handles.data,[1 3 2]);
+    EEG.dims([3 2]) = EEG.dims([2 3]); %transpose dimension
     fprintf('transposed rows and third dimension\n')
+    EEG.history = [EEG.history sprintf('Rows and 3rd dimension transposed at %s\n\n', datetime)];
 end
 
+handles.EEG = EEG;
 [d1, d2, d3] = size(handles.data); % determine the data dimensions
 handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
 
@@ -401,12 +438,15 @@ end
 if (get(handles.av_dim_1,'Value') == get(handles.av_dim_1,'Max'))
   data = mean(data,1);
   disp('averaged over 1st dimension')
+  handles.EEG.history = [handles.EEG.history sprintf('Averaged over 1st dimension at %s\n\n', datetime)];
 elseif (get(handles.av_dim_2,'Value') == get(handles.av_dim_2,'Max'))
   data = mean(data,2);
   disp('averaged over 2nd dimension')
+  handles.EEG.history = [handles.EEG.history sprintf('Averaged over 2nd dimension at %s\n\n', datetime)];
 elseif (get(handles.av_dim_3,'Value') == get(handles.av_dim_3,'Max'))
   data = mean(data,3);
   disp('averaged over 3rd dimension')
+  handles.EEG.history = [handles.EEG.history sprintf('Averaged over 3rd dimension at %s\n\n', datetime)];
 else
     errordlg('oops, something went wrong')
 end
@@ -428,19 +468,23 @@ guidata(hObject,handles)
 
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-[filename, data] = EEGLoadData(handles, 1);
+[filename, EEG] = EEGLoadData('any');
 if any(filename) % check is any file was selected
+    handles.EEG = EEG;
     handles.filename.String = ['filename: ' filename]; % display filename
-    
-    % if it is a matrix (regular EEG data) save data to handles
-    if isnumeric(data)
+    % if domain is time or frequency, data is a matrix (regular EEG data) -> save data to handles
+    if strcmp(EEG.domain, 'time') || strcmp(EEG.domain, 'frequency')
+        data = EEG.data;
         handles.data = data;
         [d1, d2, d3] = size(data);  % determine the data dimensions   
         % remove any old time frequency data set
         if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
         
-        % if it is a struct (time-frequency data) save data to handles
-    elseif isstruct(data)
+    % if domain is tf, data is a struct (time-frequency data) -> save data to handles
+    elseif strcmp(EEG.domain, 'tf')
+        data.data = EEG.data;
+        data.T = EEG.time;
+        data.F = EEG.frequency;
         handles.tf = data;
         [d1, d2, d3] = size(data.data); % determine the data dimensions
         % remove any old data set
@@ -454,13 +498,17 @@ guidata(hObject,handles)
 
 % --------------------------------------------------------------------
 function save_Callback(hObject, eventdata, handles)
+EEG = handles.EEG;
 if isfield(handles, 'tf')
-    EEGSaveData(handles, handles.tf);
+    EEG.data = handles.tf.data;
+    EEG.time = handles.tf.T;
+    EEG.frequency = handles.tf.F;
 elseif isfield(handles,'data')
-    EEGSaveData(handles, handles.data);
+    EEG.data = handles.data;
 else
     warndlg('No data to save')
 end
+EEGSaveData(EEG, 'dims');
 
 function col_row_Callback(hObject, eventdata, handles)
 global col_row
