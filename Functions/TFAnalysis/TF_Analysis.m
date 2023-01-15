@@ -54,12 +54,6 @@ function TF_Analysis_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for TF_Analysis
 handles.output = hObject;
-if isempty(handles)
-    warndlg('Unable to open this tool directly, open it from the EEG_recorder main function')
-    handles.closeFigure = true;
-else
-    handles.dir = varargin{1}.dir;
-end
 
 % Update handles structure
 guidata(hObject, handles);
@@ -151,7 +145,7 @@ try
 
     fprintf('FFT window step = %i samples\n', window-noverlap);
     % nfft = str2double(get(handles.nfft,'String'));
-    nfft = 1024; % move settings to GUI
+    nfft = Fs*4; % move settings to GUI
     nfft = pow2(nextpow2(nfft));
     fprintf('NFFT = %i samples\n', nfft);
     % filter = str2double(get(handles.filter,'String'));
@@ -247,6 +241,7 @@ try
                     clearvars('T','F','P','tf')
                     break
                 end
+                ramusage = num2str(ramusage);
             else
                 ramusage = 'unknown';
             end
@@ -311,7 +306,7 @@ try
     end
     % rereference the X-axis to the event onset
     T = T-(onset_sample/Fs);
-    
+
     % reduce data size from 4 to 3 dimensions
     % 3rd dimension (channel) is always 1 after TF computation
     tf = squeeze(tf);
@@ -413,6 +408,9 @@ handles.filesizeTF.String = sprintf('TF file size: %i - %i - %i',d1,d2,d3); % di
 
 % Store averaging in history
 handles.history.average = sprintf('Data averaged over trial/subjects at %s\n\n', datetime);
+
+% remove third dim from EEG struct
+handles.EEG.dims(3) = [];
 
 guidata(hObject,handles);
 plotTF(hObject, handles)
@@ -694,6 +692,7 @@ if any(filename) % check is any file was selected
         data = EEG.data;
         handles.data = data;
         [d1, d2, d3] = size(data);  % determine the data dimensions
+        handles.onset.String = num2str(find(EEG.time==0));
         % remove any old time frequency data set
         if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
         cla(handles.tfPlot); cla(handles.powSpec); cla(handles.tpPlot);
