@@ -126,7 +126,7 @@ plot(handles.axes1,[0 0], [ylimit(1) ylimit(2)], 'k')
 % set(handles.axes1, 'Ylabel', 'microV')
 xlabel('Time (ms)')
 ylabel('Amplitude (µV)')
-channellabels = {'chan1','chan2','chan3','chan4','chan5','chan6','chan7','chan8'};
+channellabels = EEG.channelLabels;
 labels = channellabels(channelnr);
 % legend(labels);
 hold off;
