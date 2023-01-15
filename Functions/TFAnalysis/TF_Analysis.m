@@ -247,6 +247,7 @@ try
                     clearvars('T','F','P','tf')
                     break
                 end
+                ramusage = num2str(ramusage);
             else
                 ramusage = 'unknown';
             end
