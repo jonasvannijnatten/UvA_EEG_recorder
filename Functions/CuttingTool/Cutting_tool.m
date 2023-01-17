@@ -328,7 +328,12 @@ if cuttingMethod == 1
 elseif cuttingMethod == 2
     % Serial based cuts
     EEG.time = (((1:length(cut))-1) - str2double(handles.beginSerial.String)) ./ EEG.fsample;
-    EEG.history = [ EEG.history  sprintf('Data was cut based on Serial markers\n\n') ]; 
+    addition = sprintf([ ...
+        'Cutting tool - ' datestr(now) '\n' ...
+        'Data was cut using Serial marker(s): %s.\n'...
+        'Cutting %s samples before marker onset and %s samples after marker onset\n' ...
+        '\n\n'],handles.marker_nrs.String, handles.beginSerial.String, handles.endSerial.String);
+    EEG.history = [ EEG.history  addition  ]; 
     %% to-do: add cutting parameters
 %% to-do elseif cuttingMethod == 3
 
