@@ -384,10 +384,14 @@ for ichan=1:nrofchans
     end
 end
 %
-if length(handles.axes1.Children) == length(EEG.channelLabels)
-    legend([EEG.channelLabels])
-elseif length(handles.axes1.Children) == length(EEG.channelLabels)+1
-    legend(['cuts' EEG.channelLabels])
+plots = cell2table([get(handles.axes1.Children,'Type')]);
+
+% add legend to plot
+% in case the preview contains the cuts, add those to the legend
+if any(strcmp(plots.Var1,'patch'))
+    legend(['cuts' EEG.channelLabels], 'Location', 'eastoutside')
+elseif length(handles.axes1.Children) == length(EEG.channelLabels)
+    legend([EEG.channelLabels], 'Location', 'eastoutside')
 end
 grid(handles.axes1,'on')
 handles.axes1.XLabel.String = 'times (s)';
