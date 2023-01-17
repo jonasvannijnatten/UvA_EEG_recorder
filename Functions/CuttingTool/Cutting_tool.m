@@ -175,8 +175,8 @@ if handles.cuttingMethod.Value == 1
             errordlg(sampleWarning)
         end
     end
-    segmentStart = (markers-preMarker) / EEG.fsample;
-    segmentEnd = (markers + postMarker) / EEG.fsample;
+    segmentStart = (markers-preMarker);
+    segmentEnd = (markers + postMarker);
 %% Cut based on serial markers
     elseif handles.cuttingMethod.Value == 2
     markerChannel = find(EEG.channelTypes=="Marker");
