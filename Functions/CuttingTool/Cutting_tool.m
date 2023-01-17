@@ -302,8 +302,9 @@ handles.file_size_new.String = sprintf('new file size: %d - %d - %d', size(EEG.d
 
 
 % add third dimension label
-EEG.dims = [EEG.dims "trials"];
-
+if size(EEG.data,3)>1
+    EEG.dims = [EEG.dims "trials"];
+end
 
 % % save original time fields
 % this would need to be saved per trial; really necessary??
