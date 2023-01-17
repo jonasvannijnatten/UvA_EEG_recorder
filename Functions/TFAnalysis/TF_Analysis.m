@@ -1061,7 +1061,7 @@ EEG = handles.EEG;
 
 % Store power over time data
 EEG.data = data;
-EEG.dims = "times";
+EEG.dims = "power";
 EEG.time = handles.tf.T;
 EEG.frequency = handles.tf.F;
 
@@ -1097,7 +1097,7 @@ EEG = handles.EEG;
 
 % Store power spectrum data
 EEG.data = data;
-EEG.dims = "frequencies";
+EEG.dims = "power";
 EEG.domain = "frequency";
 EEG.time = handles.tf.T;
 EEG.frequency = handles.tf.F;
