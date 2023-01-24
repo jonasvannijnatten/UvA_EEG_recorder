@@ -188,7 +188,9 @@ if handles.cuttingMethod.Value == 1
         warndlg('\fontsize{16} Please fill in the cutting parameters.', 'No Settings found', opts)
         return
     end
-    markers = find(ismember(EEG.data(:,markerChannel), str2double(strsplit(handles.marker_nrs.String))));
+%     markers = find(ismember(EEG.data(:,markerChannel), str2double(strsplit(handles.marker_nrs.String))));
+    [pks, locs] = findpeaks(EEG.data(:,markerChannel));
+    markers = locs(ismember(pks, str2double(strsplit(handles.marker_nrs.String))));
     nrofevents = length(markers);
     if nrofevents == 0
         warndlg('No markers detected within this channel. Make sure to select a Marker channel containing event markers and provide correct marker numbers', 'No events detected.','non-modal')
