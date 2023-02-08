@@ -81,19 +81,43 @@ guidata(hObject, handles);
 
 function varargout = EEG_recorder_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
+
+% set screen to maximized at startup
 set(gcf, 'units','normalized','outerposition',[0 0 1 1]); % maximize screen
+
+% Check which matlab version is running.
+% Give a warning that recording for the g.tec setup is only possible with
+% matlab version 2015 or earlier.
 if strcmp(computer, 'PCWIN64')
     opts.WindowStyle = 'modal';
     opts.Interpreter = 'tex';
-    bitwarning = sprintf([...
+    bitWarning = sprintf([...
         'You are running a 64-bit version of MATLAB.\n' ...
         'Recording is currently only available in 32-bit MATLAB (2015).\n' ...
         'Data analysis tools are available in both versions.'...
         ]);
-    warndlg(['\fontsize{20}' bitwarning],'Matlab version',opts);
-    fprintf(['\nWARNING:\n' bitwarning '\n']);
+    warndlg(['\fontsize{20}' bitWarning],'Matlab version',opts);
+    fprintf(['\nWARNING:\n' bitWarning '\n']);
     set(handles.start_recording, 'Enable','off');
     fprintf('Welcome to the EEG recorder!\n')
+end
+
+% Check if the signal processing toolbox is installed (required for the
+% cutting tool and  time frequency analysis) and give a warning when this
+% is not the case.
+if ~license('checkout','Signal_Toolbox')
+    opts.WindowStyle = 'modal';
+    opts.Interpreter = 'tex';
+    toolboxWarning = sprintf([...
+        'The signal processing toolbox is not installed.\n' ...
+        'This is required for some analysis tools so make sure to install it.\n' ...
+        'This can be done in Matlab under the ''HOME'' tab:\n' ...
+        '- Click on ''Add-Ons''\n- Click on ''Get Add-Ons'' .'...
+        ]);
+    warndlg(['\fontsize{20}' toolboxWarning],'Matlab version',opts);
+    fprintf(['\nWARNING:\n' toolboxWarning '\n']);
+else
+    fprintf('Signal Processing Toolbox detected\n')
 end
 
 function find_lega_Callback(hObject, eventdata, handles)
