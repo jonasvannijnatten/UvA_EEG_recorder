@@ -16,7 +16,7 @@ end
 
 % create new filename combining loaded file + addition
 if ~isempty(EEG.filename)
-    newname = [cd filesep 'Data' filesep EEG.filename(1:end-4) addition];
+    newname = [cd filesep 'Data' filesep EEG.filename addition];
 else
     newname = [cd filesep 'Data' filesep ];
 end
