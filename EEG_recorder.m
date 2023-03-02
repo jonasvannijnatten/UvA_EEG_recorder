@@ -105,7 +105,7 @@ end
 % Check if the signal processing toolbox is installed (required for the
 % cutting tool and  time frequency analysis) and give a warning when this
 % is not the case.
-if ~license('checkout','Signal_Toolbox')
+if exist('bandpass','file') ~= 2 %~license('checkout','Signal_Toolbox')
     opts.WindowStyle = 'modal';
     opts.Interpreter = 'tex';
     toolboxWarning = sprintf([...
