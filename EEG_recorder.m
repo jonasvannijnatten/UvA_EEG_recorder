@@ -692,7 +692,7 @@ cd(handles.dir.main);
 function tools_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 function Help_Callback(hObject, eventdata, handles)
-web('Help EEG recorder.htm', '-helpbrowser')
+web('Help EEG recorder.html', '-helpbrowser')
 % --------------------------------------------------------------------
 function about_Callback(hObject, eventdata, handles)
 web('About EEG recorder.htm', '-helpbrowser')
