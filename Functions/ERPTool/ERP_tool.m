@@ -247,7 +247,8 @@ else
         end
     end    
     set(handles.corrected_box, 'String', 'Baseline corrected', 'ForegroundColor', [0 1 0])
-    handles.history_text = sprintf('Data baseline corrected with ERP tool at %s\n\n', datetime);
+    handles.history_text = sprintf("\n\nData baseline corrected with ERP tool at %s\n" + ...
+        "using samples 1 - %d as baseline period.", datetime, onset);
     guidata(hObject, handles);
 end
 
@@ -299,7 +300,7 @@ if isempty(corrected_data)
     errordlg('There is no baseline corrected data. Apply correction first')
 elseif ~isempty(corrected_data)
     EEG.data = corrected_data;
-    EEG.history = [EEG.history handles.history_text];
+    EEG.history = EEG.history + handles.history_text;
     EEGSaveData(EEG,'blc');
     clear data;
     clear -global corrected_data;

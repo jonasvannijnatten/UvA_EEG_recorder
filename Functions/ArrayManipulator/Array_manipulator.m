@@ -197,15 +197,15 @@ end
 if dim == 1
     data = data(selection,:,:);
     disp(['Selection kept in the 1st dimension: ' num2str(selection)])
-    handles.EEG.history = [handles.EEG.history sprintf('Selection of data kept in 1st dimension: %s at %s\n\n',num2str(selection), datetime)];
+    handles.EEG.history = handles.EEG.history + sprintf("\n\nSelection of data kept in 1st dimension: %s at %s",num2str(selection), datetime);
 elseif dim == 2
     data = data(:,selection,:);
     disp(['Selection kept in the 2nd dimension: ' num2str(selection)])
-    handles.EEG.history = [handles.EEG.history sprintf('Selection of data kept in 2nd dimension: %s at %s\n\n',num2str(selection), datetime)];
+    handles.EEG.history = handles.EEG.history + sprintf("\n\nSelection of data kept in 2nd dimension: %s at %s",num2str(selection), datetime);
 elseif dim == 3
     data = data(:,:,selection);
     disp(['Selection kept in the 3rd dimension: ' num2str(selection)])
-    handles.EEG.history = [handles.EEG.history sprintf('Selection of data kept in 3rd dimension: %s at %s\n\n',num2str(selection), datetime)];
+    handles.EEG.history = handles.EEG.history + sprintf("\n\nSelection of data kept in 3rd dimension: %s at %s",num2str(selection), datetime);
 end
 
 
@@ -250,7 +250,7 @@ else
     third_e = str2double(get(handles.third_e,'String'));
     third_b = str2double(get(handles.third_b,'String'));
     array_data = array_data(col_b:col_e, row_b:row_e, third_b:third_e);
-    handles.EEG.history = [handles.EEG.history sprintf('Data resized to rows %d-%d, columns %d-%d and 3rd dimension %d-%d at %s\n\n',col_b,col_e,row_b,row_e,third_b,third_e, datetime)];
+    handles.EEG.history = handles.EEG.history + sprintf("\n\n Data resized to rows %d-%d, columns %d-%d and 3rd dimension %d-%d at %s",col_b,col_e,row_b,row_e,third_b,third_e, datetime);
 end
 [str1] = size(array_data);
 if length(str1) == 3
@@ -357,7 +357,7 @@ end
 handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
 
 % Story manipulation in history
-handles.EEG.history = [handles.EEG.history sprintf('Data of file %s and %s concatenated at %s\n\n', handles.EEG.filename, addEEG.filename, datetime)];
+handles.EEG.history = handles.EEG.history + sprintf("\n\nData of file %s and %s concatenated at %s", handles.EEG.filename, addEEG.filename, datetime);
 
 guidata(hObject,handles)
 
@@ -404,17 +404,17 @@ if (get(handles.col_row,'Value') == get(handles.col_row,'Max'))
     handles.data = permute(handles.data,[2 1 3]);
     EEG.dims([2 1]) = EEG.dims([1 2]); %transpose dimension
     fprintf('transposed rows and columns\n')
-    EEG.history = [EEG.history sprintf('Rows and columns transposed at %s\n\n', datetime)];
+    EEG.history = EEG.history + sprintf("\n\nRows and columns transposed at %s", datetime);
 elseif (get(handles.col_third,'Value') == get(handles.col_third,'Max'))
     handles.data = permute(handles.data,[3 2 1]);
     EEG.dims([3 1]) = EEG.dims([1 3]); %transpose dimension
     fprintf('transposed columns and third dimension\n')
-    EEG.history = [EEG.history sprintf('Columns and 3rd dimension transposed at %s\n\n', datetime)];
+    EEG.history = EEG.history + sprintf("\n\nColumns and 3rd dimension transposed at %s", datetime);
 elseif (get(handles.row_thrid,'Value') == get(handles.row_thrid,'Max'))
     handles.data = permute(handles.data,[1 3 2]);
     EEG.dims([3 2]) = EEG.dims([2 3]); %transpose dimension
     fprintf('transposed rows and third dimension\n')
-    EEG.history = [EEG.history sprintf('Rows and 3rd dimension transposed at %s\n\n', datetime)];
+    EEG.history = EEG.history + sprintf("\n\nRows and 3rd dimension transposed at %s", datetime);
 end
 
 handles.EEG = EEG;
@@ -438,15 +438,15 @@ end
 if (get(handles.av_dim_1,'Value') == get(handles.av_dim_1,'Max'))
   data = mean(data,1);
   disp('averaged over 1st dimension')
-  handles.EEG.history = [handles.EEG.history sprintf('Averaged over 1st dimension at %s\n\n', datetime)];
+  handles.EEG.history = handles.EEG.history + sprintf("\n\nAveraged over 1st dimension at %s", datetime);
 elseif (get(handles.av_dim_2,'Value') == get(handles.av_dim_2,'Max'))
   data = mean(data,2);
   disp('averaged over 2nd dimension')
-  handles.EEG.history = [handles.EEG.history sprintf('Averaged over 2nd dimension at %s\n\n', datetime)];
+  handles.EEG.history = handles.EEG.history + sprintf("\n\nAveraged over 2nd dimension at %s", datetime);
 elseif (get(handles.av_dim_3,'Value') == get(handles.av_dim_3,'Max'))
   data = mean(data,3);
   disp('averaged over 3rd dimension')
-  handles.EEG.history = [handles.EEG.history sprintf('Averaged over 3rd dimension at %s\n\n', datetime)];
+  handles.EEG.history = handles.EEG.history + sprintf("\n\nAveraged over 3rd dimension at %s", datetime);
 else
     errordlg('oops, something went wrong')
 end
