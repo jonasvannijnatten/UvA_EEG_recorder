@@ -538,7 +538,7 @@ return
 
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
-web('Help_Array_manipulator.htm', '-helpbrowser')
+web('Help_Array_manipulator.html', '-helpbrowser')
 
 
 % --- Executes during object creation, after setting all properties.

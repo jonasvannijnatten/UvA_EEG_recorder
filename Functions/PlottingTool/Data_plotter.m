@@ -164,7 +164,7 @@ end
  guidata(hObject,handles);
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
-web('Plotter_help.htm', '-helpbrowser')
+web('Plotter_help.html', '-helpbrowser')
 
 function row_on_Callback(hObject, eventdata, handles)
 

@@ -51,7 +51,7 @@ guidata(hObject,handles)
 
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
-web('Event_cutter_help.htm', '-helpbrowser')
+web('Event_cutter_help.html', '-helpbrowser')
 
 
 function cuttingMethod_Callback(hObject, eventdata, handles)

@@ -313,6 +313,7 @@ end
 
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
+web('Help_ERP_tool.html', '-helpbrowser')
 % hObject    handle to help (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
