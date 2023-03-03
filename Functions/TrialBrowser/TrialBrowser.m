@@ -201,7 +201,7 @@ guidata(hObject,handles)
 function [T, F, tf] = trial_TF_analysis(hObject, handles)
 
 try
-    data = handles.data*1e6;
+    data = handles.data;
     Fs = handles.EEG.fsample;
     
     fprintf('---------------------------- \nRUNNING TIME-FREQUENCY ANALYSYS\n')
