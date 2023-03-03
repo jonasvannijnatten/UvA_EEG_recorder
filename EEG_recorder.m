@@ -60,10 +60,11 @@ if ~(exist([cd filesep 'Data'],'dir')==7) % create 'Data' directory if necessary
     fprintf('created Data directory\n')
 end
 % add subdirectories
-handles.dir.backup   = [handles.dir.main filesep 'Backup'];
-handles.dir.data     = [handles.dir.main filesep 'Data'];
-handles.dir.functions = [handles.dir.main filesep 'Functions'];
-addpath(handles.dir.backup, genpath(handles.dir.data), genpath(handles.dir.functions));
+handles.dir.backup      = [handles.dir.main filesep 'Backup'];
+handles.dir.data        = [handles.dir.main filesep 'Data'];
+handles.dir.functions   = [handles.dir.main filesep 'Functions'];
+handles.dir.help        = [handles.dir.main filesep 'Help_files'];
+addpath(handles.dir.backup, genpath(handles.dir.data), genpath(handles.dir.functions), genpath(handles.dir.help));
 
 handles.plotColors = [    ...
     0      0.4470 0.7410; ...
