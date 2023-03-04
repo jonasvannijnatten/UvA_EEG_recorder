@@ -692,7 +692,9 @@ if any(filename) % check is any file was selected
         data = EEG.data;
         handles.data = data;
         [d1, d2, d3] = size(data);  % determine the data dimensions
-        handles.onset.String = num2str(find(EEG.time==0));
+        if ~isempty(num2str(find(EEG.time==0)))
+            handles.onset.String = num2str(find(EEG.time==0));
+        end
         % remove any old time frequency data set
         if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
         cla(handles.tfPlot); cla(handles.powSpec); cla(handles.tpPlot);
