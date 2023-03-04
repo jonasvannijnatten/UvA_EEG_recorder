@@ -208,15 +208,15 @@ else
             base_erp        = mean(corrected_data(:,baselinechannels(ichan),:),3);
             figure; subplot(5,1,1:2);
             for itrial = 1:baselinetrials
-                plot(time, erp_data(:,baselinechannels(ichan),itrial).*10^6,'b'); hold on;
+                plot(time, erp_data(:,baselinechannels(ichan),itrial),'b'); hold on;
             end
-            plot(time, raw_erp.*10^6, 'r');
+            plot(time, raw_erp, 'r');
             max_y1  = max(max(erp_data(:,baselinechannels(ichan),:)));
             max_y2  = max(max(corrected_data(:,baselinechannels(ichan),:)));
-            max_y   = max([max_y1 max_y2]).*10^6;
+            max_y   = max([max_y1 max_y2]);
             min_y1  = min(min(erp_data(:,baselinechannels(ichan),:)));
             min_y2  = min(min(corrected_data(:,baselinechannels(ichan),:)));
-            min_y   = min([min_y1 min_y2]).*10^6;
+            min_y   = min([min_y1 min_y2]);
             ylim([min_y max_y])
             xlimit = get(gca, 'xlim');
             ylimit = get(gca, 'ylim');
@@ -232,9 +232,9 @@ else
             
             subplot(5,1,4:5);
             for itrial = 1:baselinetrials
-                plot(time, corrected_data(:,baselinechannels(ichan),itrial).*10^6,'b'); hold on;
+                plot(time, corrected_data(:,baselinechannels(ichan),itrial),'b'); hold on;
             end
-            plot(time, base_erp.*10^6, 'r');
+            plot(time, base_erp, 'r');
             ylim([min_y max_y])
             xlimit = get(gca, 'xlim');
             ylimit = get(gca, 'ylim');

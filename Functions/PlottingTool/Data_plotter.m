@@ -111,9 +111,9 @@ else
     for A = 1:length(ka)
         if Collumns_on == 1
             time = ((1:a)./Fsp)-onset;
-            plot(time,handles.data(:,ka(A)).*10^6);hold on %plot signal in microvolts
+            plot(time,handles.data(:,ka(A)));hold on %plot signal in microvolts
         elseif row_on == 1
-            plot((1:b)./Fsp,handles.data(ka(A),:).*10^6);hold on %plot signal in microvolts
+            plot((1:b)./Fsp,handles.data(ka(A),:));hold on %plot signal in microvolts
         else
             errordlg('select if rows or collums should be plotted','Please select');
             A = length(strp)+1;
