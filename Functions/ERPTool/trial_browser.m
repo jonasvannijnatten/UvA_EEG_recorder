@@ -75,9 +75,9 @@ global ERP_SD
 global EEG
 % global erp_std;
 if browse_raw
-    browse_data = erp_data.*10^6;
+    browse_data = erp_data;
 elseif browse_corrected
-    browse_data = corrected_data.*10^6;
+    browse_data = corrected_data;
 end
 trialcounter = 1;
 totalnroftrials = size(browse_data,3);
