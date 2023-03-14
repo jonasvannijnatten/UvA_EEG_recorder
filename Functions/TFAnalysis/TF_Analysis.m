@@ -200,8 +200,8 @@ try
     else
         chans = chan;
         totaltrials = numtrials;
-    end
-    
+    end    
+
     count = 0;
     % powermatrix = [];
     for ichan = chans
@@ -266,18 +266,23 @@ try
     fprintf('Baseline in samples: %i : %i\n', bsl(1), bsl(2))
     fprintf('Baseline in seconds: %4.2f : %4.2f \n', bsl(1)/Fs, bsl(2)/Fs)
     
-    %% baseline correction
-    % calculate power during baseline
-    bslP = mean(tf(:,bslT,:),2);
-    
+    %% baseline correction  
+    handles.bslmethod.Value = 5;
     % apply correction
     if handles.bslmethod.Value == 2
+        % values near 0 cause very large values in baseline corrected TF data
+        % Make miminal TF value 1 to prevent extreme values
+        tf = tf + abs(min(tf(:))) + 1;
+        % calculate power during baseline
+        bslP = mean(tf(:,bslT,:),2);
         % relative baseline correction: power / baseline power
         tf = bsxfun(@ldivide, tf, bslP);
         fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
         handles.history.base = sprintf('Relative baseline correction per frequency (power/baseline) applied at %s\n\n', datetime);
         
     elseif handles.bslmethod.Value == 4
+        % calculate power during baseline
+        bslP = mean(tf(:,bslT,:),2);
         % absolute baseline correction: power - baseline power
         tf = bsxfun(@minus,tf,bslP);
         fprintf('Absolute baseline correction applied per frequency (power-baseline)\n')
@@ -294,6 +299,10 @@ try
         handles.history.base = sprintf('Normalized power baseline correction per time point (power/average power) applied at %s\n\n', datetime);
         
     elseif handles.bslmethod.Value == 5
+        % make sure all values are positive for correct normalization
+        tf = tf + abs(min(tf(:)));
+        % calculate power during baseline
+        bslP = mean(tf(:,bslT,:),2);
         % relative baseline correction: 10*log10(power/baseline power)
         tf = 10*log10(bsxfun(@ldivide, tf, bslP));
         fprintf('Decibel baseline correction applied per frequency 10*log10(power/baseline power)\n')
