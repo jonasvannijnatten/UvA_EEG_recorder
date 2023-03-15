@@ -270,9 +270,8 @@ try
 %     handles.bslmethod.Value = 5;
     % apply correction
     if handles.bslmethod.Value == 2
-        % values near 0 cause very large values in baseline corrected TF data
-        % Make miminal TF value 1 to prevent extreme values
-        tf = tf + abs(min(tf(:))) + 1;
+        % normalize data to prevent extreme values in the resulting TF
+        tf = (tf - min(tf(:))) / (max(tf(:)) - min(tf(:)));
         % calculate power during baseline
         bslP = mean(tf(:,bslT,:),2);
         % relative baseline correction: power / baseline power
