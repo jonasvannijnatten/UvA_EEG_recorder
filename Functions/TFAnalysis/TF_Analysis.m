@@ -267,7 +267,7 @@ try
     fprintf('Baseline in seconds: %4.2f : %4.2f \n', bsl(1)/Fs, bsl(2)/Fs)
     
     %% baseline correction  
-    handles.bslmethod.Value = 5;
+%     handles.bslmethod.Value = 5;
     % apply correction
     if handles.bslmethod.Value == 2
         % values near 0 cause very large values in baseline corrected TF data
