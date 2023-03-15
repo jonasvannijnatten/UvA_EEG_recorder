@@ -199,8 +199,10 @@ if handles.cuttingMethod.Value == 1
     for imark = 1:nrofevents
         if markers(imark)-preMarker < 0
             errordlg(sampleWarning)
+            return
         elseif markers(imark) + postMarker > size(EEG.data,1)
             errordlg(sampleWarning)
+            return
         end
     end
     segmentStart = (markers-preMarker); %/ EEG.fsample;
@@ -373,20 +375,21 @@ hold(handles.axes1, 'on')
 for ichan=1:nrofchans
     % plot physiological channels
     if ismember(EEG.channelTypes(ichan), ["EEG" "EMG" "ECG" "EOG"])
-        plot(handles.axes1,EEG.time,EEG.data(:,ichan)*100+b(ichan)); hold(handles.axes1,'on')
+        plot(handles.axes1,EEG.time,EEG.data(:,ichan)+b(ichan)); hold(handles.axes1,'on')
     elseif strcmp(EEG.channelTypes(ichan), "Marker")
         % plot markers channels
         if ~any(~ismember(unique(round(EEG.data(:,ichan)))', [0 5])) % see if all values are 0 or 5
             % plot TTL markers
-            plot(handles.axes1,EEG.time,EEG.data(:,ichan)./250+b(ichan),'k'); hold(handles.axes1,'on')
+            plot(handles.axes1,EEG.time,EEG.data(:,ichan)*10+b(ichan),'k'); hold(handles.axes1,'on')
         else 
-            resiseFactor = 20;
+            stemSize = 0.9 * max(max(EEG.data(:,1:end-1)));
             % plot serial markers as 
-            stem(EEG.time,(EEG.data(:,ichan)>0)/resiseFactor)
+%             stem(EEG.time,(EEG.data(:,ichan)>0)/resiseFactor)
+            stem(EEG.time(EEG.data(:,ichan)>0),ones(1,sum(EEG.data(:,ichan)>0))*stemSize);
             % add marker values as text 
             markerLocs   = find(EEG.data(:,ichan) > 0);
             markerValues = EEG.data(markerLocs,ichan);
-            text(markerLocs/EEG.fsample, repmat(1/resiseFactor, [1,length(markerValues)]), num2str(markerValues))
+            text(EEG.time(markerLocs), repmat(stemSize, [1,length(markerValues)]), num2str(markerValues))
         end        
     end
 end
