@@ -84,7 +84,7 @@ function varargout = EEG_recorder_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 % set screen to maximized at startup
-set(gcf, 'units','normalized','outerposition',[0 0 1 1]); % maximize screen
+handles.figure1.WindowState = 'Maximized'; % maximize screen
 
 % % Check which matlab version is running.
 % % Give a warning that recording for the g.tec setup is only possible with
