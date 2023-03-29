@@ -387,9 +387,8 @@ for ichan=1:nrofchans
 %             stem(EEG.time,(EEG.data(:,ichan)>0)/resiseFactor)
             stem(EEG.time(EEG.data(:,ichan)>0),ones(1,sum(EEG.data(:,ichan)>0))*stemSize);
             % add marker values as text 
-            markerLocs   = find(EEG.data(:,ichan) > 0);
-            markerValues = EEG.data(markerLocs,ichan);
-            text(EEG.time(markerLocs), repmat(stemSize, [1,length(markerValues)]), num2str(markerValues))
+            [markerValues, markerLocs] = findpeaks(EEG.data(:,ichan));
+            text(EEG.time(markerLocs), repmat(stemSize*1.1, [1,length(markerValues)]), num2str(markerValues))
         end        
     end
 end

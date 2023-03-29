@@ -275,7 +275,8 @@ try
         % calculate power during baseline
         bslP = mean(tf(:,bslT,:),2);
         % relative baseline correction: power / baseline power
-        tf = bsxfun(@ldivide, tf, bslP);
+%         tf = bsxfun(@ldivide, tf, bslP);
+        tf = bsxfun(@rdivide, tf, bslP);
         fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
         handles.history.base = sprintf('Relative baseline correction per frequency (power/baseline) applied at %s\n\n', datetime);
         
