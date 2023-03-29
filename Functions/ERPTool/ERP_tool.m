@@ -46,7 +46,9 @@ end
 
 % --- Executes just before temp_browse is made visible.
 function ERP_tool_OpeningFcn(hObject, eventdata, handles, varargin)
-handles.dir = varargin{1}.dir;
+if ~isdeployed
+    handles.dir = varargin{1}.dir;
+end
 clear -global corrected_data
 set(handles.filename_txt, 'String', 'no data loaded')
 % This function has no output args, see OutputFcn.

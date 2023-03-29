@@ -45,7 +45,9 @@ end
 
 function Array_manipulator_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
-handles.dir = varargin{1}.dir;
+if ~isdeployed
+    handles.dir = varargin{1}.dir;
+end
 guidata(hObject, handles);
 
 function varargout = Array_manipulator_OutputFcn(hObject, eventdata, handles)

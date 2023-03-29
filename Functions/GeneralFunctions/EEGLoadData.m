@@ -16,7 +16,7 @@ end
 
 % look for data in the 'Data' directory, select a file and return to the
 % main directory
-[filename, pathname] = uigetfile({'*.mat'},'Select an EEG data file.',[cd '/Data']);
+[filename, pathname] = uigetfile({'Data' filesep '*.mat'},'Select an EEG data file.');
 % if a file was selected, check which data format (time-series vs.
 % time-frequency)
 if ~any(filename)

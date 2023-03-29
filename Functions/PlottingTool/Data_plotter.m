@@ -54,11 +54,13 @@ function Data_plotter_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for Data_plotter
 handles.output = hObject;
-if isempty(varargin)
-    warndlg('Unable to open this tool directly, open it from the EEG_recorder main function')
-    handles.closeFigure = true;
-else
-    handles.dir = varargin{1}.dir;
+if~isdeployed
+    if isempty(varargin)
+        warndlg('Unable to open this tool directly, open it from the EEG_recorder main function')
+        handles.closeFigure = true;
+    else
+        handles.dir = varargin{1}.dir;
+    end
 end
 % Update handles structure
 guidata(hObject, handles);

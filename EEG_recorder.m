@@ -50,21 +50,26 @@ set(handles.clear, 'Enable','off');
 for i = 1:length(handles.TTL_panel.Children)
     set(handles.TTL_panel.Children(i),'Enable','on')
 end
-handles.dir.main = cd; % save path to main directory
-if ~(exist([cd filesep 'Backup'],'dir')==7) % create 'Backup' directory if necessary
+if ~isdeployed
+    handles.dir.main = cd; % save path to main directory
+end
+if ~(exist('Backup', 'dir')==7) % create 'Backup' directory if necessary
     mkdir('Backup')
     fprintf('created Backup directory\n')
 end
-if ~(exist([cd filesep 'Data'],'dir')==7) % create 'Data' directory if necessary
+if ~(exist('Data','dir')==7) % create 'Data' directory if necessary
     mkdir('Data');
     fprintf('created Data directory\n')
 end
-% add subdirectories
-handles.dir.backup      = [handles.dir.main filesep 'Backup'];
-handles.dir.data        = [handles.dir.main filesep 'Data'];
-handles.dir.functions   = [handles.dir.main filesep 'Functions'];
-handles.dir.help        = [handles.dir.main filesep 'Help_files'];
-addpath(handles.dir.backup, genpath(handles.dir.data), genpath(handles.dir.functions), genpath(handles.dir.help));
+
+if ~isdeployed
+    % add subdirectories
+    handles.dir.backup      = [handles.dir.main filesep 'Backup'];
+    handles.dir.data        = [handles.dir.main filesep 'Data'];
+    handles.dir.functions   = [handles.dir.main filesep 'Functions'];
+    handles.dir.help        = [handles.dir.main filesep 'Help_files'];
+    addpath(handles.dir.backup, genpath(handles.dir.data), genpath(handles.dir.functions), genpath(handles.dir.help));
+end
 
 handles.plotColors = [    ...
     0      0.4470 0.7410; ...
@@ -629,66 +634,66 @@ for i = 1:length(handles.TTL_panel.Children)
 end
 
 % --------------------------------------------------------------------
-function load_Callback(hObject, eventdata, handles)
-Fs = 256;
-chan_space = chan_space_Callback([],[],handles);
-plotColors = handles.plotColors;
-
-cd(handles.dir.data)
-[filename, pathname] = uigetfile({'*.mat';},'Select file');
-cd(handles.dir.main)
-if any(filename)
-    load([pathname filename]);
-    handles.data = data;
-    if size(data,3) > 1
-        warndlg('You are trying to load 3D data, the EEG_recorder is not able to display this.')
-    else
-        [nrofsamples, nrofchans] = size(data);
-        a = linspace(-chan_space,chan_space,nrofchans);
-        t = (1:nrofsamples)/Fs;
-        for ichan=1:nrofchans
-            b=sort(a,'descend');
-            if ichan<9
-                plot(handles.axes1,t,data(:,ichan)+b(ichan), 'Color', plotColors(ichan,:)); hold(handles.axes1,'on')
-            else
-                plot(handles.axes1,t,data(:,ichan)./10000+b(ichan),'k'); hold(handles.axes1,'on')
-            end
-        end
-        grid(handles.axes1,'on')
-        handles.axes1.XLabel.String = 'times (s)';
-        drawnow; hold(handles.axes1)
-        % end
-        
-        minfreq = str2double(get(handles.minfreq, 'String'));
-        maxfreq = str2double(get(handles.maxfreq, 'String'));
-        
-        for ichan = 1:8
-            L       = length(data(:,ichan));
-            NFFT    = 2^nextpow2(L);
-            Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/NFFT;
-            fo      = Fs/2*linspace(0,1,NFFT/2+1);
-            spectraldata = 2*abs(Yo(1:NFFT/2+1));
-            freqindex1 = find(fo>=minfreq,1);
-            freqindex2 = find(fo>=maxfreq,1);
-            plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)-a(ichan)/10,'Color',plotColors(ichan,:)),hold(handles.axes2,'on')
-        end
-        
-        drawnow; hold(handles.axes2,'off');
-        set(handles.clear, 'Enable','on');
-        for i = 1:length(handles.TTL_panel.Children)
-            set(handles.TTL_panel.Children(i),'Enable','on')
-        end
-    end
-    
-end
-guidata(hObject, handles);
+% function load_Callback(hObject, eventdata, handles)
+% Fs = 256;
+% chan_space = chan_space_Callback([],[],handles);
+% plotColors = handles.plotColors;
+% 
+% cd(handles.dir.data)
+% [filename, pathname] = uigetfile({'*.mat';},'Select file');
+% cd(handles.dir.main)
+% if any(filename)
+%     load([pathname filename]);
+%     handles.data = data;
+%     if size(data,3) > 1
+%         warndlg('You are trying to load 3D data, the EEG_recorder is not able to display this.')
+%     else
+%         [nrofsamples, nrofchans] = size(data);
+%         a = linspace(-chan_space,chan_space,nrofchans);
+%         t = (1:nrofsamples)/Fs;
+%         for ichan=1:nrofchans
+%             b=sort(a,'descend');
+%             if ichan<9
+%                 plot(handles.axes1,t,data(:,ichan)+b(ichan), 'Color', plotColors(ichan,:)); hold(handles.axes1,'on')
+%             else
+%                 plot(handles.axes1,t,data(:,ichan)./10000+b(ichan),'k'); hold(handles.axes1,'on')
+%             end
+%         end
+%         grid(handles.axes1,'on')
+%         handles.axes1.XLabel.String = 'times (s)';
+%         drawnow; hold(handles.axes1)
+%         % end
+%         
+%         minfreq = str2double(get(handles.minfreq, 'String'));
+%         maxfreq = str2double(get(handles.maxfreq, 'String'));
+%         
+%         for ichan = 1:8
+%             L       = length(data(:,ichan));
+%             NFFT    = 2^nextpow2(L);
+%             Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/NFFT;
+%             fo      = Fs/2*linspace(0,1,NFFT/2+1);
+%             spectraldata = 2*abs(Yo(1:NFFT/2+1));
+%             freqindex1 = find(fo>=minfreq,1);
+%             freqindex2 = find(fo>=maxfreq,1);
+%             plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)-a(ichan)/10,'Color',plotColors(ichan,:)),hold(handles.axes2,'on')
+%         end
+%         
+%         drawnow; hold(handles.axes2,'off');
+%         set(handles.clear, 'Enable','on');
+%         for i = 1:length(handles.TTL_panel.Children)
+%             set(handles.TTL_panel.Children(i),'Enable','on')
+%         end
+%     end
+%     
+% end
+% guidata(hObject, handles);
 
 % --------------------------------------------------------------------
-function save_Callback(hObject, eventdata, handles)
-data = handles.data;
-cd(handles.dir.data);
-uisave({'data'},'Name');
-cd(handles.dir.main);
+% function save_Callback(hObject, eventdata, handles)
+% data = handles.data;
+% cd(handles.dir.data);
+% uisave({'data'},'Name');
+% cd(handles.dir.main);
 % --------------------------------------------------------------------
 function tools_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
@@ -798,62 +803,62 @@ TF_Analysis(handles)
 
 
 % --------------------------------------------------------------------
-function recover_data_Callback(hObject, eventdata, handles)
-% hObject    handle to recover_data (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-cd(handles.dir.backup);
-[filename, pathname] = uigetfile({'*.daq';},'Select a 2D array');
-cd(handles.dir.main);
-
-plotColors = handles.plotColors;
-try
-    if any(filename)
-        Fs = 256;
-        data=daqread([pathname filename]);
-        handles.data = data;
-        [a,b] = size(data);
-        fprintf('backup file recoverd: \n\t%s%s\nthe file consists of:\n\t%d samples, or %.2f seconds of data\n\t%d channels\n', pathname, filename, a,a/Fs,b)
-        
-        [nrofsamples, nrofchans] = size(data);
-        chan_space = chan_space_Callback([],[],handles);
-        a = linspace(chan_space,-chan_space,nrofchans);
-        b = sort(a, 'descend');
-        t = (1:nrofsamples)/Fs;
-        for ichan=1:nrofchans
-            if ichan<9
-                plot(handles.axes1,t,data(:,ichan)+b(ichan),'Color',plotColors(ichan,:)); hold(handles.axes1,'on')
-            else
-                plot(handles.axes1,t,data(:,ichan)./10000+b(ichan),'k'); hold(handles.axes1,'on')
-            end
-        end
-        grid(handles.axes1,'on')
-        handles.axes1.XLabel.String = 'times (s)';
-        drawnow; hold(handles.axes1)
-        % end
-        
-        minfreq = str2double(get(handles.minfreq, 'String'));
-        maxfreq = str2double(get(handles.maxfreq, 'String'));
-        
-        for ichan = 1:8
-            L       = length(data(:,ichan));
-            NFFT    = 2^nextpow2(L);
-            Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/NFFT;
-            fo      = Fs/2*linspace(0,1,NFFT/2+1);
-            spectraldata = 2*abs(Yo(1:NFFT/2+1));
-            freqindex1 = find(fo>=minfreq,1);
-            freqindex2 = find(fo>=maxfreq,1);
-            plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+b(ichan)/10,'Color', plotColors(ichan,:)),hold(handles.axes2,'on')
-        end
-        
-        drawnow; hold(handles.axes2,'off');
-        set(handles.clear, 'Enable','on');
-    end
-    guidata(hObject, handles);
-catch ME
-    errordlg('Some unexpected error occurred. Unable to recover the backup data.');
-    rethrow(ME);
-end
+% function recover_data_Callback(hObject, eventdata, handles)
+% % hObject    handle to recover_data (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% cd(handles.dir.backup);
+% [filename, pathname] = uigetfile({'*.daq';},'Select a 2D array');
+% cd(handles.dir.main);
+% 
+% plotColors = handles.plotColors;
+% try
+%     if any(filename)
+%         Fs = 256;
+%         data=daqread([pathname filename]);
+%         handles.data = data;
+%         [a,b] = size(data);
+%         fprintf('backup file recoverd: \n\t%s%s\nthe file consists of:\n\t%d samples, or %.2f seconds of data\n\t%d channels\n', pathname, filename, a,a/Fs,b)
+%         
+%         [nrofsamples, nrofchans] = size(data);
+%         chan_space = chan_space_Callback([],[],handles);
+%         a = linspace(chan_space,-chan_space,nrofchans);
+%         b = sort(a, 'descend');
+%         t = (1:nrofsamples)/Fs;
+%         for ichan=1:nrofchans
+%             if ichan<9
+%                 plot(handles.axes1,t,data(:,ichan)+b(ichan),'Color',plotColors(ichan,:)); hold(handles.axes1,'on')
+%             else
+%                 plot(handles.axes1,t,data(:,ichan)./10000+b(ichan),'k'); hold(handles.axes1,'on')
+%             end
+%         end
+%         grid(handles.axes1,'on')
+%         handles.axes1.XLabel.String = 'times (s)';
+%         drawnow; hold(handles.axes1)
+%         % end
+%         
+%         minfreq = str2double(get(handles.minfreq, 'String'));
+%         maxfreq = str2double(get(handles.maxfreq, 'String'));
+%         
+%         for ichan = 1:8
+%             L       = length(data(:,ichan));
+%             NFFT    = 2^nextpow2(L);
+%             Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/NFFT;
+%             fo      = Fs/2*linspace(0,1,NFFT/2+1);
+%             spectraldata = 2*abs(Yo(1:NFFT/2+1));
+%             freqindex1 = find(fo>=minfreq,1);
+%             freqindex2 = find(fo>=maxfreq,1);
+%             plot(handles.axes2,fo(freqindex1:freqindex2),spectraldata(freqindex1:freqindex2)+b(ichan)/10,'Color', plotColors(ichan,:)),hold(handles.axes2,'on')
+%         end
+%         
+%         drawnow; hold(handles.axes2,'off');
+%         set(handles.clear, 'Enable','on');
+%     end
+%     guidata(hObject, handles);
+% catch ME
+%     errordlg('Some unexpected error occurred. Unable to recover the backup data.');
+%     rethrow(ME);
+% end
 
 
 

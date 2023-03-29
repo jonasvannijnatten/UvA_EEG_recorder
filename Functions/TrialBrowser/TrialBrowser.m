@@ -51,12 +51,14 @@ function TrialBrowser_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to TrialBrowser (see VARARGIN)
 
-handles.output = hObject;
-if isempty(varargin)
-    warndlg('Unable to open this tool directly, open it from the EEG_recorder main function')
-    handles.closeFigure = true;
-else
-    handles.dir = varargin{1}.dir;
+if~isdeployed
+    handles.output = hObject;
+    if isempty(varargin)
+        warndlg('Unable to open this tool directly, open it from the EEG_recorder main function')
+        handles.closeFigure = true;
+    else
+        handles.dir = varargin{1}.dir;
+    end
 end
 
 % Update handles structure
