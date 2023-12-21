@@ -103,6 +103,23 @@ handles.figure1.WindowState = 'Maximized'; % maximize screen
 %     fprintf('Welcome to the EEG recorder!\n')
 % end
 
+% Check whether the correct matlab version is used.
+% some functions only work from 2021a onwards
+v = version('-release');
+v = str2double(v(1:4));
+if v<2021
+    opts.WindowStyle = 'modal';
+    opts.Interpreter = 'tex';
+    bitWarning = sprintf([...
+        'You are running an older version of MATLAB.\n' ...
+        'Please update to matlab 2021a or later.\n'
+        ]);
+    warndlg(['\fontsize{20}' bitWarning],'Matlab version',opts);
+    fprintf(['\nWARNING:\n' bitWarning '\n']);
+    set(handles.start_recording, 'Enable','off');
+    fprintf('Welcome to the EEG recorder!\n')
+end
+
 % Check if the signal processing toolbox is installed (required for the
 % cutting tool and  time frequency analysis) and give a warning when this
 % is not the case.
