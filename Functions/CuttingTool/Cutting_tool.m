@@ -17,7 +17,8 @@ else
 end
 
 function Cutting_tool_OpeningFcn(hObject, eventdata, handles, varargin)
-set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'off')
+set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'on')
+set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
 set(get(handles.timePanel, 'Children'), 'Enable', 'off')
 set(get(handles.manualPanel, 'Children'), 'Enable', 'off')
 
@@ -56,11 +57,12 @@ web('Event_cutter_help.html', '-helpbrowser')
 
 function cuttingMethod_Callback(hObject, eventdata, handles)
 if handles.cuttingMethod.Value == 1
-    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'on')
+    
+    set(get(handles.markerPanelSerialL, 'Children'), 'Enable', 'on')
     handles.markerPanelTTL.ShadowColor = 'k';
     handles.markerPanelTTL.BorderWidth = 2;
     
-    set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'off')
+    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
     handles.markerPanelSerial.ShadowColor = [.7 .7 .7];
     handles.markerPanelSerial.BorderWidth = 1;
 
@@ -74,13 +76,13 @@ if handles.cuttingMethod.Value == 1
 
 elseif handles.cuttingMethod.Value == 2
 
-    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
-    handles.markerPanelTTL.ShadowColor = [.7 .7 .7];
-    handles.markerPanelTTL.BorderWidth = 1;
-
-    set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'on')
+    set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'off')
     handles.markerPanelSerial.ShadowColor = 'k';
     handles.markerPanelSerial.BorderWidth = 2;
+
+    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'on')
+    handles.markerPanelTTL.ShadowColor = [.7 .7 .7];
+    handles.markerPanelTTL.BorderWidth = 1;
 
     set(get(handles.timePanel, 'Children'), 'Enable', 'off')
     handles.timePanel.ShadowColor = [.7 .7 .7];
@@ -91,13 +93,14 @@ elseif handles.cuttingMethod.Value == 2
     handles.manualPanel.BorderWidth = 1;
 
 elseif handles.cuttingMethod.Value == 3
-    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
-    handles.markerPanelTTL.ShadowColor = [.7 .7 .7];
-    handles.markerPanelTTL.BorderWidth = 1;
 
     set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'off')
     handles.markerPanelSerial.ShadowColor = [.7 .7 .7];
     handles.markerPanelSerial.BorderWidth = 1;
+
+    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
+    handles.markerPanelTTL.ShadowColor = [.7 .7 .7];
+    handles.markerPanelTTL.BorderWidth = 1;
 
     set(get(handles.timePanel, 'Children'), 'Enable', 'on')
     handles.timePanel.ShadowColor = 'k';
@@ -108,13 +111,14 @@ elseif handles.cuttingMethod.Value == 3
     handles.manualPanel.BorderWidth = 1;
 
 elseif handles.cuttingMethod.Value == 4
-    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
-    handles.markerPanelTTL.ShadowColor = [.7 .7 .7];
-    handles.markerPanelTTL.BorderWidth = 1;
 
     set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'off')
     handles.markerPanelSerial.ShadowColor = [.7 .7 .7];
     handles.markerPanelSerial.BorderWidth = 1;
+
+    set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
+    handles.markerPanelTTL.ShadowColor = [.7 .7 .7];
+    handles.markerPanelTTL.BorderWidth = 1;
 
     set(get(handles.timePanel, 'Children'), 'Enable', 'off')
     handles.timePanel.ShadowColor = [.7 .7 .7];
@@ -141,12 +145,45 @@ Ylimits = ax1.YLim;
 
 sampleWarning = {'No samples available';'You are trying to cut samples outside of your dataset.';'Adjust your settings.'};
 % cuttingMethods:
-% 1 = marker based cuts TTL
-% 2 = marker based cuts Serial
+% 1 = marker based cuts Serial
+% 2 = marker based cuts TTL
 % 3 = time based cuts
 % 4 = manual selection (to be implemented)
-%% cut based on TTL markers
-if handles.cuttingMethod.Value == 1
+
+if handles.cuttingMethod.Value == 1  
+    %% Cut based on serial markerss
+    markerChannel = find(EEG.channelTypes=="Marker");
+    preMarker = str2double(handles.beginSerial.String);
+    postMarker = str2double(handles.endSerial.String);
+    if any(isnan([markerChannel preMarker postMarker]))
+        opts.Interpreter = 'tex';
+        opts.WindowStyle = 'modal';
+        warndlg('\fontsize{16} Please fill in the cutting parameters.', 'No Settings found', opts)
+        return
+    end
+%     markers = find(ismember(EEG.data(:,markerChannel), str2double(strsplit(handles.marker_nrs.String))));
+    [pks, locs] = findpeaks(EEG.data(:,markerChannel));
+    markers = locs(ismember(pks, str2double(strsplit(handles.marker_nrs.String))));
+    nrofevents = length(markers);
+    if nrofevents == 0
+        warndlg('No markers detected within this channel. Make sure to select a Marker channel containing event markers and provide correct marker numbers', 'No events detected.','non-modal')
+        return
+    end
+    for imark = 1:nrofevents
+        if markers(imark)-preMarker < 0
+            errordlg(sampleWarning)
+            return
+        elseif markers(imark) + postMarker > size(EEG.data,1)
+            errordlg(sampleWarning)
+            return
+        end
+    end
+    segmentStart = (markers-preMarker); %/ EEG.fsample;
+    segmentEnd = (markers + postMarker); %/ EEG.fsample;
+
+
+    elseif handles.cuttingMethod.Value == 2
+    %% cut based on TTL markers
     % check cutting parameters
     selectedChan = str2double(handles.col_nr.String);
     preMarker = str2double(handles.beg.String);
@@ -177,37 +214,6 @@ if handles.cuttingMethod.Value == 1
     end
     segmentStart = (markers-preMarker);
     segmentEnd = (markers + postMarker);
-%% Cut based on serial markers
-    elseif handles.cuttingMethod.Value == 2
-    markerChannel = find(EEG.channelTypes=="Marker");
-    preMarker = str2double(handles.beginSerial.String);
-    postMarker = str2double(handles.endSerial.String);
-    if any(isnan([markerChannel preMarker postMarker]))
-        opts.Interpreter = 'tex';
-        opts.WindowStyle = 'modal';
-        warndlg('\fontsize{16} Please fill in the cutting parameters.', 'No Settings found', opts)
-        return
-    end
-%     markers = find(ismember(EEG.data(:,markerChannel), str2double(strsplit(handles.marker_nrs.String))));
-    [pks, locs] = findpeaks(EEG.data(:,markerChannel));
-    markers = locs(ismember(pks, str2double(strsplit(handles.marker_nrs.String))));
-    nrofevents = length(markers);
-    if nrofevents == 0
-        warndlg('No markers detected within this channel. Make sure to select a Marker channel containing event markers and provide correct marker numbers', 'No events detected.','non-modal')
-        return
-    end
-    for imark = 1:nrofevents
-        if markers(imark)-preMarker < 0
-            errordlg(sampleWarning)
-            return
-        elseif markers(imark) + postMarker > size(EEG.data,1)
-            errordlg(sampleWarning)
-            return
-        end
-    end
-    segmentStart = (markers-preMarker); %/ EEG.fsample;
-    segmentEnd = (markers + postMarker); %/ EEG.fsample;
-
 %% Cut based on time periods
 elseif handles.cuttingMethod.Value == 3
     firstEvent = str2double(handles.event_t.String);
@@ -325,12 +331,7 @@ end
 cuttingMethod = handles.cuttingMethod.Value;
 
 if cuttingMethod == 1
-    % TTL based cuts
-    EEG.time = (((1:length(cut))-1) - str2double(handles.beg)) ./ EEG.fsample;
-    EEG.history = EEG.history  + sprintf("\n\nData was cut based on TTLs markers\n\n") ; 
-    %% to-do: add cutting parameters
-elseif cuttingMethod == 2
-    % Serial based cuts
+        % Serial based cuts
     EEG.time = (((1:length(cut))-1) - str2double(handles.beginSerial.String)) ./ EEG.fsample;
     addition = sprintf(["\n\n"  +...
         "Cutting tool - %s \n" +...
@@ -338,6 +339,12 @@ elseif cuttingMethod == 2
         "Cutting %s samples before marker onset and %s samples after marker onset" ...
         ],datetime, handles.marker_nrs.String, handles.beginSerial.String, handles.endSerial.String);
     EEG.history = EEG.history + addition; 
+    %% to-do: add cutting parameters
+   
+elseif cuttingMethod == 2
+ % TTL based cuts
+    EEG.time = (((1:length(cut))-1) - str2double(handles.beg)) ./ EEG.fsample;
+    EEG.history = EEG.history  + sprintf("\n\nData was cut based on TTLs markers\n\n") ; 
     %% to-do: add cutting parameters
 %% to-do elseif cuttingMethod == 3
 
