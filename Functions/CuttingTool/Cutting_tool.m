@@ -58,7 +58,7 @@ web('Event_cutter_help.html', '-helpbrowser')
 function cuttingMethod_Callback(hObject, eventdata, handles)
 if handles.cuttingMethod.Value == 1
     
-    set(get(handles.markerPanelSerialL, 'Children'), 'Enable', 'on')
+    set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'on')
     handles.markerPanelTTL.ShadowColor = 'k';
     handles.markerPanelTTL.BorderWidth = 2;
     
