@@ -54,7 +54,7 @@ function trial_browser_OpeningFcn(hObject, eventdata, handles, varargin)
 global erp_data;
 global browse_data; % browse_data = .... (copy from ERP tool)
 global corrected_data;
-global filenamep;
+global filename;
 global channelnr;
 global labels;
 global trialcounter;
@@ -72,18 +72,19 @@ global browse_raw;
 global browse_corrected;
 global ERP_mean
 global ERP_SD
+global EEG
 % global erp_std;
 if browse_raw
-    browse_data = erp_data.*10^6;
+    browse_data = erp_data;
 elseif browse_corrected
-    browse_data = corrected_data.*10^6;
+    browse_data = corrected_data;
 end
 trialcounter = 1;
 totalnroftrials = size(browse_data,3);
 nrofsamples = size(browse_data,1);
-samplingrate = 256;
+samplingrate = EEG.fsample;
 set(handles.trial_indicator, 'String', [num2str(trialcounter) ' / ' num2str(totalnroftrials)]);
-set(handles.filename,'string',filenamep);
+set(handles.filename,'string',filename);
 set(handles.channel_display,'string',num2str(channelnr));
 samples = 1:nrofsamples;
 samples = samples-onset;
@@ -96,7 +97,7 @@ SD_range = str2double(get(handles.SD_range, 'String'));
 % end
 
 ERP_SD = zeros(nrofsamples,1);
-for isample = 1: size(browse_data,1);
+for isample = 1: size(browse_data,1)
     ERP_SD(isample) = std(browse_data(isample,channelnr,:));
 end
 ERP_mean = mean(browse_data(:,channelnr,:),3);
@@ -125,7 +126,7 @@ plot(handles.axes1,[0 0], [ylimit(1) ylimit(2)], 'k')
 % set(handles.axes1, 'Ylabel', 'microV')
 xlabel('Time (ms)')
 ylabel('Amplitude (µV)')
-channellabels = {'chan1','chan2','chan3','chan4','chan5','chan6','chan7','chan8'};
+channellabels = EEG.channelLabels;
 labels = channellabels(channelnr);
 % legend(labels);
 hold off;

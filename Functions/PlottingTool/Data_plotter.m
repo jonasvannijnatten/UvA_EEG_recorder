@@ -75,14 +75,6 @@ if (isfield(handles,'closeFigure') && handles.closeFigure)
       Data_plotter_CloseRequestFcn(hObject, eventdata, handles)
 end
 
-
-function Fs_Callback(hObject, eventdata, handles)
-return
-function Fs_CreateFcn(hObject, eventdata, handles)
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 function chan2plot_Callback(hObject, eventdata, handles)
 return
 function chan2plot_CreateFcn(hObject, eventdata, handles)
@@ -94,7 +86,7 @@ function plot_Callback(hObject, eventdata, handles)
 x_ax = get(handles.x_ax,'String'); % get x limits
 y_ax = get(handles.y_ax,'String'); % get y limits
 strp = get(handles.chan2plot,'String'); % get selection to plot
-Fsp = str2double(get(handles.Fs,'String')); % get sampling rate
+Fsp = handles.Fs; % get sampling rate
 onset = str2double(get(handles.onset, 'String')); % get stim-onset sample
 if isempty(onset)
     onset = 0;
@@ -119,9 +111,9 @@ else
     for A = 1:length(ka)
         if Collumns_on == 1
             time = ((1:a)./Fsp)-onset;
-            plot(time,handles.data(:,ka(A)).*10^6);hold on %plot signal in microvolts
+            plot(time,handles.data(:,ka(A)));hold on %plot signal in microvolts
         elseif row_on == 1
-            plot((1:b)./Fsp,handles.data(ka(A),:).*10^6);hold on %plot signal in microvolts
+            plot((1:b)./Fsp,handles.data(ka(A),:));hold on %plot signal in microvolts
         else
             errordlg('select if rows or collums should be plotted','Please select');
             A = length(strp)+1;
@@ -160,9 +152,11 @@ else
 end
 % --------------------------------------------------------------------
 function load_Callback(hObject, eventdata, handles)
-[filename, data] = EEGLoadData(handles);
+[filename, EEG] = EEGLoadData('time');
 if any(filename)
-    handles.data = data;
+    handles.EEG = EEG;
+    handles.data = EEG.data;
+    handles.Fs = EEG.fsample;
     handles.filename= filename;
     set(handles.filename_txt,'string',filename);
     set(handles.filesize_txt,'string',num2str(size(handles.data)));
@@ -170,7 +164,7 @@ end
  guidata(hObject,handles);
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
-web('Plotter_help.htm', '-helpbrowser')
+web('Plotter_help.html', '-helpbrowser')
 
 function row_on_Callback(hObject, eventdata, handles)
 

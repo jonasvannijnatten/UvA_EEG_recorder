@@ -60,10 +60,11 @@ if ~(exist([cd filesep 'Data'],'dir')==7) % create 'Data' directory if necessary
     fprintf('created Data directory\n')
 end
 % add subdirectories
-handles.dir.backup   = [handles.dir.main filesep 'Backup'];
-handles.dir.data     = [handles.dir.main filesep 'Data'];
-handles.dir.functions = [handles.dir.main filesep 'Functions'];
-addpath(handles.dir.backup, genpath(handles.dir.data), genpath(handles.dir.functions));
+handles.dir.backup      = [handles.dir.main filesep 'Backup'];
+handles.dir.data        = [handles.dir.main filesep 'Data'];
+handles.dir.functions   = [handles.dir.main filesep 'Functions'];
+handles.dir.help        = [handles.dir.main filesep 'Help_files'];
+addpath(handles.dir.backup, genpath(handles.dir.data), genpath(handles.dir.functions), genpath(handles.dir.help));
 
 handles.plotColors = [    ...
     0      0.4470 0.7410; ...
@@ -81,17 +82,60 @@ guidata(hObject, handles);
 
 function varargout = EEG_recorder_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
-set(gcf, 'units','normalized','outerposition',[0 0 1 1]); % maximize screen
-if strcmp(computer, 'PCWIN64')
-    bitwarning = sprintf([...
-        'You are running a 64-bit version of MATLAB.\n' ...
-        'Recording is currently only available in 32-bit MATLAB.\n' ...
-        'Data analysis tools are available in both versions.\n'...
+
+% set screen to maximized at startup
+handles.figure1.WindowState = 'Maximized'; % maximize screen
+
+% % Check which matlab version is running.
+% % Give a warning that recording for the g.tec setup is only possible with
+% % matlab version 2015 or earlier.
+% if strcmp(computer, 'PCWIN64')
+%     opts.WindowStyle = 'modal';
+%     opts.Interpreter = 'tex';
+%     bitWarning = sprintf([...
+%         'You are running a 64-bit version of MATLAB.\n' ...
+%         'Recording is currently only available in 32-bit MATLAB (2015).\n' ...
+%         'Data analysis tools are available in both versions.'...
+%         ]);
+%     warndlg(['\fontsize{20}' bitWarning],'Matlab version',opts);
+%     fprintf(['\nWARNING:\n' bitWarning '\n']);
+%     set(handles.start_recording, 'Enable','off');
+%     fprintf('Welcome to the EEG recorder!\n')
+% end
+
+% Check whether the correct matlab version is used.
+% some functions only work from 2021a onwards
+v = version('-release');
+v = str2double(v(1:4));
+if v<2021
+    opts.WindowStyle = 'modal';
+    opts.Interpreter = 'tex';
+    bitWarning = sprintf([...
+        'You are running an older version of MATLAB.\n' ...
+        'Please update to matlab 2021a or later.\n'
         ]);
-    warndlg(bitwarning);
-    fprintf(['\nWARNING:\n' bitwarning '\n']);
+    warndlg(['\fontsize{20}' bitWarning],'Matlab version',opts);
+    fprintf(['\nWARNING:\n' bitWarning '\n']);
     set(handles.start_recording, 'Enable','off');
     fprintf('Welcome to the EEG recorder!\n')
+end
+
+% Check if the signal processing toolbox is installed (required for the
+% cutting tool and  time frequency analysis) and give a warning when this
+% is not the case.
+if exist('bandpass','file') ~= 2 %~license('checkout','Signal_Toolbox')
+    opts.WindowStyle = 'modal';
+    opts.Interpreter = 'tex';
+    toolboxWarning = sprintf([...
+        'The signal processing toolbox is not installed.\n' ...
+        'This is required for some analysis tools so make sure to install it.\n' ...
+        'This can be done in Matlab under the ''HOME'' tab:\n' ...
+        '- Click on ''Add-Ons''\n- Click on ''Get Add-Ons'' .'...
+        ]);
+    warndlg(['\fontsize{20}' toolboxWarning],'Matlab version',opts);
+    fprintf(['\nWARNING:\n' toolboxWarning '\n']);
+else
+    fprintf('Signal Processing Toolbox detected\n')
 end
 
 function find_lega_Callback(hObject, eventdata, handles)
@@ -666,7 +710,7 @@ cd(handles.dir.main);
 function tools_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 function Help_Callback(hObject, eventdata, handles)
-web('Help EEG recorder.htm', '-helpbrowser')
+web('Help EEG recorder.html', '-helpbrowser')
 % --------------------------------------------------------------------
 function about_Callback(hObject, eventdata, handles)
 web('About EEG recorder.htm', '-helpbrowser')
@@ -701,7 +745,20 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function filter_Callback(hObject, eventdata, handles)
-filters(handles)
+vers = version('-release');
+vers = str2double(vers(1:4));
+if vers <= 2015
+    opts.WindowStyle = 'non-modal'; 
+    opts.Interpreter = 'tex';
+    msg = 'A newer version of this function is avalaibe in Matlab 2016a or later';
+    warndlg(['\fontsize{18}' msg],'Update available in newer Matlab version',opts)  
+    fprintf([msg '\n'])
+    filters(handles)
+    
+elseif vers > 2015
+    Filter_tool
+end
+
 
 function Syllabus_Callback(hObject, eventdata, handles)
 web('Syllabus.htm', '-helpbrowser')
@@ -911,6 +968,33 @@ artGui(handles)
 
 function Cutting_tool_Callback(hObject, eventdata, handles)
 Cutting_tool(handles)
+%%% When new version is implemented %%%
+% vers = version('-release');
+% vers = str2double(vers(1:4));
+% if vers <= 2015
+%     opts.WindowStyle = 'non-modal'; 
+%     opts.Interpreter = 'tex';
+%     msg = '\fontsize{18} A newer version of this function is avalaibe in Matlab version 2016a or later';
+%     warndlg(msg,'Latest vesrion unavailable in this Matlab version',opts)  
+%     Cutting_tool(handles)
+% elseif vers > 2015
+%     Cutting_tool_App
+% end
+
+
+function Import_data_Callback(hObject, eventdata, handles)
+vers = version('-release');
+vers = str2double(vers(1:4));
+if vers <= 2015
+    opts.WindowStyle = 'non-modal'; 
+    opts.Interpreter = 'tex';
+    msg = 'This function is only avalaibe in Matlab version 2016a or later';
+    warndlg(['\fontsize{18}' msg],'Function unavailable in this Matlab version',opts)  
+    fprintf([msg '\n'])
+    return
+elseif vers > 2015
+    Import_tool
+end
 
 % --- Executes on button press in spectogram.
 function spectogram_Callback(hObject, eventdata, handles)

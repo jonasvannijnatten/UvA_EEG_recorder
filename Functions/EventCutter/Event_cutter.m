@@ -122,7 +122,7 @@ end
 
 % --------------------------------------------------------------------
 function help_Callback(hObject, eventdata, handles)
-web('Event_cutter_help.htm', '-helpbrowser')
+web('Event_cutter_help.html', '-helpbrowser')
 function t_bev_Callback(hObject, eventdata, handles)
 global t_bev
 t_bev = str2double(get(hObject,'String')); return

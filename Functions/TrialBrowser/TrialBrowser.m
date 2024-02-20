@@ -66,9 +66,10 @@ guidata(hObject, handles);
 % uiwait(handles.figure1);
 
 function Load_Callback(hObject, eventdata, handles)
-[filename, data] = EEGLoadData(handles, 0);
+[filename, EEG] = EEGLoadData('time');
 if any(filename) % check is any file was selected
     handles.filename.String = ['filename: ' filename]; % display filename
+    data = EEG.data;
     handles.samples = size(data,1);
     handles.nrofchannels = size(data,2);
     handles.totalnroftrials = size(data,3);
@@ -78,7 +79,8 @@ if any(filename) % check is any file was selected
     handles.chan.String = num2str(handles.channelcounter);
     cla(handles.trialPlot);
     cla(handles.extraPlot);
-    handles.data = data;    
+    handles.data = data;  
+    handles.EEG = EEG;
     handles.filesize.String = sprintf('file size: %i - %i - %i',handles.samples,handles.nrofchannels,handles.totalnroftrials); % display filesize 
     [handles.tf.T, handles.tf.F, handles.tf.data] = trial_TF_analysis(hObject, handles);
     plotData(hObject, handles);
@@ -152,7 +154,7 @@ function plotData(hObject, handles)
 handles.trial_indicator.String = [num2str(handles.trialcounter) ' / ' num2str(handles.totalnroftrials)];
 handles.channel_indicator.String = [num2str(handles.channelcounter) ' / ' num2str(handles.nrofchannels)];
 
-time = (1:size(handles.data,1)) / 256;
+time = handles.EEG.time;
 data = handles.data *1e6;
 cla(handles.trialPlot);
 if handles.plotStats.Value
@@ -199,8 +201,8 @@ guidata(hObject,handles)
 function [T, F, tf] = trial_TF_analysis(hObject, handles)
 
 try
-    data = handles.data*1e6;
-    Fs = 256;
+    data = handles.data;
+    Fs = handles.EEG.fsample;
     
     fprintf('---------------------------- \nRUNNING TIME-FREQUENCY ANALYSYS\n')
     fprintf('data dimensions: %d - %d - %d \nFs: %d samples/second\n', size(data,1), size(data,2), size(data,3), Fs);    
@@ -222,18 +224,36 @@ try
     end
     fprintf('settings used for time-frequency analysis: \n');
     % window = str2double(get(handles.window,'String'));
-    window = 256; % move settings to GUI
+    window = handles.EEG.fsample; % move settings to GUI
     fprintf('FFT window-size = %i samples \n', window);    
     fprintf('FFT window-shape = Hamming \n');
     % noverlap = str2double(get(handles.noverlap,'String'));
     nrsamples = size(data,1);
-    if nrsamples  < 1280
-        noverlap = window-1;
-    elseif nrsamples >= 1280 && nrsamples < 7680
-        noverlap = 192;
-    else
-        noverlap = 128; % move settings to GUI
+    if Fs >= 1000
+        if nrsamples  < 2*Fs    
+            noverlap = window-1;
+        elseif nrsamples >= 1*Fs && nrsamples < 2*Fs
+            noverlap = 0.5*Fs;
+        else
+            noverlap = .1*Fs;
+        end
+    elseif Fs < 1000
+        if nrsamples  < 5*Fs
+            noverlap = window-1;
+        elseif nrsamples >= 5*Fs && nrsamples < 30*Fs
+            noverlap = .75*Fs;
+        else
+            noverlap = 0.5*Fs;
+        end
     end
+    %     nrsamples = size(data,1);
+%     if nrsamples  < 1280
+%         noverlap = window-1;
+%     elseif nrsamples >= 1280 && nrsamples < 7680
+%         noverlap = 192;
+%     else
+%         noverlap = 128; % move settings to GUI
+%     end
     fprintf('FFT window step = %i samples\n', window-noverlap);
     % nfft = str2double(get(handles.nfft,'String'));
     nfft = 1024; % move settings to GUI
@@ -312,7 +332,7 @@ try
             %% monitor RAM usage
             if ispc
                 [~, sys] = memory;
-                ramusage = round((sys.PhysicalMemory.Total - sys.PhysicalMemory.Available )/ sys.PhysicalMemory.Total * 100,2);
+                ramusage = num2str(round((sys.PhysicalMemory.Total - sys.PhysicalMemory.Available )/ sys.PhysicalMemory.Total * 100,2));
                 if ramusage > 95 % quit the proces if RAM is overloading
                     warndlg({ ...
                         'The time-frequency analysis is aborted because the computer is running out of working memory.';...
@@ -334,7 +354,7 @@ try
     end
    
     % rereference the X-axis to the event onset
-    T = T-(onset_sample/Fs);    
+    T = T+min(handles.EEG.time);
     
 %     %% store variables to handles
     handles.tf.data = tf;
