@@ -54,7 +54,7 @@ function ERP_assesment_OpeningFcn(hObject, eventdata, handles, varargin)
 global erp_data;
 global assesment_data; % assesment_data = .... (copy from ERP tool)
 % global corrected_data;
-global filenamep;
+global filename;
 global channelnr;
 global labels;
 global subjectcounter;
@@ -66,6 +66,7 @@ global nrofsamples;
 global samplingrate;
 global samples;
 global time;
+global EEG;
 % global browse_raw;
 % global browse_corrected;
 % global erp_std;
@@ -78,14 +79,14 @@ assesment_data = erp_data;
 subjectcounter = 1;
 totalnrofsubjects = size(assesment_data,3);
 nrofsamples = size(assesment_data,1);
-samplingrate = 256;
+samplingrate = EEG.fsample;
 set(handles.subject_indicator, 'String', [num2str(subjectcounter) ' / ' num2str(totalnrofsubjects)]);
-set(handles.filename,'string',filenamep);
+set(handles.filename,'string',filename);
 set(handles.channel_display,'string',num2str(channelnr));
 samples = 1:nrofsamples;
 samples = samples-onset;
 time = samples/samplingrate*1000;
-plot(handles.axes1,time, assesment_data(:,channelnr,subjectcounter).*10^6)
+plot(handles.axes1,time, assesment_data(:,channelnr,subjectcounter))
 hold(handles.axes1,'on')
 onset = onset/samplingrate;
 set(handles.axes1, 'Xlim', [min(time) max(time)])
@@ -100,7 +101,7 @@ plot(handles.axes1,[0 0], [ylimit(1) ylimit(2)], 'k')
 % set(handles.axes1, 'Ylabel', 'microV')
 xlabel('Time (ms)')
 ylabel('Amplitude (microvolts)')
-channellabels = {'chan1','chan2','chan3','chan4','chan5','chan6','chan7','chan8'};
+channellabels = EEG.channelLabels;
 labels = channellabels(channelnr);
 legend(labels);
 hold off;
@@ -145,7 +146,7 @@ else
 end
 set(handles.subject_indicator, 'String', [num2str(subjectcounter) ' / ' num2str(totalnrofsubjects)]);
 hold(handles.axes1,'off')
-plot(gca,time, assesment_data(:,channelnr,subjectcounter).*10^6)
+plot(gca,time, assesment_data(:,channelnr,subjectcounter))
 hold(handles.axes1,'on')
 % onset = onset/samplingrate;
 set(handles.axes1, 'Xlim', [min(time) max(time)])
@@ -185,7 +186,7 @@ else
 end
 set(handles.subject_indicator, 'String', [num2str(subjectcounter) ' / ' num2str(totalnrofsubjects)]);
 hold(handles.axes1,'off')
-plot(gca,time, assesment_data(:,channelnr,subjectcounter).*10^6)
+plot(gca,time, assesment_data(:,channelnr,subjectcounter))
 hold(handles.axes1,'on')
 % onset = onset/samplingrate;
 set(handles.axes1, 'Xlim', [min(time) max(time)])
@@ -330,7 +331,7 @@ else
     errordlg('enter a lower limit')
 end
 hold(handles.axes1,'off')
-plot(gca,time, assesment_data(:,channelnr,subjectcounter).*10^6)
+plot(gca,time, assesment_data(:,channelnr,subjectcounter))
 hold(handles.axes1,'on')
 % onset = onset/samplingrate;
 temp = get(handles.axes1);
@@ -356,28 +357,28 @@ up_limit =  round((upper_limit/1000+onset)*samplingrate);
 
 max_y = max(assesment_data(lo_limit:up_limit,channelnr,subjectcounter));
 max_x = find(assesment_data(lo_limit:up_limit,channelnr,subjectcounter) == max_y)+lo_limit-1;
-max_x_time = (max_x/256-onset)*1000;
+max_x_time = (max_x/samplingrate-onset)*1000;
 set(handles.xmax, 'String', num2str(max_x_time));
-set(handles.ymax, 'String', num2str(max_y*10^6));
+set(handles.ymax, 'String', num2str(max_y));
 min_y = min(assesment_data(lo_limit:up_limit,channelnr,subjectcounter));
 min_x = find(assesment_data(lo_limit:up_limit,channelnr,subjectcounter) == min_y)+lo_limit-1;
-min_x_time = (min_x/256-onset)*1000;
+min_x_time = (min_x/samplingrate-onset)*1000;
 set(handles.xmin, 'String', num2str(min_x_time));
-set(handles.ymin, 'String', num2str(min_y*10^6));
+set(handles.ymin, 'String', num2str(min_y));
 hold on
-plot(handles.axes1, max_x_time, max_y*10^6, '*r')
-plot(handles.axes1, min_x_time, min_y*10^6, '*r')
+plot(handles.axes1, max_x_time, max_y, '*r')
+plot(handles.axes1, min_x_time, min_y, '*r')
 
 average_y = mean(assesment_data(lo_limit:up_limit,channelnr,subjectcounter));
-set(handles.average_amplitude, 'String', num2str(average_y*10^6))
+set(handles.average_amplitude, 'String', num2str(average_y))
 % component_min = min(assesment_data(lo_limit:up_limit,channelnr,subjectcounter))*1000000;
 
 pos_y   = max(assesment_data(lo_limit:up_limit,channelnr,subjectcounter),0);
 pos_auc = trapz(1:length(pos_y),pos_y);
 neg_y   = min(assesment_data(lo_limit:up_limit,channelnr,subjectcounter),0);
 neg_auc = trapz(1:length(neg_y),neg_y);
-set(handles.pos_auc, 'String', num2str(pos_auc*10^6));
-set(handles.neg_auc, 'String', num2str(neg_auc*10^6));
+set(handles.pos_auc, 'String', num2str(pos_auc));
+set(handles.neg_auc, 'String', num2str(neg_auc));
 
 
 % --------------------------------------------------------------------

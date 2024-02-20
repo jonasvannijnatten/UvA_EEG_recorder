@@ -60,10 +60,11 @@ if ~(exist([cd filesep 'Data'],'dir')==7) % create 'Data' directory if necessary
     fprintf('created Data directory\n')
 end
 % add subdirectories
-handles.dir.backup   = [handles.dir.main filesep 'Backup'];
-handles.dir.data     = [handles.dir.main filesep 'Data'];
-handles.dir.functions = [handles.dir.main filesep 'Functions'];
-addpath(handles.dir.backup, genpath(handles.dir.data), genpath(handles.dir.functions));
+handles.dir.backup      = [handles.dir.main filesep 'Backup'];
+handles.dir.data        = [handles.dir.main filesep 'Data'];
+handles.dir.functions   = [handles.dir.main filesep 'Functions'];
+handles.dir.help        = [handles.dir.main filesep 'Help_files'];
+addpath(handles.dir.backup, genpath(handles.dir.data), genpath(handles.dir.functions), genpath(handles.dir.help));
 
 handles.plotColors = [    ...
     0      0.4470 0.7410; ...
@@ -81,17 +82,60 @@ guidata(hObject, handles);
 
 function varargout = EEG_recorder_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
-set(gcf, 'units','normalized','outerposition',[0 0 1 1]); % maximize screen
-if strcmp(computer, 'PCWIN64')
-    bitwarning = sprintf([...
-        'You are running a 64-bit version of MATLAB.\n' ...
-        'Recording is currently only available in 32-bit MATLAB.\n' ...
-        'Data analysis tools are available in both versions.\n'...
+
+% set screen to maximized at startup
+handles.figure1.WindowState = 'Maximized'; % maximize screen
+
+% % Check which matlab version is running.
+% % Give a warning that recording for the g.tec setup is only possible with
+% % matlab version 2015 or earlier.
+% if strcmp(computer, 'PCWIN64')
+%     opts.WindowStyle = 'modal';
+%     opts.Interpreter = 'tex';
+%     bitWarning = sprintf([...
+%         'You are running a 64-bit version of MATLAB.\n' ...
+%         'Recording is currently only available in 32-bit MATLAB (2015).\n' ...
+%         'Data analysis tools are available in both versions.'...
+%         ]);
+%     warndlg(['\fontsize{20}' bitWarning],'Matlab version',opts);
+%     fprintf(['\nWARNING:\n' bitWarning '\n']);
+%     set(handles.start_recording, 'Enable','off');
+%     fprintf('Welcome to the EEG recorder!\n')
+% end
+
+% Check whether the correct matlab version is used.
+% some functions only work from 2021a onwards
+v = version('-release');
+v = str2double(v(1:4));
+if v<2021
+    opts.WindowStyle = 'modal';
+    opts.Interpreter = 'tex';
+    bitWarning = sprintf([...
+        'You are running an older version of MATLAB.\n' ...
+        'Please update to matlab 2021a or later.\n'
         ]);
-    warndlg(bitwarning);
-    fprintf(['\nWARNING:\n' bitwarning '\n']);
+    warndlg(['\fontsize{20}' bitWarning],'Matlab version',opts);
+    fprintf(['\nWARNING:\n' bitWarning '\n']);
     set(handles.start_recording, 'Enable','off');
     fprintf('Welcome to the EEG recorder!\n')
+end
+
+% Check if the signal processing toolbox is installed (required for the
+% cutting tool and  time frequency analysis) and give a warning when this
+% is not the case.
+if exist('bandpass','file') ~= 2 %~license('checkout','Signal_Toolbox')
+    opts.WindowStyle = 'modal';
+    opts.Interpreter = 'tex';
+    toolboxWarning = sprintf([...
+        'The signal processing toolbox is not installed.\n' ...
+        'This is required for some analysis tools so make sure to install it.\n' ...
+        'This can be done in Matlab under the ''HOME'' tab:\n' ...
+        '- Click on ''Add-Ons''\n- Click on ''Get Add-Ons'' .'...
+        ]);
+    warndlg(['\fontsize{20}' toolboxWarning],'Matlab version',opts);
+    fprintf(['\nWARNING:\n' toolboxWarning '\n']);
+else
+    fprintf('Signal Processing Toolbox detected\n')
 end
 
 function find_lega_Callback(hObject, eventdata, handles)
@@ -181,6 +225,8 @@ global fft_l
 global preview
 global ai
 global manualstop
+global plot_spectogram
+global plot_neurofeedback
 
 mainDir = handles.dir.main;
 
@@ -208,7 +254,7 @@ try
     dur_aq      = str2double(get(handles.dur_aq,'String'));
     Fs          = 256;
     % chan_space      = str2double(get(handles.chan_space,'String'));
-    fft_l       = str2double(get(handles.fft_ll,'String'));
+    fft_l = str2double(get(handles.fft_ll,'String'));
     preview     = str2double(get(handles.prev_t,'String'));
     manualstop  = 0;
     
@@ -383,6 +429,10 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     chan_space = str2double(get(handles.chan_space,'String'))/1000;
     a = linspace(-chan_space,chan_space,num_chan_plot);
     b = sort(a,'descend');
+    % get default settings
+    plot_spectogram = handles.spectogram.Value;
+    plot_neurofeedback = handles.neurofeedback.Value;
+    
     %% plot live signal
     for ichan=1:num_chan_plot
         if channel_selection(ichan)< 9
@@ -397,6 +447,7 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     xlim([min(tempTime) max(tempTime)]);
     
     
+    if plot_spectogram == 1;
     %% plot power spectrum
     minfreq = str2double(get(handles.minfreq, 'String'));
     maxfreq = str2double(get(handles.maxfreq, 'String'));
@@ -419,6 +470,50 @@ while ai.SamplesAcquired < dur_aq * Fs  && manualstop == 0
     end
     
     drawnow; hold(handles.axes2,'off');
+     
+    end
+    
+    if plot_neurofeedback == 1 %start plot neurofeedback
+       
+        feedback_channel = str2num(handles.feedback_channel.String);
+        freq_range1 = str2num(handles.freq_range1.String);
+        freq_range2 = str2num(handles.freq_range2.String);
+        freq_range3 = str2num(handles.freq_range3.String);
+        freq_range4 = str2num(handles.freq_range4.String);
+        
+        for ichan=feedback_channel
+                if analog_channels_on(ichan)
+                    L       = length(data(:,ichan));
+                    NFFT    = 2^nextpow2(L);
+                    Yo      = fft(data(:,ichan)-mean(data(:,ichan)),NFFT)/NFFT;
+                    fo      = Fs/2*linspace(0,1,NFFT/2+1);
+         
+                    selection_range1 = find(fo>freq_range1(1) & fo<freq_range1(2));
+                    power_range1= mean(2*abs(Yo(selection_range1)));
+                    selection_range2 = find(fo>freq_range2(1) & fo<freq_range2(2));
+                    power_range2= mean(2*abs(Yo(selection_range2)));
+                    selection_range3 = find(fo>freq_range3(1) & fo<freq_range3(2));
+                    power_range3= mean(2*abs(Yo(selection_range3)));
+                    selection_range4 = find(fo>freq_range4(1) & fo<freq_range4(2));
+                    power_range4= mean(2*abs(Yo(selection_range4)));
+                
+                    %x = [Range1 Range2 Range3 Range4];
+                   
+                    name = {'Range 1';'Range 2';'Range 3';'Range 4'};
+                    feedback_plot = [power_range1 power_range2 power_range3 power_range4];
+                    bar(handles.axes2,feedback_plot);
+                    set(handles.axes2,'xticklabel',name);
+                    %ylim([0 0.000005]);
+
+                end
+            end
+    
+            drawnow; hold(handles.axes2,'off')
+        
+        
+        
+    end %plot neurofeedback
+    
 end
 
 if manualstop == 0
@@ -615,7 +710,7 @@ cd(handles.dir.main);
 function tools_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 function Help_Callback(hObject, eventdata, handles)
-web('Help EEG recorder.htm', '-helpbrowser')
+web('Help EEG recorder.html', '-helpbrowser')
 % --------------------------------------------------------------------
 function about_Callback(hObject, eventdata, handles)
 web('About EEG recorder.htm', '-helpbrowser')
@@ -635,6 +730,9 @@ Data_plotter(handles)
 function Event_cutter_Callback(hObject, eventdata, handles)
 Event_cutter(handles)
 % --------------------------------------------------------------------
+function TrialBrowser_Callback(hObject, eventdata, handles)
+TrialBrowser(handles)
+% --------------------------------------------------------------------
 
 function prev_t_Callback(hObject, eventdata, handles)
 global preview
@@ -647,7 +745,20 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function filter_Callback(hObject, eventdata, handles)
-filters(handles)
+vers = version('-release');
+vers = str2double(vers(1:4));
+if vers <= 2015
+    opts.WindowStyle = 'non-modal'; 
+    opts.Interpreter = 'tex';
+    msg = 'A newer version of this function is avalaibe in Matlab 2016a or later';
+    warndlg(['\fontsize{18}' msg],'Update available in newer Matlab version',opts)  
+    fprintf([msg '\n'])
+    filters(handles)
+    
+elseif vers > 2015
+    Filter_tool
+end
+
 
 function Syllabus_Callback(hObject, eventdata, handles)
 web('Syllabus.htm', '-helpbrowser')
@@ -844,3 +955,139 @@ hObject.YTick = [];
 hObject.YLabel.String = 'Power';
 
 
+
+% --------------------------------------------------------------------
+function ECG_Tool_Callback(hObject, eventdata, handles)
+ECG_Tool(handles)
+
+function ReplayData_Callback(hObject, eventdata, handles)
+ReplayData(handles)
+
+function artGui_Callback(hObject, eventdata, handles)
+artGui(handles)
+
+function Cutting_tool_Callback(hObject, eventdata, handles)
+Cutting_tool(handles)
+%%% When new version is implemented %%%
+% vers = version('-release');
+% vers = str2double(vers(1:4));
+% if vers <= 2015
+%     opts.WindowStyle = 'non-modal'; 
+%     opts.Interpreter = 'tex';
+%     msg = '\fontsize{18} A newer version of this function is avalaibe in Matlab version 2016a or later';
+%     warndlg(msg,'Latest vesrion unavailable in this Matlab version',opts)  
+%     Cutting_tool(handles)
+% elseif vers > 2015
+%     Cutting_tool_App
+% end
+
+
+function Import_data_Callback(hObject, eventdata, handles)
+vers = version('-release');
+vers = str2double(vers(1:4));
+if vers <= 2015
+    opts.WindowStyle = 'non-modal'; 
+    opts.Interpreter = 'tex';
+    msg = 'This function is only avalaibe in Matlab version 2016a or later';
+    warndlg(['\fontsize{18}' msg],'Function unavailable in this Matlab version',opts)  
+    fprintf([msg '\n'])
+    return
+elseif vers > 2015
+    Import_tool
+end
+
+% --- Executes on button press in spectogram.
+function spectogram_Callback(hObject, eventdata, handles)
+global plot_spectogram
+plot_spectogram = get(hObject,'Value');
+
+% --- Executes on button press in neurofeedback.
+function neurofeedback_Callback(hObject, eventdata, handles)
+global plot_neurofeedback
+plot_neurofeedback = get(hObject,'Value');
+
+function freq_range1_Callback(hObject, eventdata, handles)
+% hObject    handle to freq_range1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% --- Executes during object creation, after setting all properties.
+function freq_range1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to freq_range1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function freq_range2_Callback(hObject, eventdata, handles)
+% hObject    handle to freq_range2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% --- Executes during object creation, after setting all properties.
+function freq_range2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to freq_range2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function freq_range3_Callback(hObject, eventdata, handles)
+% hObject    handle to freq_range3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% --- Executes during object creation, after setting all properties.
+function freq_range3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to freq_range3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function freq_range4_Callback(hObject, eventdata, handles)
+% hObject    handle to freq_range4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% --- Executes during object creation, after setting all properties.
+function freq_range4_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to freq_range4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function feedback_channel_Callback(hObject, eventdata, handles)
+% hObject    handle to feedback_channel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes during object creation, after setting all properties.
+function feedback_channel_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to feedback_channel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
