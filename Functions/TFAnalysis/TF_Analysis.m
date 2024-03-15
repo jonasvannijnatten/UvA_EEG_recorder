@@ -1084,13 +1084,17 @@ EEG.channelTypes = handles.channelTypes;
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
 if isfield(handles.history, 'TF') && isfield(handles.history, 'base') && isfield(handles.history, 'average')
-    EEG.history = [EEG.history handles.history.base handles.history.TF handles.history.average];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.base + "\n\n" + handles.history.average);
 elseif isfield(handles.history, 'TF') && isfield(handles.history, 'base')
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.base);
     EEG.history = [EEG.history handles.history.base handles.history.TF];
 elseif isfield(handles.history, 'TF') && isfield(handles.history, 'average')
-    EEG.history = [EEG.history handles.history.TF handles.history.average];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.average);
 elseif isfield(handles.history, 'TF')
-    EEG.history = [EEG.history handles.history.TF];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF);
 end
 
 % Save EEG data struct
@@ -1127,13 +1131,16 @@ EEG.channelTypes = handles.channelTypes;
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
 if isfield(handles.history, 'TF') && isfield(handles.history, 'base') && isfield(handles.history, 'average')
-    EEG.history = [EEG.history handles.history.base handles.history.TF handles.history.average];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.base + "\n\n" + handles.history.average);
 elseif isfield(handles.history, 'TF') && isfield(handles.history, 'base')
-    EEG.history = [EEG.history handles.history.base handles.history.TF];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.base );
 elseif isfield(handles.history, 'TF') && isfield(handles.history, 'average')
-    EEG.history = [EEG.history handles.history.TF handles.history.average];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.average);
 elseif isfield(handles.history, 'TF')
-    EEG.history = [EEG.history handles.history.TF];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF);
 end
 
 % Save EEG data struct
