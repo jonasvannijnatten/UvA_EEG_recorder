@@ -936,6 +936,7 @@ chan  = str2double(handles.chan.String);
 trial = str2double(handles.trial.String);
 
 % plot powerspectrum
+%% to-do add inputcheck whether nr of values == 2
 powspec = handles.powSpec;
 toi = str2num(handles.toi.String);
 Tselect = T>toi(1) & T<toi(2);
@@ -1103,15 +1104,21 @@ copyobj(handles.powSpec, powSpecFig);
 
 % --- Executes on button press in Export_powSpec_data.
 function Export_powSpec_data_Callback(hObject, eventdata, handles)
-data = handles.powSpec.Children(2).YData' ;
 EEG = handles.EEG;
 
 % Store power spectrum data
-EEG.data = data;
+% get time range of interest
+tois = str2double(strsplit(handles.toi.String));
+% average power over that time range
+Tselect = handles.tf.T>tois(1) & handles.tf.T<tois(2);
+EEG.data = mean(handles.tf.data(:,Tselect),2);
+
+% update data information in the struct
 EEG.dims = "frequencies";
 EEG.domain = "frequency";
-EEG.time = handles.tf.T;
 EEG.frequency = handles.tf.F;
+% remove the time information from the struct.
+EEG = rmfield(EEG,'time');
 
 % Store analyzed channel label and type
 EEG.channelLabels = handles.channelLabel;
