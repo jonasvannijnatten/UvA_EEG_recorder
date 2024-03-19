@@ -120,18 +120,24 @@ try
     if Fs >= 1000
         if nrsamples  < 2*Fs
             noverlap = window-1;
+            smoothing = 1;
         elseif nrsamples >= 1*Fs && nrsamples < 2*Fs
             noverlap = 0.5*Fs;
+            smoothing = 3;
         else
             noverlap = .1*Fs;
+            smoothing = 5;
         end
     elseif Fs < 1000
         if nrsamples  < 5*Fs
             noverlap = window-1;
+            smoothing = 1;
         elseif nrsamples >= 5*Fs && nrsamples < 30*Fs
             noverlap = .75*Fs;
+            smoothing = 3;
         else
             noverlap = 0.5*Fs;
+            smoothing = 5;
         end
     end
     %     original method of determining noverlap
@@ -149,7 +155,7 @@ try
     nfft = pow2(nextpow2(nfft));
     fprintf('NFFT = %i samples\n', nfft);
     % filter = str2double(get(handles.filter,'String'));
-    smoothing = 5; % move settings to GUI
+    % smoothing = 1; % move settings to GUI
     if mod(smoothing,2)==0
         filterwarn = sprintf('2D filter size has to be an odd number. Filter size is changed from %i to %i',smoothing,smoothing+1);
         warndlg(filterwarn);
