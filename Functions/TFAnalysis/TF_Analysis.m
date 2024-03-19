@@ -213,6 +213,8 @@ try
             handles.channelLabel = handles.EEG.channelLabels(ichan);
             handles.channelTypes = handles.EEG.channelTypes(ichan);
         end
+        % TO-DO: calculate output tf size based on windowsize and overlap
+        % to preallocate tf variable
         for itrial=1:numtrials
             count = count+1;
             waitbar(count/totaltrials,wb, { ...
@@ -220,10 +222,10 @@ try
                 ['channel: ' num2str(ichan) ', trial: ' num2str(count) ' / ' num2str(numtrials)]; ...
                 })
             [~,F,T,P] = spectrogram(data(:,ichan,itrial),window,noverlap,nfft,Fs);
-            %mp = min(P);
-            tf(:,:,itrial)=cfilter2(log10(abs(P)),smoothing); % original code
-            %     tf=cfilter2((abs(P)),filter);
-            %         powermatrix = cat(5,powermatrix,tf);
+            % power to dB
+            tf(:,:,itrial)=log10(abs(P));
+            % apply temporal smoothing
+            tf(:,:,itrial)=cfilter2(tf(:,:,itrial),smoothing);
 
             %% monitor RAM usage
             if ispc
@@ -433,7 +435,9 @@ handles.filesizeTF.String = sprintf('TF file size: %i - %i - %i',d1,d2,d3); % di
 handles.history.average = sprintf('Data averaged over trial/subjects at %s\n\n', datetime);
 
 % remove third dim from EEG struct
-handles.EEG.dims(3) = [];
+if length(handles.EEG.dims)==3
+    handles.EEG.dims(3) = [];
+end
 
 guidata(hObject,handles);
 plotTF(hObject, handles)
