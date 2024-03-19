@@ -490,8 +490,13 @@ end
 
 % --- Executes on button press in selectManual.
 function handles = selectManual_Callback(hObject, eventdata, handles)
+delete(findobj('type','patch'))
 handles.axes1;
-[selection,~] = ginput(2);
+for iclick = 1:2
+    [selection(iclick), ~] = ginput(1);
+    xline(handles.axes1, selection(iclick), LineStyle="--")
+end
+% [selection,~] = ginput(2);
 handles.windowEdges = round(selection'*handles.EEG.fsample);
 guidata(hObject,handles)
 Preview_Callback(hObject, eventdata, handles)
