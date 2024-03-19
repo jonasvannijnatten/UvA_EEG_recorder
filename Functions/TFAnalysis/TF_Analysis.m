@@ -215,6 +215,7 @@ try
         end
         % TO-DO: calculate output tf size based on windowsize and overlap
         % to preallocate tf variable
+        % tf = zeros(??, length(handles.EEG.times,length(chans),size(data,3))
         for itrial=1:numtrials
             count = count+1;
             waitbar(count/totaltrials,wb, { ...
