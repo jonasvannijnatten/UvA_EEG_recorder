@@ -442,21 +442,68 @@ else
 end
   
 % average data in selected dimensions
-if (get(handles.av_dim_1,'Value') == get(handles.av_dim_1,'Max'))
-  data = mean(data,1);
-  disp('averaged over 1st dimension')
-  handles.EEG.history = handles.EEG.history + sprintf("\n\nAveraged over 1st dimension at %s", datetime);
-elseif (get(handles.av_dim_2,'Value') == get(handles.av_dim_2,'Max'))
-  data = mean(data,2);
-  disp('averaged over 2nd dimension')
-  handles.EEG.history = handles.EEG.history + sprintf("\n\nAveraged over 2nd dimension at %s", datetime);
-elseif (get(handles.av_dim_3,'Value') == get(handles.av_dim_3,'Max'))
-  data = mean(data,3);
-  disp('averaged over 3rd dimension')
-  handles.EEG.history = handles.EEG.history + sprintf("\n\nAveraged over 3rd dimension at %s", datetime);
-else
-    errordlg('oops, something went wrong')
+
+% create a logical array of which dimension will be averaged
+dimIndexLog = [...
+    handles.av_dim_1.Value ...
+    handles.av_dim_2.Value ...
+    handles.av_dim_3.Value ...
+    ];
+% create a numeric indexing array
+dimIndexNum = find(dimIndexLog);
+
+% check whether the selected dimension is present & has an informative
+% label
+if dimIndexNum > length(handles.EEG.dims) && (size(handles.EEG.data,dimIndexNum)==1)
+    h = msgbox("there is no data in the selected dimension to average.");
+    waitfor(h)
+    return
+elseif dimIndexNum > length(handles.EEG.dims) && (size(handles.EEG.data,dimIndexNum)>1)    
+    answer = questdlg(sprintf(['There is data in the selected dimension to average, ' ...
+        'but is has no informative label (channels/trials/subjects etc.).\n' ...
+        'Load the file and type "EEG" in the command window to check the data properties if you are unsure.\n' ...
+        'Are you sure you want to continue?']),"Unclear which data is averaged","No","Yes","No");
+    if strcmp(answer, "No")
+        return
+    end
+elseif dimIndexNum == length(handles.EEG.dims) && (size(handles.EEG.data,dimIndexNum)==1)
+    h = msgbox("there is no data in the selected dimension to average.");
+    waitfor(h)
+    return
 end
+
+% average over the indexed dimension
+data = mean(data,dimIndexNum);
+fprintf('averaged over %s\n', handles.EEG.dims(dimIndexNum))
+
+% update EEG struct info
+if strcmp(handles.EEG.dims(dimIndexNum), 'trials')
+elseif strcmp(handles.EEG.dims(dimIndexNum), 'channels')
+    handles.EEG.channelLabels = sprintf("channel average of %s",  strjoin(handles.EEG.channelLabels, " "));
+    handles.EEG.channelTypes  = strjoin(unique(handles.EEG.channelTypes), "/");
+elseif strcmp(handles.EEG.dims(dimIndexNum), 'samples')
+    handles.EEG = rmfield(handles.EEG, 'samples');
+    handles.EEG = rmfield(handles.EEG, 'sampleinfo');
+elseif strcmp(handles.EEG.dims(dimIndexNum), 'frequencies')
+    handles.EEG = rmfield(handles.EEG, 'frequency');
+elseif strcmp(handles.EEG.dims(dimIndexNum), 'subjects')
+    handles.EEG.subjectID = strjoin(unique(handles.EEG.subjectID), "/");
+elseif strcmp(handles.EEG.dims(dimIndexNum), 'times')
+    handles.EEG = rmfield(handles.EEG, 'times');
+end
+
+% update domain when averaging over time or frequency of tf data
+if handles.EEG.domain == "tf" && handles.EEG.dims(dimIndexNum) == "times"
+    handles.EEG.domain = "frequency";
+elseif handles.EEG.domain == "tf" && handles.EEG.dims(dimIndexNum) == "frequencies"
+    handles.EEG.domain = "time";
+end
+
+% update EEG history
+handles.EEG.history = handles.EEG.history + sprintf("\n\nAveraged over %s  at %s", handles.EEG.dims(dimIndexNum), datetime);
+
+% remove the label from the dimensions field
+handles.EEG.dims(dimIndexNum) = [];
 
 % determine and display new data size
 [d1, d2, d3] = size(data); 
@@ -485,18 +532,19 @@ if any(filename) % check is any file was selected
         handles.data = data;
         [d1, d2, d3] = size(data);  % determine the data dimensions   
         % remove any old time frequency data set
-        if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
+        % if isfield(handles,'tf'); handles = rmfield(handles,'tf'); end
         
     % if domain is tf, data is a struct (time-frequency data) -> save data to handles
     elseif strcmp(EEG.domain, 'tf')
-        data.data = EEG.data;
-        data.T = EEG.time;
-        data.F = EEG.frequency;
-        handles.tf = data;
-        [d1, d2, d3] = size(data.data); % determine the data dimensions
-        % remove any old data set
-        if isfield(handles,'data'); handles = rmfield(handles,'data'); end
-        
+        data = EEG.data;
+        handles.data = data;
+    %     data.T = EEG.time;
+    %     data.F = EEG.frequency;
+    %     handles.tf = data;
+        [d1, d2, d3] = size(data); % determine the data dimensions
+    %     % remove any old data set
+    %     if isfield(handles,'data'); handles = rmfield(handles,'data'); end
+    % 
     end
     handles.filesize.String = sprintf('%i - %i - %i',d1,d2,d3); % display filesize
 end
