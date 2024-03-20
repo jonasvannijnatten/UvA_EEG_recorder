@@ -253,7 +253,8 @@ try
                 })
             [~,F,T,P] = spectrogram(data(:,ichan,itrial),window,noverlap,nfft,Fs);
             % power to dB
-            tf(:,:,itrial)=log10(abs(P));
+            % tf(:,:,itrial)=log10(abs(P));
+            tf(:,:,itrial)=10*log10(abs(P));
             % apply temporal smoothing
             tf(:,:,itrial)=cfilter2(tf(:,:,itrial),smoothing);
 
@@ -300,6 +301,9 @@ try
 
     %% baseline correction
     %     handles.bslmethod.Value = 5;
+    % if no baseline correction is applied the power is expressed in dB
+    powerUnit = "power (dB)";
+
     % apply correction
     if handles.bslmethod.Value == 2
         % normalize data to prevent extreme values in the resulting TF
@@ -308,7 +312,9 @@ try
         bslP = mean(tf(:,bslT,:),2);
         % relative baseline correction: power / baseline power
         %         tf = bsxfun(@ldivide, tf, bslP);
-        tf = bsxfun(@rdivide, tf, bslP);
+        tf = bsxfun(@rdivide, tf, bslP)*100;
+        
+        powerUnit = "power (% to baseline)";
         fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
         handles.history.base = sprintf(['Relative baseline correction per frequency (power/baseline) applied at %s\n' ...
             'The time widow used as baseline is %2.f until %.2f'], datetime, bsl(1)/Fs, bsl(2)/Fs);
@@ -329,6 +335,7 @@ try
         % power normalization: power / average power
         tf = bsxfun(@rdivide,tf,mean(tf,1));
         %     tf = bsxfun(@times,sum(tf,1),bsxfun(@rdivide,tf,sum(tf,1)));
+        powerUnit = "Normalized power";
         fprintf('Power normalized per time point(power/average power)\n')
         handles.history.base = sprintf('Normalized power baseline correction per time point (power/average power) applied at %s\n\n', datetime);
 
@@ -352,6 +359,8 @@ try
     else
         warndlg('huh?\n')
     end
+    handles.tf.powerUnit = powerUnit;
+
     % rereference the X-axis to the event onset
     T = T-(onset_sample/Fs);
 
@@ -440,6 +449,7 @@ end
 % add colorbar and Z-axis label
 cb = colorbar(handles.tfPlot);
 ztitle = 'Power';
+ztitle = handles.tf.powerUnit;
 ylabel(cb, ztitle);
 
 % set z limits
@@ -994,7 +1004,8 @@ plot(powspec,F(Fselect),mean(tf(Fselect,Tselect,trial),2))
 
 axis(powspec, 'tight');
 powspec.XLabel.String = 'Frequency (Hz)';
-powspec.YLabel.String = 'Power';
+% powspec.YLabel.String = 'Power';
+powspec.YLabel.String = handles.tf.powerUnit;
 powspec.Title.String = ['Power during ' num2str(toi(1)) 's to ' num2str(toi(2)) 's'];
 
 %% power vs over time plot
@@ -1004,7 +1015,8 @@ Fselect = F>foi(1) & F<foi(2);
 plot(tpPlot, T,mean(tf(Fselect,:,trial),1));
 axis(tpPlot, 'tight');
 tpPlot.XLabel.String = 'Time (s)';
-tpPlot.YLabel.String = 'Power';
+% tpPlot.YLabel.String = 'Power';
+tpPlot.YLabel.String = handles.tf.powerUnit;
 tpPlot.Title.String = ['Power in ' num2str(foi(1)) 'Hz to ' num2str(foi(2)) 'Hz band'];
 % set y limits
 if str2num(handles.XLim.String)==0
