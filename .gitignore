@@ -21,3 +21,4 @@ Functions/data_generator.m
 Functions/data_generator3.m
 *.daq
 *.asv
+*.xml
