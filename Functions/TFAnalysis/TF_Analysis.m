@@ -474,11 +474,6 @@ handles.filesizeTF.String = sprintf('TF file size: %i - %i - %i',d1,d2,d3); % di
 % Store averaging in history
 handles.history.average = sprintf('Data averaged over trial/subjects at %s\n\n', datetime);
 
-% remove third dim from EEG struct
-if length(handles.EEG.dims)==3
-    handles.EEG.dims(3) = [];
-end
-
 guidata(hObject,handles);
 plotTF(hObject, handles)
 averagePower_Callback(hObject, eventdata, handles)
