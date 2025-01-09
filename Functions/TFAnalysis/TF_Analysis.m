@@ -251,13 +251,16 @@ try
                 ['Running fourier analysis  (RAM usage: ' ramusage '%)']; ...
                 ['channel: ' num2str(ichan) ', trial: ' num2str(count) ' / ' num2str(numtrials)]; ...
                 })
-            [~,F,T,P] = spectrogram(data(:,ichan,itrial),window,noverlap,nfft,Fs);
+            % de-mean the data to prevent edge artefacts in case no
+            % band-pass or high-pass filter is applied.
+            trial_data = data(:,ichan,itrial) - mean(data(:,ichan,itrial));
+            % calculate the TF transform
+            [~,F,T,P] = spectrogram(trial_data,window,noverlap,nfft,Fs);
             % power to dB
-            % tf(:,:,itrial)=log10(abs(P));
             tf(:,:,itrial)=10*log10(abs(P));
             % apply temporal smoothing
             tf(:,:,itrial)=cfilter2(tf(:,:,itrial),smoothing);
-
+            
             %% monitor RAM usage
             if ispc
                 [~, sys] = memory;
