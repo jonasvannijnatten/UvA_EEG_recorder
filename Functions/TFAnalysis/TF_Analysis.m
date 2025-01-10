@@ -95,7 +95,7 @@ try
     fprintf('data dimensions: %d - %d - %d \nFs: %d samples/second\n', size(data,1), size(data,2), size(data,3), Fs);
 
 
-    % check whether channel selection is valid
+    %% check whether channel selection is valid
     chan = str2double(handles.chan.String);
     if chan < 0 || chan > size(data,2)
         warndlg('Invalid channel number')
@@ -110,52 +110,60 @@ try
         warndlg('Invalid trial number')
         return
     end
+
     fprintf('settings used for time-frequency analysis: \n');
-    % window = str2double(get(handles.window,'String'));
+    % use a sliding window of 1 second (=Fs)
     window = handles.EEG.fsample; % move settings to GUI
     fprintf('FFT window-size = %i samples \n', window);
     fprintf('FFT window-shape = Hamming \n');
-    % noverlap = str2double(get(handles.noverlap,'String'));
+    
+    %% Determine step size & smoothing
+    % Determine the amount of overlap and temporal smoothing depending on
+    % the sampling rate and segement size
+
+    % determine nr of samples in the segment
     nrsamples = size(data,1);
+
+    % when the sampling rate is equal to or greater than 1000Hz
     if Fs >= 1000
+
+        % For windows of less then 2 seconds
         if nrsamples  < 2*Fs
             noverlap = window-1;
             smoothing = 1;
+
+        % For windows between 1 and 2 seconds
         elseif nrsamples >= 1*Fs && nrsamples < 2*Fs
             noverlap = 0.5*Fs;
             smoothing = 3;
+
+        % For windows of 2 seconds and more
         else
             noverlap = .1*Fs;
             smoothing = 5;
         end
+
+    % when the sampling rate is less than 1000Hz
     elseif Fs < 1000
+
+        % For windows less than 5 seconds
         if nrsamples  < 5*Fs
             noverlap = window-1;
             smoothing = 1;
+
+        % for windows between 5 and 30 seconds
         elseif nrsamples >= 5*Fs && nrsamples < 30*Fs
             noverlap = .75*Fs;
             smoothing = 3;
+
+        % for windows of 30 seconds and more
         else
             noverlap = 0.5*Fs;
             smoothing = 5;
         end
     end
-    %     original method of determining noverlap
-    %     if nrsamples  < 1280
-    %         noverlap = window-1;
-    %     elseif nrsamples >= 1280 && nrsamples < 7680
-    %         noverlap = 192;
-    %     else
-    %         noverlap = 128; % move settings to GUI
-    %     end
-
     fprintf('FFT window step = %i samples\n', window-noverlap);
-    % nfft = str2double(get(handles.nfft,'String'));
-    nfft = Fs*4; % move settings to GUI
-    nfft = pow2(nextpow2(nfft));
-    fprintf('NFFT = %i samples\n', nfft);
-    % filter = str2double(get(handles.filter,'String'));
-    % smoothing = 1; % move settings to GUI
+
     if mod(smoothing,2)==0
         filterwarn = sprintf('2D filter size has to be an odd number. Filter size is changed from %i to %i',smoothing,smoothing+1);
         warndlg(filterwarn);
@@ -163,7 +171,19 @@ try
     end
     fprintf('2D filter size = %i sampels \n', smoothing);
 
-    % check whether onset sample is valid
+
+    %% determine the NFFT
+    % this can be increased to increase spectral accuracy
+    if Fs <= 1000
+        nfft = 1024;
+    else
+        nfft = pow2(nextpow2(Fs));
+    end
+    fprintf('NFFT = %i samples\n', nfft);
+
+    
+
+    %% check whether onset sample is valid
     onset_sample = str2double(handles.onset.String);
     if ~(isnumeric(onset_sample) && (mod(onset_sample,1)==0))
         if isnumeric(onset_sample) && ~(mod(onset_sample,1)==0)
@@ -183,7 +203,7 @@ try
         end
     end
 
-    % get frequency range to plot
+    %% get frequency range to plot
     % ylimits = str2num(get(handles.YLim, 'String'));
     if ispc
         [~, sys] = memory;
@@ -221,19 +241,26 @@ try
         end
         % TO-DO: calculate output tf size based on windowsize and overlap
         % to preallocate tf variable
-        % tf = zeros(??, length(handles.EEG.times,length(chans),size(data,3))
+        % tf = zeros([nfft/2+1, size(handles.EEG.data,1)-(noverlap),length(chans),size(data,3)]);
+        % tf = zeros([nfft/2+1, size(handles.EEG.data,1)-(noverlap),size(data,3)]);
+        tf = zeros([nfft/2+1, floor((nrsamples - window) / (window-noverlap)) + 1,size(data,3)]);
+        
         for itrial=1:numtrials
             count = count+1;
             waitbar(count/totaltrials,wb, { ...
                 ['Running fourier analysis  (RAM usage: ' ramusage '%)']; ...
                 ['channel: ' num2str(ichan) ', trial: ' num2str(count) ' / ' num2str(numtrials)]; ...
                 })
-            [~,F,T,P] = spectrogram(data(:,ichan,itrial),window,noverlap,nfft,Fs);
+            % de-mean the data to prevent edge artefacts in case no
+            % band-pass or high-pass filter is applied.
+            trial_data = data(:,ichan,itrial) - mean(data(:,ichan,itrial));
+            % calculate the TF transform
+            [~,F,T,P] = spectrogram(trial_data,window,noverlap,nfft,Fs);
             % power to dB
-            tf(:,:,itrial)=log10(abs(P));
+            tf(:,:,itrial)=10*log10(abs(P));
             % apply temporal smoothing
             tf(:,:,itrial)=cfilter2(tf(:,:,itrial),smoothing);
-
+            
             %% monitor RAM usage
             if ispc
                 [~, sys] = memory;
@@ -277,6 +304,9 @@ try
 
     %% baseline correction
     %     handles.bslmethod.Value = 5;
+    % if no baseline correction is applied the power is expressed in dB
+    powerUnit = "power (dB)";
+
     % apply correction
     if handles.bslmethod.Value == 2
         % normalize data to prevent extreme values in the resulting TF
@@ -285,7 +315,9 @@ try
         bslP = mean(tf(:,bslT,:),2);
         % relative baseline correction: power / baseline power
         %         tf = bsxfun(@ldivide, tf, bslP);
-        tf = bsxfun(@rdivide, tf, bslP);
+        tf = bsxfun(@rdivide, tf, bslP)*100;
+        
+        powerUnit = "power (% to baseline)";
         fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
         handles.history.base = sprintf(['Relative baseline correction per frequency (power/baseline) applied at %s\n' ...
             'The time widow used as baseline is %2.f until %.2f'], datetime, bsl(1)/Fs, bsl(2)/Fs);
@@ -306,6 +338,7 @@ try
         % power normalization: power / average power
         tf = bsxfun(@rdivide,tf,mean(tf,1));
         %     tf = bsxfun(@times,sum(tf,1),bsxfun(@rdivide,tf,sum(tf,1)));
+        powerUnit = "Normalized power";
         fprintf('Power normalized per time point(power/average power)\n')
         handles.history.base = sprintf('Normalized power baseline correction per time point (power/average power) applied at %s\n\n', datetime);
 
@@ -329,6 +362,8 @@ try
     else
         warndlg('huh?\n')
     end
+    handles.tf.powerUnit = powerUnit;
+
     % rereference the X-axis to the event onset
     T = T-(onset_sample/Fs);
 
@@ -417,6 +452,7 @@ end
 % add colorbar and Z-axis label
 cb = colorbar(handles.tfPlot);
 ztitle = 'Power';
+ztitle = handles.tf.powerUnit;
 ylabel(cb, ztitle);
 
 % set z limits
@@ -440,11 +476,6 @@ handles.filesizeTF.String = sprintf('TF file size: %i - %i - %i',d1,d2,d3); % di
 
 % Store averaging in history
 handles.history.average = sprintf('Data averaged over trial/subjects at %s\n\n', datetime);
-
-% remove third dim from EEG struct
-if length(handles.EEG.dims)==3
-    handles.EEG.dims(3) = [];
-end
 
 guidata(hObject,handles);
 plotTF(hObject, handles)
@@ -971,7 +1002,8 @@ plot(powspec,F(Fselect),mean(tf(Fselect,Tselect,trial),2))
 
 axis(powspec, 'tight');
 powspec.XLabel.String = 'Frequency (Hz)';
-powspec.YLabel.String = 'Power';
+% powspec.YLabel.String = 'Power';
+powspec.YLabel.String = handles.tf.powerUnit;
 powspec.Title.String = ['Power during ' num2str(toi(1)) 's to ' num2str(toi(2)) 's'];
 
 %% power vs over time plot
@@ -981,7 +1013,8 @@ Fselect = F>foi(1) & F<foi(2);
 plot(tpPlot, T,mean(tf(Fselect,:,trial),1));
 axis(tpPlot, 'tight');
 tpPlot.XLabel.String = 'Time (s)';
-tpPlot.YLabel.String = 'Power';
+% tpPlot.YLabel.String = 'Power';
+tpPlot.YLabel.String = handles.tf.powerUnit;
 tpPlot.Title.String = ['Power in ' num2str(foi(1)) 'Hz to ' num2str(foi(2)) 'Hz band'];
 % set y limits
 if str2num(handles.XLim.String)==0
