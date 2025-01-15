@@ -297,8 +297,15 @@ if any(addFilename) % check is any file was selected
         end
     elseif isfield(handles,'data') && strcmp(addEEG.domain, 'time')
         addData = addEEG.data;
+    elseif strcmp(handles.EEG.domain, addEEG.domain)
+        if any(~(handles.EEG.frequency==addEEG.frequency))
+            errordlg(['Trying to combine two powerspectrum data sets' ...
+                'but the frequency axes do not match.'])
+        end
+        addData = addEEG.data;
     end
 end
+
 % determine along which dimension to concatenate the data sets
 if (get(handles.con_row,'Value') == get(handles.con_row,'Max'))
     concatDim = 1;

@@ -65,7 +65,7 @@ delete(hObject)
 function varargout = TF_Analysis_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 if (isfield(handles,'closeFigure') && handles.closeFigure)
-      TF_Analysis_CloseRequestFcn(hObject, eventdata, handles)
+    TF_Analysis_CloseRequestFcn(hObject, eventdata, handles)
 end
 
 % --- Executes on button press in computeTF.
@@ -90,12 +90,12 @@ cla(handles.tpPlot)
 try
     data = handles.data;
     Fs = handles.EEG.fsample;
-    
+
     fprintf('---------------------------- \nRUNNING TIME-FREQUENCY ANALYSYS\n')
     fprintf('data dimensions: %d - %d - %d \nFs: %d samples/second\n', size(data,1), size(data,2), size(data,3), Fs);
-    
-    
-    % check whether channel selection is valid
+
+
+    %% check whether channel selection is valid
     chan = str2double(handles.chan.String);
     if chan < 0 || chan > size(data,2)
         warndlg('Invalid channel number')
@@ -103,61 +103,87 @@ try
     end
     % number of channels
     numchans = size(data,2);
-    
+
     % check whether trial selection is valid
     trial = str2double(handles.trial.String);
     if trial < 0 || trial > size(data,3)
         warndlg('Invalid trial number')
         return
     end
+
     fprintf('settings used for time-frequency analysis: \n');
-    % window = str2double(get(handles.window,'String'));
+    % use a sliding window of 1 second (=Fs)
     window = handles.EEG.fsample; % move settings to GUI
-    fprintf('FFT window-size = %i samples \n', window);    
+    fprintf('FFT window-size = %i samples \n', window);
     fprintf('FFT window-shape = Hamming \n');
-    % noverlap = str2double(get(handles.noverlap,'String'));
+    
+    %% Determine step size & smoothing
+    % Determine the amount of overlap and temporal smoothing depending on
+    % the sampling rate and segement size
+
+    % determine nr of samples in the segment
     nrsamples = size(data,1);
+
+    % when the sampling rate is equal to or greater than 1000Hz
     if Fs >= 1000
-        if nrsamples  < 2*Fs    
+
+        % For windows of less then 2 seconds
+        if nrsamples  < 2*Fs
             noverlap = window-1;
+            smoothing = 1;
+
+        % For windows between 1 and 2 seconds
         elseif nrsamples >= 1*Fs && nrsamples < 2*Fs
             noverlap = 0.5*Fs;
+            smoothing = 3;
+
+        % For windows of 2 seconds and more
         else
             noverlap = .1*Fs;
+            smoothing = 5;
         end
+
+    % when the sampling rate is less than 1000Hz
     elseif Fs < 1000
+
+        % For windows less than 5 seconds
         if nrsamples  < 5*Fs
             noverlap = window-1;
+            smoothing = 1;
+
+        % for windows between 5 and 30 seconds
         elseif nrsamples >= 5*Fs && nrsamples < 30*Fs
             noverlap = .75*Fs;
+            smoothing = 3;
+
+        % for windows of 30 seconds and more
         else
             noverlap = 0.5*Fs;
+            smoothing = 5;
         end
     end
-%     original method of determining noverlap
-%     if nrsamples  < 1280
-%         noverlap = window-1;
-%     elseif nrsamples >= 1280 && nrsamples < 7680
-%         noverlap = 192;
-%     else
-%         noverlap = 128; % move settings to GUI
-%     end
-
     fprintf('FFT window step = %i samples\n', window-noverlap);
-    % nfft = str2double(get(handles.nfft,'String'));
-    nfft = Fs*4; % move settings to GUI
-    nfft = pow2(nextpow2(nfft));
-    fprintf('NFFT = %i samples\n', nfft);
-    % filter = str2double(get(handles.filter,'String'));
-    filter = 5; % move settings to GUI
-    if mod(filter,2)==0
-        filterwarn = sprintf('2D filter size has to be an odd number. Filter size is changed from %i to %i',filter,filter+1);
+
+    if mod(smoothing,2)==0
+        filterwarn = sprintf('2D filter size has to be an odd number. Filter size is changed from %i to %i',smoothing,smoothing+1);
         warndlg(filterwarn);
-        filter = filter+1;
+        smoothing = smoothing+1;
     end
-    fprintf('2D filter size = %i sampels \n', filter);
+    fprintf('2D filter size = %i sampels \n', smoothing);
+
+
+    %% determine the NFFT
+    % this can be increased to increase spectral accuracy
+    if Fs <= 1000
+        nfft = 1024;
+    else
+        nfft = pow2(nextpow2(Fs));
+    end
+    fprintf('NFFT = %i samples\n', nfft);
+
     
-    % check whether onset sample is valid
+
+    %% check whether onset sample is valid
     onset_sample = str2double(handles.onset.String);
     if ~(isnumeric(onset_sample) && (mod(onset_sample,1)==0))
         if isnumeric(onset_sample) && ~(mod(onset_sample,1)==0)
@@ -176,8 +202,8 @@ try
             onset_sample = 0;
         end
     end
-    
-    % get frequency range to plot
+
+    %% get frequency range to plot
     % ylimits = str2num(get(handles.YLim, 'String'));
     if ispc
         [~, sys] = memory;
@@ -185,12 +211,12 @@ try
     else
         ramusage = 'unknown';
     end
-    
+
     %% calculate time frequency representation
     wb = waitbar(0, 'Running fourier analysis');
-    
+
     numtrials = size(data,3);
-    
+
     % hard-coded setting whether to analyse all channels at once or one at a
     % time
     allchans = 0;
@@ -200,7 +226,7 @@ try
     else
         chans = chan;
         totaltrials = numtrials;
-    end    
+    end
 
     count = 0;
     % powermatrix = [];
@@ -213,17 +239,27 @@ try
             handles.channelLabel = handles.EEG.channelLabels(ichan);
             handles.channelTypes = handles.EEG.channelTypes(ichan);
         end
+        % TO-DO: calculate output tf size based on windowsize and overlap
+        % to preallocate tf variable
+        % tf = zeros([nfft/2+1, size(handles.EEG.data,1)-(noverlap),length(chans),size(data,3)]);
+        % tf = zeros([nfft/2+1, size(handles.EEG.data,1)-(noverlap),size(data,3)]);
+        tf = zeros([nfft/2+1, floor((nrsamples - window) / (window-noverlap)) + 1,size(data,3)]);
+        
         for itrial=1:numtrials
             count = count+1;
             waitbar(count/totaltrials,wb, { ...
                 ['Running fourier analysis  (RAM usage: ' ramusage '%)']; ...
                 ['channel: ' num2str(ichan) ', trial: ' num2str(count) ' / ' num2str(numtrials)]; ...
                 })
-            [~,F,T,P] = spectrogram(data(:,ichan,itrial),window,noverlap,nfft,Fs);
-            %mp = min(P);
-            tf(:,:,itrial)=cfilter2(log10(abs(P)),filter); % original code
-            %     tf=cfilter2((abs(P)),filter);
-            %         powermatrix = cat(5,powermatrix,tf);
+            % de-mean the data to prevent edge artefacts in case no
+            % band-pass or high-pass filter is applied.
+            trial_data = data(:,ichan,itrial) - mean(data(:,ichan,itrial));
+            % calculate the TF transform
+            [~,F,T,P] = spectrogram(trial_data,window,noverlap,nfft,Fs);
+            % power to dB
+            tf(:,:,itrial)=10*log10(abs(P));
+            % apply temporal smoothing
+            tf(:,:,itrial)=cfilter2(tf(:,:,itrial),smoothing);
             
             %% monitor RAM usage
             if ispc
@@ -249,7 +285,7 @@ try
         % reset trial counter for each channel
         count = 0;
     end
-    
+
     %% determine baseline samples
     if any(str2num(get(handles.bsl, 'String')))
         bsl = str2num(get(handles.bsl, 'String'));
@@ -265,9 +301,12 @@ try
     end
     fprintf('Baseline in samples: %i : %i\n', bsl(1), bsl(2))
     fprintf('Baseline in seconds: %4.2f : %4.2f \n', bsl(1)/Fs, bsl(2)/Fs)
-    
-    %% baseline correction  
-%     handles.bslmethod.Value = 5;
+
+    %% baseline correction
+    %     handles.bslmethod.Value = 5;
+    % if no baseline correction is applied the power is expressed in dB
+    powerUnit = "power (dB)";
+
     % apply correction
     if handles.bslmethod.Value == 2
         % normalize data to prevent extreme values in the resulting TF
@@ -275,29 +314,34 @@ try
         % calculate power during baseline
         bslP = mean(tf(:,bslT,:),2);
         % relative baseline correction: power / baseline power
-%         tf = bsxfun(@ldivide, tf, bslP);
-        tf = bsxfun(@rdivide, tf, bslP);
-        fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
-        handles.history.base = sprintf('Relative baseline correction per frequency (power/baseline) applied at %s\n\n', datetime);
+        %         tf = bsxfun(@ldivide, tf, bslP);
+        tf = bsxfun(@rdivide, tf, bslP)*100;
         
+        powerUnit = "power (% to baseline)";
+        fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
+        handles.history.base = sprintf(['Relative baseline correction per frequency (power/baseline) applied at %s\n' ...
+            'The time widow used as baseline is %2.f until %.2f'], datetime, bsl(1)/Fs, bsl(2)/Fs);
+
     elseif handles.bslmethod.Value == 4
         % calculate power during baseline
         bslP = mean(tf(:,bslT,:),2);
         % absolute baseline correction: power - baseline power
         tf = bsxfun(@minus,tf,bslP);
         fprintf('Absolute baseline correction applied per frequency (power-baseline)\n')
-        handles.history.base = sprintf('Absolute baseline correction per frequency (power-baseline) applied at %s\n\n', datetime);
-        
+        handles.history.base = sprintf(['Absolute baseline correction per frequency (power-baseline) applied at %s\n' ...
+            'The time widow used as baseline is %2.f until %.2f'], datetime, bsl(1)/Fs, bsl(2)/Fs);
+
     elseif handles.bslmethod.Value == 3
-        % normalized power       
+        % normalized power
         % make sure all values are positive for correct normalization
         tf = tf + abs(min(tf(:)));
         % power normalization: power / average power
         tf = bsxfun(@rdivide,tf,mean(tf,1));
         %     tf = bsxfun(@times,sum(tf,1),bsxfun(@rdivide,tf,sum(tf,1)));
+        powerUnit = "Normalized power";
         fprintf('Power normalized per time point(power/average power)\n')
         handles.history.base = sprintf('Normalized power baseline correction per time point (power/average power) applied at %s\n\n', datetime);
-        
+
     elseif handles.bslmethod.Value == 5
         % make sure all values are positive for correct normalization
         tf = tf + abs(min(tf(:)));
@@ -307,40 +351,54 @@ try
         tf = 10*log10(bsxfun(@ldivide, tf, bslP));
         fprintf('Decibel baseline correction applied per frequency 10*log10(power/baseline power)\n')
         handles.history.base = sprintf('Decibel baseline correction per frequency 10*log10(power/baseline power) applied at %s\n\n', datetime);
-        
+
     elseif handles.bslmethod.Value == 1
         fprintf('no baseline correction has been applied\n')
+
+        % when the data is analysed again, remove the previous history
+        if isfield(handles, 'history')
+            handles = rmfield(handles, 'history');
+        end
     else
         warndlg('huh?\n')
     end
+    handles.tf.powerUnit = powerUnit;
+
     % rereference the X-axis to the event onset
     T = T-(onset_sample/Fs);
 
     % reduce data size from 4 to 3 dimensions
     % 3rd dimension (channel) is always 1 after TF computation
     tf = squeeze(tf);
-    
+
     [d1, d2, d3] = size(tf);
     handles.filesizeTF.String = sprintf('TF file size: %i - %i - %i',d1,d2,d3); % display filesize
-    
+
     %% store variables to handles
     handles.tf.data = tf;
     handles.tf.F    = F;
     handles.tf.T    = T;
-    handles.history.TF = sprintf('TF analysis applied at %s\n\n', datetime);
+    % handles.history.TF = sprintf('TF analysis applied at %s', datetime);
+    handles.history.TF = sprintf(['TF analysis applied at %s\n' ...
+        'The following paramaters were used:\n' ...
+        ' - a Hamming window of %i samples or %.2f seconds\n' ...
+        ' - %i samples overlap, or %.2f seconds\n' ...
+        ' - NFFT of %i samples\n' ...
+        ' - 2D smooting of %i' ...
+        ''], datetime, window, window/Fs, noverlap, noverlap/Fs, nfft, smoothing);
     guidata(hObject, handles);
 
-    
-    
+
+
     % close waitbar
     close(wb)
-    
+
     % plot the results
     plotTF(hObject, handles)
-    
+
     % calculate average power for the time- and freq of interest
-%     averagePower_Callback(hObject, eventdata, handles)
-    
+    %     averagePower_Callback(hObject, eventdata, handles)
+
     fprintf('---------------------------- \n')
 catch ME
     if exist('wb','var') && ishandle(wb)
@@ -394,6 +452,7 @@ end
 % add colorbar and Z-axis label
 cb = colorbar(handles.tfPlot);
 ztitle = 'Power';
+ztitle = handles.tf.powerUnit;
 ylabel(cb, ztitle);
 
 % set z limits
@@ -418,9 +477,6 @@ handles.filesizeTF.String = sprintf('TF file size: %i - %i - %i',d1,d2,d3); % di
 % Store averaging in history
 handles.history.average = sprintf('Data averaged over trial/subjects at %s\n\n', datetime);
 
-% remove third dim from EEG struct
-handles.EEG.dims(3) = [];
-
 guidata(hObject,handles);
 plotTF(hObject, handles)
 averagePower_Callback(hObject, eventdata, handles)
@@ -440,25 +496,25 @@ if isfield(handles,'indexH') && ishandle(handles.indexH)
     % reset frame to TF plot to indicate time-frequency range of interest
     handles.indexH.XData = [toi(1),toi(2),toi(2),toi(1),toi(1)];
     handles.indexH.YData = [foi(1),foi(1),foi(2),foi(2),foi(1)];
-    
+
     % reset lines to powerspectrum to indicate frequency band of interest
-     handles.powSpecLines = line(...
+    handles.powSpecLines = line(...
         [foi(1) foi(1) nan foi(2) foi(2)], ...
         [handles.powSpec.YLim(1) handles.powSpec.YLim(2) nan handles.powSpec.YLim(1) handles.powSpec.YLim(2)], ...
         'Parent', handles.powSpec,...
         'Color','k', ...
         'LineStyle','--' ...
         );
-    
+
     % reset lines to time-power plot to indicate time window of interest
-        handles.tpPlotLines = line( ...
+    handles.tpPlotLines = line( ...
         [toi(1) toi(1) nan toi(2) toi(2)], ...
         [handles.tpPlot.YLim(1) handles.tpPlot.YLim(2) nan handles.tpPlot.YLim(1) handles.tpPlot.YLim(2)], ...
         'Parent', handles.tpPlot,...
         'Color','k', ...
         'LineStyle','--' ...
         );
-    
+
 else
     % add frame to TF plot to indicate time-frequency range of interest
     hold(handles.tfPlot, 'on');
@@ -471,7 +527,7 @@ else
         'LineStyle','--' ...
         );
     hold(handles.tfPlot, 'off');
-    
+
     % add lines to powerspectrum to indicate frequency band of interest
     handles.powSpecLines = line(...
         [foi(1) foi(1) nan foi(2) foi(2)], ...
@@ -481,7 +537,7 @@ else
         'LineStyle','--' ...
         );
 
-    % add lines to time-power plot to indicate time window of interest  
+    % add lines to time-power plot to indicate time window of interest
     handles.tpPlotLines = line( ...
         [toi(1) toi(1) nan toi(2) toi(2)], ...
         [handles.tpPlot.YLim(1) handles.tpPlot.YLim(2) nan handles.tpPlot.YLim(1) handles.tpPlot.YLim(2)], ...
@@ -710,7 +766,7 @@ if any(filename) % check is any file was selected
         handles.bsl.String = ' ';
         handles.filesize.String = sprintf('file size: %i - %i - %i',d1,d2,d3); % display filesize
         handles.filesizeTF.String = ' ';
-    % if dmoain is tf, data is a struct (time-frequency data) -> save data to handles
+        % if dmoain is tf, data is a struct (time-frequency data) -> save data to handles
     elseif strcmp(EEG.domain, 'tf')
         data.data = EEG.data;
         data.T = EEG.time;
@@ -720,7 +776,7 @@ if any(filename) % check is any file was selected
         % remove any old data set
         if isfield(handles,'data'); handles = rmfield(handles,'data'); end
         plotTF(hObject, handles)
-%         averagePower_Callback(hObject, eventdata, handles)
+        %         averagePower_Callback(hObject, eventdata, handles)
         handles.filesizeTF.String = sprintf('TF filesize: %i - %i - %i',d1,d2,d3); % display filesize
         handles.filesize.String = ' ';
     end
@@ -936,6 +992,7 @@ chan  = str2double(handles.chan.String);
 trial = str2double(handles.trial.String);
 
 % plot powerspectrum
+%% to-do add inputcheck whether nr of values == 2
 powspec = handles.powSpec;
 toi = str2num(handles.toi.String);
 Tselect = T>toi(1) & T<toi(2);
@@ -945,7 +1002,8 @@ plot(powspec,F(Fselect),mean(tf(Fselect,Tselect,trial),2))
 
 axis(powspec, 'tight');
 powspec.XLabel.String = 'Frequency (Hz)';
-powspec.YLabel.String = 'Power';
+% powspec.YLabel.String = 'Power';
+powspec.YLabel.String = handles.tf.powerUnit;
 powspec.Title.String = ['Power during ' num2str(toi(1)) 's to ' num2str(toi(2)) 's'];
 
 %% power vs over time plot
@@ -955,7 +1013,8 @@ Fselect = F>foi(1) & F<foi(2);
 plot(tpPlot, T,mean(tf(Fselect,:,trial),1));
 axis(tpPlot, 'tight');
 tpPlot.XLabel.String = 'Time (s)';
-tpPlot.YLabel.String = 'Power';
+% tpPlot.YLabel.String = 'Power';
+tpPlot.YLabel.String = handles.tf.powerUnit;
 tpPlot.Title.String = ['Power in ' num2str(foi(1)) 'Hz to ' num2str(foi(2)) 'Hz band'];
 % set y limits
 if str2num(handles.XLim.String)==0
@@ -985,7 +1044,7 @@ addFrame(hObject, handles)
 function Save_Callback(hObject, eventdata, handles)
 if isfield(handles, 'tf')
     EEG = handles.EEG;
-    
+
     % History needs to be stored
     % Store tf data and change related information in struct
     EEG.data = handles.tf.data;
@@ -993,23 +1052,26 @@ if isfield(handles, 'tf')
     EEG.domain = "tf";
     EEG.time = handles.tf.T;
     EEG.frequency = handles.tf.F;
-    
+
     % Store analyzed channel label and type
     EEG.channelLabels = handles.channelLabel;
     EEG.channelTypes = handles.channelTypes;
-    
+
     % Update history depending on whether TF analysis, baseline correction and averaging was applied
     % History is updated here to make it flexible while user is still using the tool
     if isfield(handles.history, 'TF') && isfield(handles.history, 'base') && isfield(handles.history, 'average')
-        EEG.history = EEG.history + sprintf("\n\n") + handles.history.base + handles.history.TF +handles.history.average;
+        EEG.history = sprintf(EEG.history + "\n\n" + handles.history.base + "\n\n" + ...
+            handles.history.TF + "\n\n" + handles.history.average);
     elseif isfield(handles.history, 'TF') && isfield(handles.history, 'base')
-        EEG.history = EEG.history + sprintf("\n\n") + handles.history.base + handles.history.TF;
+        EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+            "\n\n" + handles.history.base);
     elseif isfield(handles.history, 'TF') && isfield(handles.history, 'average')
-        EEG.history = EEG.history + sprintf("\n\n") + handles.history.TF + handles.history.average;
+        EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+            "\n\n" + handles.history.average);
     elseif isfield(handles.history, 'TF')
-        EEG.history = EEG.history + sprintf("\n\n") + handles.history.TF;
+        EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF);
     end
-    
+
     % Save EEG data struct
     EEGSaveData(EEG,'tf');
 else
@@ -1083,13 +1145,16 @@ EEG.channelTypes = handles.channelTypes;
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
 if isfield(handles.history, 'TF') && isfield(handles.history, 'base') && isfield(handles.history, 'average')
-    EEG.history = [EEG.history handles.history.base handles.history.TF handles.history.average];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.base + "\n\n" + handles.history.average);
 elseif isfield(handles.history, 'TF') && isfield(handles.history, 'base')
-    EEG.history = [EEG.history handles.history.base handles.history.TF];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.base);
 elseif isfield(handles.history, 'TF') && isfield(handles.history, 'average')
-    EEG.history = [EEG.history handles.history.TF handles.history.average];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.average);
 elseif isfield(handles.history, 'TF')
-    EEG.history = [EEG.history handles.history.TF];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF);
 end
 
 % Save EEG data struct
@@ -1103,15 +1168,21 @@ copyobj(handles.powSpec, powSpecFig);
 
 % --- Executes on button press in Export_powSpec_data.
 function Export_powSpec_data_Callback(hObject, eventdata, handles)
-data = handles.powSpec.Children(2).YData' ;
 EEG = handles.EEG;
 
 % Store power spectrum data
-EEG.data = data;
+% get time range of interest
+tois = str2double(strsplit(handles.toi.String));
+% average power over that time range
+Tselect = handles.tf.T>tois(1) & handles.tf.T<tois(2);
+EEG.data = mean(handles.tf.data(:,Tselect),2);
+
+% update data information in the struct
 EEG.dims = "frequencies";
 EEG.domain = "frequency";
-EEG.time = handles.tf.T;
 EEG.frequency = handles.tf.F;
+% remove the time information from the struct.
+EEG = rmfield(EEG,'time');
 
 % Store analyzed channel label and type
 EEG.channelLabels = handles.channelLabel;
@@ -1120,13 +1191,16 @@ EEG.channelTypes = handles.channelTypes;
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
 if isfield(handles.history, 'TF') && isfield(handles.history, 'base') && isfield(handles.history, 'average')
-    EEG.history = [EEG.history handles.history.base handles.history.TF handles.history.average];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.base + "\n\n" + handles.history.average);
 elseif isfield(handles.history, 'TF') && isfield(handles.history, 'base')
-    EEG.history = [EEG.history handles.history.base handles.history.TF];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.base );
 elseif isfield(handles.history, 'TF') && isfield(handles.history, 'average')
-    EEG.history = [EEG.history handles.history.TF handles.history.average];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF + ...
+        "\n\n" + handles.history.average);
 elseif isfield(handles.history, 'TF')
-    EEG.history = [EEG.history handles.history.TF];
+    EEG.history = sprintf(EEG.history + "\n\n" + handles.history.TF);
 end
 
 % Save EEG data struct
@@ -1139,34 +1213,3 @@ TFFig = figure;
 h = copyobj(handles.tfPlot, TFFig);
 cb = colorbar('eastoutside');
 ylabel(cb, 'power');
-
-function zz = cfilter2( yy,nn )
-% 2D filter of yy, convolutes with nn x nn smoother nn must be uneven
-% Detailed explanation goes here
-if nn==1
-    zz=yy;
-    return
-end
-if rem(nn,2)==0
-   errordlg('You must filter with an uneven width, no action taken','Error','modal'); 
-   zz=yy;
-   return
-end
-B=ones(nn,nn); 
-B=B*0.5;
-mm=1+floor(nn/2);
-if nn>3
-  B(mm-1:mm+1,mm-1:mm+1)=0.75;
-end
-if nn>1
-  B(mm,mm)=1;
-end
-summat=sum(sum(B));
-B=B/summat;
-zz=yy; kk=size(yy);
-for ii=1:mm-1
-    a=zz(:,1); b=zz(:,end); zz=[a zz b];
-    c=zz(1,:); d=zz(end,:); zz=[c; zz; d];
-end
-zz=conv2(zz,B);
-zz=zz((mm+mm-1):(mm+mm+kk(1)-2),(mm+mm-1):(mm+mm+kk(2)-2));
