@@ -116,7 +116,7 @@ try
     window = handles.EEG.fsample; % move settings to GUI
     fprintf('FFT window-size = %i samples \n', window);
     fprintf('FFT window-shape = Hamming \n');
-    
+
     %% Determine step size & smoothing
     % Determine the amount of overlap and temporal smoothing depending on
     % the sampling rate and segement size
@@ -132,18 +132,18 @@ try
             noverlap = window-1;
             smoothing = 7;
 
-        % For windows between 1 and 2 seconds
+            % For windows between 1 and 2 seconds
         elseif nrsamples >= 1*Fs && nrsamples <= 2*Fs
             noverlap = 0.5*Fs;
             smoothing = 11;
 
-        % For windows of 2 seconds and more
+            % For windows of 2 seconds and more
         else
             noverlap = .1*Fs;
             smoothing = 15;
         end
 
-    % when the sampling rate is less than 1000Hz
+        % when the sampling rate is less than 1000Hz
     elseif Fs < 1000
 
         % For windows less than 5 seconds
@@ -151,12 +151,12 @@ try
             noverlap = window-1;
             smoothing = 3;
 
-        % for windows between 5 and 30 seconds
+            % for windows between 5 and 30 seconds
         elseif nrsamples >= 5*Fs && nrsamples <= 30*Fs
             noverlap = .75*Fs;
             smoothing = 5;
 
-        % for windows of 30 seconds and more
+            % for windows of 30 seconds and more
         else
             noverlap = 0.5*Fs;
             smoothing = 7;
@@ -181,7 +181,7 @@ try
     end
     fprintf('NFFT = %i samples\n', nfft);
 
-    
+
 
     %% check whether onset sample is valid
     onset_sample = str2double(handles.onset.String);
@@ -244,7 +244,7 @@ try
         % tf = zeros([nfft/2+1, size(handles.EEG.data,1)-(noverlap),length(chans),size(data,3)]);
         % tf = zeros([nfft/2+1, size(handles.EEG.data,1)-(noverlap),size(data,3)]);
         tf = zeros([nfft/2+1, floor((nrsamples - window) / (window-noverlap)) + 1,size(data,3)]);
-        
+
         for itrial=1:numtrials
             count = count+1;
             waitbar(count/totaltrials,wb, { ...
@@ -260,7 +260,7 @@ try
             tf(:,:,itrial)=10*log10(abs(P));
             % apply temporal smoothing
             tf(:,:,itrial)=cfilter2(tf(:,:,itrial),smoothing);
-            
+
             %% monitor RAM usage
             if ispc
                 [~, sys] = memory;
@@ -316,7 +316,7 @@ try
         % relative baseline correction: power / baseline power
         %         tf = bsxfun(@ldivide, tf, bslP);
         tf = bsxfun(@rdivide, tf, bslP)*100;
-        
+
         powerUnit = "power (% to baseline)";
         fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
         handles.history.base = sprintf(['Relative baseline correction per frequency (power/baseline) applied at %s\n' ...
@@ -995,6 +995,14 @@ trial = str2double(handles.trial.String);
 %% to-do add inputcheck whether nr of values == 2
 powspec = handles.powSpec;
 toi = str2num(handles.toi.String);
+msg = sprintf("Please indicate the time of interest with 2 values: \n" + ...
+    "the start time and end time in seconds.\n" + ...
+    "The end time should have a larger value then the start time.");
+if (length(toi) ~= 2) || ((length(toi)==2) && toi(1) > toi(2))
+    errordlg(msg, "Invalid time of interest")
+end
+
+
 Tselect = T>toi(1) & T<toi(2);
 ylimits = str2num(handles.YLim.String);
 Fselect = F>ylimits(1) & F<ylimits(2);
@@ -1009,6 +1017,12 @@ powspec.Title.String = ['Power during ' num2str(toi(1)) 's to ' num2str(toi(2)) 
 %% power vs over time plot
 tpPlot = handles.tpPlot;
 foi = str2num(handles.foi.String);
+msg = sprintf("Please indicate the frequency of interest with 2 values: \n" + ...
+    "the lower frequency and upper frequency in seconds.\n" + ...
+    "The upper frequency should have a larger value then the lower frequency.");
+if (length(foi) ~= 2) || ((length(foi)==2) && foi(1) > foi(2))
+    errordlg(msg, "Invalid frequency of interest")
+end
 Fselect = F>foi(1) & F<foi(2);
 plot(tpPlot, T,mean(tf(Fselect,:,trial),1));
 axis(tpPlot, 'tight');
@@ -1023,9 +1037,9 @@ else
     handles.tpPlot.XLim = str2num(handles.XLim.String);
 end
 %% average power within time and frequency of interest
-tois = str2num(handles.toi.String);
-foi = str2num(handles.foi.String);
-Tselect = T>tois(1) & T<tois(2);
+% tois = str2num(handles.toi.String);
+% foi = str2num(handles.foi.String);
+Tselect = T>toi(1) & T<toi(2);
 Fselect = F>foi(1) & F<foi(2);
 selection = tf(Fselect,Tselect,trial);
 handles.meanPower.String = num2str(mean(selection(:)));
