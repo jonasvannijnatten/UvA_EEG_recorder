@@ -1156,6 +1156,7 @@ EEG.frequency = str2num(handles.foi.String);
 % Store analyzed channel label and type
 EEG.channelLabels = handles.channelLabel;
 EEG.channelTypes = handles.channelTypes;
+EEG = rmfield(EEG.channelnumbers);
 
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
@@ -1203,6 +1204,7 @@ EEG.time = str2num(handles.toi.String);
 % Store analyzed channel label and type
 EEG.channelLabels = handles.channelLabel;
 EEG.channelTypes = handles.channelTypes;
+EEG = rmfield(EEG.channelnumbers);
 
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
