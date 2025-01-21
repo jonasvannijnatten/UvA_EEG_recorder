@@ -267,7 +267,7 @@ end
 
 guidata(hObject,handles)
 
-function conca_Callback(hObject, eventdata, handles)
+ function conca_Callback(hObject, eventdata, handles)
 [addFilename, addEEG] = EEGLoadData('any');
 %addData = addEEG.data;
 if any(addFilename) % check is any file was selected
@@ -283,7 +283,7 @@ if any(addFilename) % check is any file was selected
     % frequency axes match. If not, check the analysis settings.
     if isfield(handles,'tf') && strcmp(addEEG.domain, 'tf')
         addData.data = addEEG.data;
-        addData.T = addEEG.time;
+        addData.T = addEEG.time; 
         addData.F = addEEG.frequency;
         if any(size(handles.tf.T) ~= size(addData.T)) || sum(~any(handles.tf.T == addData.T))
             errordlg(['Trying to combine two time-frequency data sets' ...
