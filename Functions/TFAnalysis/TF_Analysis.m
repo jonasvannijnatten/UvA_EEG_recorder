@@ -130,17 +130,17 @@ try
         % For windows of less then 2 seconds
         if nrsamples  < 2*Fs
             noverlap = window-1;
-            smoothing = 1;
+            smoothing = 7;
 
         % For windows between 1 and 2 seconds
-        elseif nrsamples >= 1*Fs && nrsamples < 2*Fs
+        elseif nrsamples >= 1*Fs && nrsamples <= 2*Fs
             noverlap = 0.5*Fs;
-            smoothing = 3;
+            smoothing = 11;
 
         % For windows of 2 seconds and more
         else
             noverlap = .1*Fs;
-            smoothing = 5;
+            smoothing = 15;
         end
 
     % when the sampling rate is less than 1000Hz
@@ -149,17 +149,17 @@ try
         % For windows less than 5 seconds
         if nrsamples  < 5*Fs
             noverlap = window-1;
-            smoothing = 1;
+            smoothing = 3;
 
         % for windows between 5 and 30 seconds
-        elseif nrsamples >= 5*Fs && nrsamples < 30*Fs
+        elseif nrsamples >= 5*Fs && nrsamples <= 30*Fs
             noverlap = .75*Fs;
-            smoothing = 3;
+            smoothing = 5;
 
         % for windows of 30 seconds and more
         else
             noverlap = 0.5*Fs;
-            smoothing = 5;
+            smoothing = 7;
         end
     end
     fprintf('FFT window step = %i samples\n', window-noverlap);
@@ -173,7 +173,7 @@ try
 
 
     %% determine the NFFT
-    % this can be increased to increase spectral accuracy
+    % this can be increased to increase spectral resolution
     if Fs <= 1000
         nfft = 1024;
     else
