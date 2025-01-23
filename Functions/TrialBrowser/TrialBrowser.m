@@ -79,9 +79,9 @@ if any(filename) % check is any file was selected
     handles.chan.String = num2str(handles.channelcounter);
     cla(handles.trialPlot);
     cla(handles.extraPlot);
-    handles.data = data;  
+    handles.data = data;
     handles.EEG = EEG;
-    handles.filesize.String = sprintf('file size: %i - %i - %i',handles.samples,handles.nrofchannels,handles.totalnroftrials); % display filesize 
+    handles.filesize.String = sprintf('file size: %i - %i - %i',handles.samples,handles.nrofchannels,handles.totalnroftrials); % display filesize
     [handles.tf.T, handles.tf.F, handles.tf.data] = trial_TF_analysis(hObject, handles);
     plotData(hObject, handles);
 end
@@ -163,7 +163,7 @@ if handles.plotStats.Value
     plot(handles.trialPlot, time, trialMean, 'r');
     hold(handles.trialPlot, 'on');
     plot(handles.trialPlot, time, trialMean+trialSD, 'r:');
-    plot(handles.trialPlot, time, trialMean-trialSD, 'r:');    
+    plot(handles.trialPlot, time, trialMean-trialSD, 'r:');
 end
 hold(handles.trialPlot, 'on');
 plot(handles.trialPlot, time, data(:,handles.channelcounter, handles.trialcounter), 'b');
@@ -203,19 +203,23 @@ function [T, F, tf] = trial_TF_analysis(hObject, handles)
 try
     data = handles.data;
     Fs = handles.EEG.fsample;
-    
+
     fprintf('---------------------------- \nRUNNING TIME-FREQUENCY ANALYSYS\n')
-    fprintf('data dimensions: %d - %d - %d \nFs: %d samples/second\n', size(data,1), size(data,2), size(data,3), Fs);    
+    fprintf('data dimensions: %d - %d - %d \nFs: %d samples/second\n', size(data,1), size(data,2), size(data,3), Fs);
+
+    % number of channels
+    numchans = size(data,2);
+
+    % determine nr of samples in the segment
+    nrsamples = size(data,1);
     
     % check whether channel selection is valid
     chan = str2double(handles.channelcounter);
-    if chan < 0 || chan > size(data,2)
+    if chan < 0 || chan > numchans
         warndlg('Invalid channel number')
         return
     end
-    % number of channels
-    numchans = size(data,2);
-    
+
     % check whether trial selection is valid
     trial = str2double(handles.trialcounter);
     if trial < 0 || trial > size(data,3)
@@ -225,70 +229,78 @@ try
     fprintf('settings used for time-frequency analysis: \n');
     % window = str2double(get(handles.window,'String'));
     window = handles.EEG.fsample; % move settings to GUI
-    fprintf('FFT window-size = %i samples \n', window);    
+    fprintf('FFT window-size = %i samples \n', window);
     fprintf('FFT window-shape = Hamming \n');
-    % noverlap = str2double(get(handles.noverlap,'String'));
-    nrsamples = size(data,1);
+
+    % when the sampling rate is equal to or greater than 1000Hz
     if Fs >= 1000
-        if nrsamples  < 2*Fs    
+
+        % For windows of less then 2 seconds
+        if nrsamples  < 2*Fs
             noverlap = window-1;
-        elseif nrsamples >= 1*Fs && nrsamples < 2*Fs
+            smoothing = 7;
+
+            % For windows between 1 and 2 seconds
+        elseif nrsamples >= 1*Fs && nrsamples <= 2*Fs
             noverlap = 0.5*Fs;
+            smoothing = 11;
+
+            % For windows of 2 seconds and more
         else
             noverlap = .1*Fs;
+            smoothing = 15;
         end
+
+        % when the sampling rate is less than 1000Hz
     elseif Fs < 1000
+
+        % For windows less than 5 seconds
         if nrsamples  < 5*Fs
             noverlap = window-1;
-        elseif nrsamples >= 5*Fs && nrsamples < 30*Fs
+            smoothing = 3;
+
+            % for windows between 5 and 30 seconds
+        elseif nrsamples >= 5*Fs && nrsamples <= 30*Fs
             noverlap = .75*Fs;
+            smoothing = 5;
+
+            % for windows of 30 seconds and more
         else
             noverlap = 0.5*Fs;
+            smoothing = 7;
         end
     end
-    %     nrsamples = size(data,1);
-%     if nrsamples  < 1280
-%         noverlap = window-1;
-%     elseif nrsamples >= 1280 && nrsamples < 7680
-%         noverlap = 192;
-%     else
-%         noverlap = 128; % move settings to GUI
-%     end
     fprintf('FFT window step = %i samples\n', window-noverlap);
-    % nfft = str2double(get(handles.nfft,'String'));
-    nfft = 1024; % move settings to GUI
-    nfft = pow2(nextpow2(nfft));
-    fprintf('NFFT = %i samples\n', nfft);
-    % filter = str2double(get(handles.filter,'String'));
-    filter = 5; % move settings to GUI
-    if mod(filter,2)==0
-        filterwarn = sprintf('2D filter size has to be an odd number. Filter size is changed from %i to %i',filter,filter+1);
+
+    if mod(smoothing,2)==0
+        filterwarn = sprintf('2D filter size has to be an odd number. Filter size is changed from %i to %i',smoothing,smoothing+1);
         warndlg(filterwarn);
-        filter = filter+1;
+        smoothing = smoothing+1;
     end
-    fprintf('2D filter size = %i sampels \n', filter);
-    
+    fprintf('2D filter size = %i sampels \n', smoothing);
+
+
+    %% determine the NFFT
+    % this can be increased to increase spectral resolution
+    if Fs <= 1000
+        nfft = 1024;
+    else
+        nfft = pow2(nextpow2(Fs));
+    end
+    fprintf('NFFT = %i samples\n', nfft);
+
+    % monitor RAM usage
+    if ispc
+        [~, sys] = memory;
+        ramusage = num2str(round((sys.PhysicalMemory.Total - sys.PhysicalMemory.Available )/ sys.PhysicalMemory.Total * 100,2));
+    else
+        ramusage = 'unknown';
+    end
+
     % check whether onset sample is valid
     onset_sample = 1;
-%     onset_sample = str2double(handles.onset.String);
-    if ~(isnumeric(onset_sample) && (mod(onset_sample,1)==0))
-        if isnumeric(onset_sample) && ~(mod(onset_sample,1)==0)
-            warndlg('The provided onset sample is not an integer. No baseline correction will be applied')
-            onset_sample = 0;
-        elseif ~isnumeric(onset_sample)
-            warndlg('The provided onset sample is not number. No baseline correction will be applied')
-            onset_sample = 0;
-        elseif isempty(onset_sample)
-            warndlg('The provided onset sample is empty. No baseline correction will be applied')
-            onset_sample = 0;
-        elseif onset_sample > size(data,1)
-            warndlg('The provided onset sample exceeds the samples in the dataset')
-        else
-            warndlg('The provided onset sample is unidentified. No baseline correction will be applied')
-            onset_sample = 0;
-        end
-    end
-    
+
+
     % get frequency range to plot
     % ylimits = str2num(get(handles.YLim, 'String'));
     if ispc
@@ -297,12 +309,12 @@ try
     else
         ramusage = 'unknown';
     end
-    
+
     %% calculate time frequency representation
     wb = waitbar(0, 'Running fourier analysis');
-    
+
     numtrials = size(data,3);
-    
+
     % hard-coded setting whether to analyse all channels at once or one at a
     % time
     allchans = 0;
@@ -313,7 +325,7 @@ try
         chans = handles.channelcounter;
         totaltrials = numtrials;
     end
-    
+
     count = 0;
     % powermatrix = [];
     for ichan = chans
@@ -323,16 +335,20 @@ try
                 ['Running fourier analysis  (RAM usage: ' ramusage '%)']; ...
                 ['channel: ' num2str(ichan) ', trial: ' num2str(count) ' / ' num2str(numtrials)]; ...
                 })
-            [~,F,T,P] = spectrogram(data(:,ichan ,itrial),window,noverlap,nfft,Fs);
-            %mp = min(P);
-            tf(:,:,itrial)=cfilter2(log10(abs(P)),filter); % original code
-            %     tf=cfilter2((abs(P)),filter);
-            %         powermatrix = cat(5,powermatrix,tf);
-            
+            % de-mean the data to prevent edge artefacts in case no
+            % band-pass or high-pass filter is applied.
+            trial_data = data(:,ichan,itrial) - mean(data(:,ichan,itrial));
+            % calculate the TF transform
+            [~,F,T,P] = spectrogram(trial_data,window,noverlap,nfft,Fs);
+            % power to dB
+            tf(:,:,itrial)=10*log10(abs(P));
+            % apply temporal smoothing
+            tf(:,:,itrial)=cfilter2(tf(:,:,itrial),smoothing);
+
             %% monitor RAM usage
             if ispc
                 [~, sys] = memory;
-                ramusage = num2str(round((sys.PhysicalMemory.Total - sys.PhysicalMemory.Available )/ sys.PhysicalMemory.Total * 100,2));
+                ramusage = round((sys.PhysicalMemory.Total - sys.PhysicalMemory.Available )/ sys.PhysicalMemory.Total * 100,2);
                 if ramusage > 95 % quit the proces if RAM is overloading
                     warndlg({ ...
                         'The time-frequency analysis is aborted because the computer is running out of working memory.';...
@@ -345,6 +361,7 @@ try
                     clearvars('T','F','P','tf')
                     break
                 end
+                ramusage = num2str(ramusage);
             else
                 ramusage = 'unknown';
             end
@@ -352,19 +369,19 @@ try
         % reset trial counter for each channel
         count = 0;
     end
-   
+
     % rereference the X-axis to the event onset
     T = T+min(handles.EEG.time);
-    
-%     %% store variables to handles
+
+    %     %% store variables to handles
     handles.tf.data = tf;
     handles.tf.F    = F;
     handles.tf.T    = T;
     guidata(hObject, handles);
-    
+
     % close waitbar
     close(wb)
-    
+
     fprintf('---------------------------- \n')
 catch ME
     if exist('wb','var') && ishandle(wb)
