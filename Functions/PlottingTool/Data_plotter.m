@@ -118,7 +118,11 @@ for Idx = 1:length(dimension)
             frequency = handles.EEG.frequency;
             plot(frequency, handles.data(:,dimension(Idx))); hold on
             xlabel('Frequency (Hz)')
-            ylabel(handles.EEG.powerUnit)
+            if isfield(handles.EEG, 'powerUnit')
+                ylabel(handles.EEG.powerUnit)
+            else
+                ylabel('Power (dB)')
+            end
         end
     elseif row_on == 1
         plot((1:nr_of_cols)./Fsp,handles.data(dimension(Idx),:));hold on %plot signal in microvolts
@@ -141,8 +145,12 @@ if ~isempty(y_ax)
 end
 
 
-if isfield(handles.EEG, "powerUnit")
-    ylabel(handles.EEG.powerUnit)
+if strcmp(handles.EEG.domain, 'frequency')
+    ylabel('Power (dB)')
+
+    % TO-DO: use unit of power as calculated in TF analysis tool.
+    % Need to double check whether it is exported correctly in that tool.
+    % ylabel(handles.EEG.powerUnit)
 else
     ylabel('EEG Amplitude (microvolts)')
     % add zero line
