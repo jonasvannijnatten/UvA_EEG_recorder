@@ -155,7 +155,7 @@ handles.trial_indicator.String = [num2str(handles.trialcounter) ' / ' num2str(ha
 handles.channel_indicator.String = [num2str(handles.channelcounter) ' / ' num2str(handles.nrofchannels)];
 
 time = handles.EEG.time;
-data = handles.data *1e6;
+data = handles.data;
 cla(handles.trialPlot);
 if handles.plotStats.Value
     trialMean = mean(data(:,handles.channelcounter,:),3);
