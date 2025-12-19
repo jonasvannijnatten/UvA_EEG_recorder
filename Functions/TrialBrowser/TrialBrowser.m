@@ -22,7 +22,7 @@ function varargout = TrialBrowser(varargin)
 
 % Edit the above text to modify the response to help TrialBrowser
 
-% Last Modified by GUIDE v2.5 27-Jan-2022 15:19:14
+% Last Modified by GUIDE v2.5 18-Dec-2025 17:04:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -171,11 +171,15 @@ axis(handles.trialPlot, 'tight')
 xlabel(handles.trialPlot,'Time (seconds)')
 ylabel(handles.trialPlot,'Amplitude (\muV)')
 
+
 T = handles.tf.T;
 F = handles.tf.F;
 tf = handles.tf.data;
 
-surf(handles.extraPlot,T,F,tf(:,:,handles.trialcounter),'EdgeColor','none');
+ylimits = str2num(handles.YLim.String);
+Fselect = F> ylimits(1) & F < ylimits(2);
+
+surf(handles.extraPlot,T,F(Fselect),tf(Fselect,:,handles.trialcounter),'EdgeColor','none');
 colormap(handles.extraPlot,jet(30)); % set colormap
 view(handles.extraPlot,0,90); % set view from xy-axis angle
 axis(handles.extraPlot,'xy');
@@ -194,6 +198,11 @@ cb = colorbar(handles.extraPlot);
 ztitle = 'Power (^{10}log(\muV^2)';
 ylabel(cb, ztitle);
 
+% set z limits
+if any(get(handles.ZLim, 'String')) && numel(str2num(get(handles.ZLim, 'String')))>1
+    caxis(handles.extraPlot, str2num(get(handles.ZLim, 'String')));
+    cb.Limits = str2num(get(handles.ZLim, 'String'));
+end
 
 guidata(hObject,handles)
 
@@ -403,6 +412,15 @@ plotData(hObject, handles)
 
 
 function YLim_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function ZLim_Callback(hObject, eventdata, handles)
+plotData(hObject, handles)
+
+% --- Executes during object creation, after setting all properties.
+function ZLim_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
