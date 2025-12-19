@@ -23,3 +23,6 @@ Functions/data_generator3.m
 *.asv
 *.xml
 *.vsrrp
+*.log
+*.zip
+Data/inwerken_2526/demo_data_ta3/N_back_task_S2.csv
