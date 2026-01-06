@@ -154,8 +154,12 @@ function plotData(hObject, handles)
 handles.trial_indicator.String = [num2str(handles.trialcounter) ' / ' num2str(handles.totalnroftrials)];
 handles.channel_indicator.String = [num2str(handles.channelcounter) ' / ' num2str(handles.nrofchannels)];
 
+% only use time points also available in TF data
 time = handles.EEG.time;
-data = handles.data;
+time_select = find(time>min(handles.tf.T) & time<max(handles.tf.T));
+
+time = handles.EEG.time(time_select);
+data = handles.data(time_select,:,:);
 cla(handles.trialPlot);
 if handles.plotStats.Value
     trialMean = mean(data(:,handles.channelcounter,:),3);
