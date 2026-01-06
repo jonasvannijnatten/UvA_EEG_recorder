@@ -1150,11 +1150,13 @@ EEG = handles.EEG;
 EEG.data = data;
 EEG.dims = "times";
 EEG.time = handles.tf.T;
-EEG.frequency = handles.tf.F;
+EEG.powerUnit = handles.tf.powerUnit;
+EEG.frequency = str2num(handles.foi.String);
 
 % Store analyzed channel label and type
 EEG.channelLabels = handles.channelLabel;
 EEG.channelTypes = handles.channelTypes;
+EEG = rmfield(EEG.channelnumbers);
 
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
@@ -1195,12 +1197,14 @@ EEG.data = mean(handles.tf.data(:,Tselect),2);
 EEG.dims = "frequencies";
 EEG.domain = "frequency";
 EEG.frequency = handles.tf.F;
+EEG.powerUnit = handles.tf.powerUnit;
 % remove the time information from the struct.
-EEG = rmfield(EEG,'time');
+EEG.time = str2num(handles.toi.String);
 
 % Store analyzed channel label and type
 EEG.channelLabels = handles.channelLabel;
 EEG.channelTypes = handles.channelTypes;
+EEG = rmfield(EEG.channelnumbers);
 
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
