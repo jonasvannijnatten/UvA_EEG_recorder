@@ -22,7 +22,7 @@ function varargout = Array_manipulator(varargin)
 
 % Edit the above text to modify the response to help Array_manipulator
 
-% Last Modified by GUIDE v2.5 26-Feb-2019 15:48:47
+% Last Modified by GUIDE v2.5 06-Jan-2026 10:34:13
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -484,6 +484,7 @@ elseif strcmp(handles.EEG.dims(dimIndexNum), 'channels')
 elseif strcmp(handles.EEG.dims(dimIndexNum), 'samples')
     handles.EEG = rmfield(handles.EEG, 'samples');
     handles.EEG = rmfield(handles.EEG, 'sampleinfo');
+    handles.EEG = rm.field(handles.EEG, 'time');
 elseif strcmp(handles.EEG.dims(dimIndexNum), 'frequencies')
     handles.EEG = rmfield(handles.EEG, 'frequency');
 elseif strcmp(handles.EEG.dims(dimIndexNum), 'subjects')
@@ -634,8 +635,8 @@ function Syllabus_Callback(hObject, eventdata, handles)
 web('Syllabus.htm', '-helpbrowser')
 
 
-% --- Executes when uipanel5 is resized.
-function uipanel5_SizeChangedFcn(hObject, eventdata, handles)
-% hObject    handle to uipanel5 (see GCBO)
+% --- Executes when panel_data is resized.
+function panel_data_SizeChangedFcn(hObject, eventdata, handles)
+% hObject    handle to panel_data (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
