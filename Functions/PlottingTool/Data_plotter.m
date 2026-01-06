@@ -22,7 +22,7 @@ function varargout = Data_plotter(varargin)
 
 % Edit the above text to modify the response to help Data_plotter
 
-% Last Modified by GUIDE v2.5 20-Dec-2018 15:05:47
+% Last Modified by GUIDE v2.5 06-Jan-2026 12:44:33
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -83,6 +83,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function plot_Callback(hObject, eventdata, handles)
+axes1 = handles.axes1;
 x_ax = get(handles.x_ax,'String'); % get x limits
 y_ax = get(handles.y_ax,'String'); % get y limits
 strp = get(handles.chan2plot,'String'); % get selection to plot
@@ -112,11 +113,11 @@ for Idx = 1:length(dimension)
         % depending on the data domain, use appropriate axis labels
         if strcmp(handles.EEG.domain, "time")
             time = handles.EEG.time;
-            plot(time,handles.data(:,dimension(Idx)));hold on %plot signal in microvolts
+            plot(axes1,time,handles.data(:,dimension(Idx)));hold on %plot signal in microvolts
             xlabel('Time (s)')
         elseif strcmp(handles.EEG.domain, "frequency")
             frequency = handles.EEG.frequency;
-            plot(frequency, handles.data(:,dimension(Idx))); hold on
+            plot(axes1,frequency, handles.data(:,dimension(Idx))); hold on
             xlabel('Frequency (Hz)')
             if isfield(handles.EEG, 'powerUnit')
                 ylabel(handles.EEG.powerUnit)
@@ -125,7 +126,7 @@ for Idx = 1:length(dimension)
             end
         end
     elseif row_on == 1
-        plot((1:nr_of_cols)./Fsp,handles.data(dimension(Idx),:));hold on %plot signal in microvolts
+        plot(axes1,(1:nr_of_cols)./Fsp,handles.data(dimension(Idx),:));hold on %plot signal in microvolts
     end
 end
 
@@ -157,8 +158,8 @@ else
     xlimit = get(gca, 'xlim');
     ylimit = get(gca, 'ylim');
     hold on
-    plot([xlimit(1) xlimit(2)],[0 0],'k')
-    plot([0 0], [ylimit(1) ylimit(2)], 'k')
+    plot(axes1, [xlimit(1) xlimit(2)],[0 0],'k')
+    plot(axes1, [0 0], [ylimit(1) ylimit(2)], 'k')
 end
 
 % add legend with arbitraty entries
@@ -166,7 +167,7 @@ end
 labels = {'data 1','data 2','data 3','data 4','data 5',...
     'data 6','data 7','data 8','data 9','data 10','data 11','data 12','data 13','data 14'};
 labeling = labels(dimension);
-legend(labeling,'Location','NorthEastOutside');
+legend(labeling,'Location','northeast');
 hold off
 title(handles.filename,'Interpreter','none')
 
@@ -220,3 +221,11 @@ function onset_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in export_figure.
+function export_figure_Callback(hObject, eventdata, handles)
+copyobj([handles.axes1.Legend handles.axes1], figure);
+% hObject    handle to export_figure (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
