@@ -23,16 +23,16 @@ w\:* {behavior:url(#default#VML);}
   <o:Author>Jonas van Nijnatten</o:Author>
   <o:Template>Normal</o:Template>
   <o:LastAuthor>Jonas van Nijnatten</o:LastAuthor>
-  <o:Revision>18</o:Revision>
-  <o:TotalTime>6565</o:TotalTime>
+  <o:Revision>19</o:Revision>
+  <o:TotalTime>6586</o:TotalTime>
   <o:Created>2023-01-11T16:03:00Z</o:Created>
-  <o:LastSaved>2025-01-21T13:57:00Z</o:LastSaved>
+  <o:LastSaved>2025-01-21T14:18:00Z</o:LastSaved>
   <o:Pages>12</o:Pages>
-  <o:Words>2236</o:Words>
-  <o:Characters>12301</o:Characters>
-  <o:Lines>102</o:Lines>
-  <o:Paragraphs>29</o:Paragraphs>
-  <o:CharactersWithSpaces>14508</o:CharactersWithSpaces>
+  <o:Words>2215</o:Words>
+  <o:Characters>12186</o:Characters>
+  <o:Lines>101</o:Lines>
+  <o:Paragraphs>28</o:Paragraphs>
+  <o:CharactersWithSpaces>14373</o:CharactersWithSpaces>
   <o:Version>16.00</o:Version>
  </o:DocumentProperties>
 </xml><![endif]-->
@@ -2203,7 +2203,7 @@ mso-ansi-language:EN-US;mso-no-proof:yes'><!--[if gte vml 1]><v:shapetype id="_x
  <v:imagedata src="TF_Analysis_help_bestanden/image001.png" o:title=""
   cropleft="193f" cropright="1f"/>
 </v:shape><![endif]--><![if !vml]><img width=1127 height=669
-src="TF_Analysis_help_bestanden/image012.gif" v:shapes="Picture_x0020_9"><![endif]></span><span
+src="TF_Analysis_help_bestanden/image002.gif" v:shapes="Picture_x0020_9"><![endif]></span><span
 lang=EN-US style='font-size:12.0pt;line-height:115%;mso-ansi-language:EN-US'><o:p></o:p></span></p>
 
 <p class=MsoNormal><span lang=EN-US style='font-size:12.0pt;line-height:115%;
@@ -2292,7 +2292,7 @@ mso-ansi-language:EN-US'>&nbsp;<span style='mso-no-proof:yes'><!--[if gte vml 1]
  height:33pt;visibility:visible;mso-wrap-style:square'>
  <v:imagedata src="TF_Analysis_help_bestanden/image003.png" o:title=""/>
 </v:shape><![endif]--><![if !vml]><img width=185 height=44
-src="TF_Analysis_help_bestanden/image013.gif" v:shapes="Picture_x0020_2"><![endif]></span><o:p></o:p></span></p>
+src="TF_Analysis_help_bestanden/image004.gif" v:shapes="Picture_x0020_2"><![endif]></span><o:p></o:p></span></p>
 
 <p class=MsoNormal><span lang=EN-US style='font-size:12.0pt;line-height:115%;
 mso-ansi-language:EN-US'><o:p>&nbsp;</o:p></span></p>
@@ -2327,7 +2327,7 @@ yes'><!--[if gte vml 1]><v:shape id="Picture_x0020_3" o:spid="_x0000_i1029"
  <v:imagedata src="TF_Analysis_help_bestanden/image001.png" o:title=""
   croptop="6662f" cropbottom="51203f" cropleft="193f" cropright="35671f"/>
 </v:shape><![endif]--><![if !vml]><img width=390 height=60
-src="TF_Analysis_help_bestanden/image014.gif" v:shapes="Picture_x0020_3"><![endif]></span><span
+src="TF_Analysis_help_bestanden/image005.gif" v:shapes="Picture_x0020_3"><![endif]></span><span
 lang=EN-US style='font-size:12.0pt;line-height:115%;mso-ansi-language:EN-US'><o:p></o:p></span></p>
 
 <p class=MsoNormal><span lang=EN-US style='font-size:12.0pt;line-height:115%;
@@ -2368,7 +2368,7 @@ lang=EN-US style='font-size:12.0pt;line-height:115%;font-family:Symbol;
 mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol;mso-ansi-language:
 EN-US'><span style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </span></span></span><![endif]><span lang=EN-US style='font-size:12.0pt;
-line-height:115%;mso-ansi-language:EN-US'>NFFT = Fs*4<o:p></o:p></span></p>
+line-height:115%;mso-ansi-language:EN-US'>NFFT = 1024<o:p></o:p></span></p>
 
 <p class=MsoListParagraph style='margin-left:85.05pt;text-indent:-.25in;
 mso-list:l5 level1 lfo6'><![if !supportLists]><span lang=EN-US
@@ -2639,10 +2639,11 @@ style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;
 </span></span></span><![endif]><span lang=EN-US style='font-size:12.0pt;
 line-height:115%;mso-ansi-language:EN-US'>None<br>
 No baseline correction is applied and the function plots the power spectral density
-(PSD) estimates. These PSD are expressed in <sup>10</sup>Log(V<sup>2</sup>). <br>
-Note: since the recorder EEG signal is in the order of microvolts (=1e<sup>-6</sup>
-Volt) the resulting raw power values are in the range of -12 (=<sup>10</sup>Log(1e<sup>-6*2</sup>))</span><span
-lang=en-US style='font-size:12.0pt;line-height:115%;mso-ansi-language:#0C00'><o:p></o:p></span></p>
+(PSD) estimates. These PSD are expressed in decibels (10*<sup>10</sup>Log(V<sup>2</sup>)).
+<br style='mso-special-character:line-break'>
+<![if !supportLineBreakNewLine]><br style='mso-special-character:line-break'>
+<![endif]></span><span lang=en-US style='font-size:12.0pt;line-height:115%;
+mso-ansi-language:#0C00'><o:p></o:p></span></p>
 
 <p class=MsoListParagraph style='margin-left:85.05pt;text-indent:-.25in;
 mso-list:l0 level1 lfo8'><![if !supportLists]><span lang=en-US
@@ -2788,7 +2789,7 @@ yes'><!--[if gte vml 1]><v:shape id="Picture_x0020_5" o:spid="_x0000_i1027"
  <v:imagedata src="TF_Analysis_help_bestanden/image001.png" o:title=""
   croptop="39863f" cropleft="40858f" cropright="1f"/>
 </v:shape><![endif]--><![if !vml]><img border=0 width=382 height=236
-src="TF_Analysis_help_bestanden/image015.gif" v:shapes="Picture_x0020_5"><![endif]></span><span
+src="TF_Analysis_help_bestanden/image007.gif" v:shapes="Picture_x0020_5"><![endif]></span><span
 lang=en-US style='font-size:12.0pt;line-height:115%;mso-ansi-language:#0C00'><o:p></o:p></span></p>
 
 <p class=MsoNormal><span lang=en-US style='font-size:12.0pt;line-height:115%;
@@ -2851,7 +2852,7 @@ mso-ansi-language:EN-US'>&nbsp;<span style='mso-no-proof:yes'><!--[if gte vml 1]
  height:16.5pt;visibility:visible;mso-wrap-style:square'>
  <v:imagedata src="TF_Analysis_help_bestanden/image008.png" o:title=""/>
 </v:shape><![endif]--><![if !vml]><img border=0 width=183 height=22
-src="TF_Analysis_help_bestanden/image016.gif" v:shapes="Picture_x0020_6"><![endif]></span><br
+src="TF_Analysis_help_bestanden/image009.gif" v:shapes="Picture_x0020_6"><![endif]></span><br
 style='mso-special-character:line-break'>
 <![if !supportLineBreakNewLine]><br style='mso-special-character:line-break'>
 <![endif]><o:p></o:p></span></p>
@@ -3001,7 +3002,7 @@ These settings do not affect the analysis itself.<o:p></o:p></span></p>
   croptop="6651f" cropbottom="26488f" cropleft="31042f" cropright="25726f"/>
  <w:wrap type="square" anchorx="margin" anchory="margin"/>
 </v:shape><![endif]--><![if !vml]><img width=287 height=533
-src="TF_Analysis_help_bestanden/image017.gif" align=left hspace=45
+src="TF_Analysis_help_bestanden/image018.gif" align=left hspace=45
 style='margin-left:-33px;margin-right:33px' v:shapes="Picture_x0020_3"><![endif]><span
 lang=EN-US style='mso-ansi-language:EN-US'>Channel</span><span lang=EN-US
 style='font-size:11.0pt;line-height:115%;mso-ansi-language:EN-US'><o:p></o:p></span></h4>
