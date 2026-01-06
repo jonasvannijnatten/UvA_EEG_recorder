@@ -59,12 +59,12 @@ function cuttingMethod_Callback(hObject, eventdata, handles)
 if handles.cuttingMethod.Value == 1
     
     set(get(handles.markerPanelSerial, 'Children'), 'Enable', 'on')
-    handles.markerPanelTTL.ShadowColor = 'k';
-    handles.markerPanelTTL.BorderWidth = 2;
+    handles.markerPanelSerial.ShadowColor = 'k';
+    handles.markerPanelSerial.BorderWidth = 2;
     
     set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
-    handles.markerPanelSerial.ShadowColor = [.7 .7 .7];
-    handles.markerPanelSerial.BorderWidth = 1;
+    handles.markerPanelTTL.ShadowColor = [.7 .7 .7];
+    handles.markerPanelTTL.BorderWidth = 1;
 
     set(get(handles.timePanel, 'Children'), 'Enable', 'off')
     handles.timePanel.ShadowColor = [.7 .7 .7];
@@ -490,8 +490,13 @@ end
 
 % --- Executes on button press in selectManual.
 function handles = selectManual_Callback(hObject, eventdata, handles)
+delete(findobj('type','patch'))
 handles.axes1;
-[selection,~] = ginput(2);
+for iclick = 1:2
+    [selection(iclick), ~] = ginput(1);
+    xline(handles.axes1, selection(iclick), LineStyle="--")
+end
+% [selection,~] = ginput(2);
 handles.windowEdges = round(selection'*handles.EEG.fsample);
 guidata(hObject,handles)
 Preview_Callback(hObject, eventdata, handles)
