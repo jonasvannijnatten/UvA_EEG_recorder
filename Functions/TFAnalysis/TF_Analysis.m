@@ -457,7 +457,7 @@ ylabel(cb, ztitle);
 
 % set z limits
 if any(get(handles.ZLim, 'String')) && numel(str2num(get(handles.ZLim, 'String')))>1
-    caxis(handles.tfPlot, str2num(get(handles.ZLim, 'String')));
+    clim(handles.tfPlot, str2num(get(handles.ZLim, 'String')));
     cb.Limits = str2num(get(handles.ZLim, 'String'));
 end
 

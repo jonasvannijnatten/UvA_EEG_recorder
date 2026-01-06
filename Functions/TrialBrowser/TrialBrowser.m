@@ -176,10 +176,12 @@ T = handles.tf.T;
 F = handles.tf.F;
 tf = handles.tf.data;
 
+
 ylimits = str2num(handles.YLim.String);
 Fselect = F> ylimits(1) & F < ylimits(2);
 
 surf(handles.extraPlot,T,F(Fselect),tf(Fselect,:,handles.trialcounter),'EdgeColor','none');
+
 colormap(handles.extraPlot,jet(30)); % set colormap
 view(handles.extraPlot,0,90); % set view from xy-axis angle
 axis(handles.extraPlot,'xy');
@@ -194,16 +196,24 @@ else
     handles.extraPlot.YLim = str2num(handles.YLim.String);
 end
 
+y_lim = handles.extraPlot.YLim;
+freq_selection = (F>y_lim(1)) & (F<y_lim(2));
 cb = colorbar(handles.extraPlot);
-ztitle = 'Power (^{10}log(\muV^2)';
+ztitle = 'Power (dB)';
 ylabel(cb, ztitle);
+power_range = [min(tf(freq_selection,:,handles.trialcounter), [], 'all'), max(tf(freq_selection,:,handles.trialcounter), [], 'all')];
+clim(power_range);
+cb.Limits = power_range;
+% cb.Limits =
+handles.extraPlot.CLim =  power_range;
+% handles.extraPlot.ZLim = [min(tf(freq_selection,:,:), [], 'all'), max(tf(freq_selection,:,:), [], 'all')];
+
 
 % set z limits
 if any(get(handles.ZLim, 'String')) && numel(str2num(get(handles.ZLim, 'String')))>1
-    caxis(handles.extraPlot, str2num(get(handles.ZLim, 'String')));
+    clim(handles.extraPlot, str2num(get(handles.ZLim, 'String')));
     cb.Limits = str2num(get(handles.ZLim, 'String'));
 end
-
 guidata(hObject,handles)
 
 
@@ -221,7 +231,7 @@ try
 
     % determine nr of samples in the segment
     nrsamples = size(data,1);
-    
+
     % check whether channel selection is valid
     chan = str2double(handles.channelcounter);
     if chan < 0 || chan > numchans
@@ -299,19 +309,6 @@ try
     fprintf('NFFT = %i samples\n', nfft);
 
     % monitor RAM usage
-    if ispc
-        [~, sys] = memory;
-        ramusage = num2str(round((sys.PhysicalMemory.Total - sys.PhysicalMemory.Available )/ sys.PhysicalMemory.Total * 100,2));
-    else
-        ramusage = 'unknown';
-    end
-
-    % check whether onset sample is valid
-    onset_sample = 1;
-
-
-    % get frequency range to plot
-    % ylimits = str2num(get(handles.YLim, 'String'));
     if ispc
         [~, sys] = memory;
         ramusage = num2str(round((sys.PhysicalMemory.Total - sys.PhysicalMemory.Available )/ sys.PhysicalMemory.Total * 100,2));
