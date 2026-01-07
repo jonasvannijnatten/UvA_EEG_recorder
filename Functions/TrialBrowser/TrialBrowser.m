@@ -22,7 +22,7 @@ function varargout = TrialBrowser(varargin)
 
 % Edit the above text to modify the response to help TrialBrowser
 
-% Last Modified by GUIDE v2.5 18-Dec-2025 17:04:12
+% Last Modified by GUIDE v2.5 07-Jan-2026 22:08:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -150,38 +150,75 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-function plotData(hObject, handles)
+function plotTrial(hObject, handles)
 handles.trial_indicator.String = [num2str(handles.trialcounter) ' / ' num2str(handles.totalnroftrials)];
 handles.channel_indicator.String = [num2str(handles.channelcounter) ' / ' num2str(handles.nrofchannels)];
 
 % only use time points also available in TF data
-time = handles.EEG.time;
-time_select = find(time>min(handles.tf.T) & time<max(handles.tf.T));
+plotTFtime = 0;
 
-time = handles.EEG.time(time_select);
-data = handles.data(time_select,:,:);
+time = handles.EEG.time;
+if plotTFtime && handles.powerPlotChoice.Value==4
+    time_select = find(time>min(handles.tf.T) & time<max(handles.tf.T));
+    time = handles.EEG.time(time_select);
+    data = handles.data(time_select,:,:);
+else
+    data = handles.data;
+end
+
 cla(handles.trialPlot);
-if handles.plotStats.Value
+if handles.TrialPlotChoice.Value == 2
+    % plot mean + SD of all trials
     trialMean = mean(data(:,handles.channelcounter,:),3);
     trialSD = std(data(:,handles.channelcounter,:), [], 3)*str2double(handles.SD_range.String);
     plot(handles.trialPlot, time, trialMean, 'r');
     hold(handles.trialPlot, 'on');
     plot(handles.trialPlot, time, trialMean+trialSD, 'r:');
     plot(handles.trialPlot, time, trialMean-trialSD, 'r:');
+elseif handles.TrialPlotChoice.Value == 3
+    % plot all trials as grey lines
+    plot(handles.trialPlot, time, squeeze(data(:,handles.channelcounter,:)), Color=[0.7 0.7 0.7]);
 end
+
+% plot current trial
 hold(handles.trialPlot, 'on');
-plot(handles.trialPlot, time, data(:,handles.channelcounter, handles.trialcounter), 'b');
-axis(handles.trialPlot, 'tight')
+plot(handles.trialPlot, time, data(:,handles.channelcounter, handles.trialcounter), 'b', 'LineWidth', 2);
 xlabel(handles.trialPlot,'Time (seconds)')
 ylabel(handles.trialPlot,'Amplitude (\muV)')
+axis(handles.trialPlot, 'tight')
 
+if handles.trialYlimChoice.Value == 2
+    handles.trialPlot.YLim = [min(data(:,handles.channelcounter,:),[],'all') max(data(:,handles.channelcounter,:), [], 'all')];
+elseif handles.trialYlimChoice.Value == 3
+    if ~isempty(handles.trialYlim.String) && length(handles.trialYlim.String) >1
+        handles.trialPlot.YLim = str2double(strsplit(handles.trialYlim.String));
+    end
+end
+
+guidata(hObject,handles)
+
+
+function plotData(hObject, handles)
+plotTrial(hObject, handles)
+plotPower(hObject, handles)
+
+function plotPower(hObject, handles)
+if handles.powerPlotChoice.Value == 4
+    plotTF(hObject, handles);
+else
+    plotPowerspectrum(hObject, handles)
+end
+
+
+function plotTF(hObject, handles)
+cla(handles.extraPlot)
 
 T = handles.tf.T;
 F = handles.tf.F;
 tf = handles.tf.data;
 
 
-ylimits = str2num(handles.YLim.String);
+ylimits = str2num(handles.freqLim.String);
 Fselect = F> ylimits(1) & F < ylimits(2);
 
 surf(handles.extraPlot,T,F(Fselect),tf(Fselect,:,handles.trialcounter),'EdgeColor','none');
@@ -194,29 +231,87 @@ handles.extraPlot.XLim = handles.trialPlot.XLim;
 xlabel(handles.extraPlot, 'Time (seconds)')
 ylabel(handles.extraPlot, 'Frequency (Hz)')
 
-if str2num(handles.YLim.String)==0
+if str2num(handles.freqLim.String)==0
     ylim auto
 else
-    handles.extraPlot.YLim = str2num(handles.YLim.String);
+    handles.extraPlot.YLim = str2num(handles.freqLim.String);
 end
 
 y_lim = handles.extraPlot.YLim;
 freq_selection = (F>y_lim(1)) & (F<y_lim(2));
-cb = colorbar(handles.extraPlot);
+cb = colorbar(handles.extraPlot,"east");
 ztitle = 'Power (dB)';
 ylabel(cb, ztitle);
-power_range = [min(tf(freq_selection,:,handles.trialcounter), [], 'all'), max(tf(freq_selection,:,handles.trialcounter), [], 'all')];
-clim(power_range);
-cb.Limits = power_range;
-% cb.Limits =
-handles.extraPlot.CLim =  power_range;
+
+if handles.powerRangeChoice.Value == 1
+
+elseif handles.powerRangeChoice.Value == 2
+    % power_range = [min(tf(freq_selection,:,handles.trialcounter), [], 'all'), max(tf(freq_selection,:,handles.trialcounter), [], 'all')];
+    power_range = [min(tf(freq_selection,:,:), [], 'all'), max(tf(freq_selection,:,:), [], 'all')];
+    clim(power_range);
+    cb.Limits = power_range;
+    % cb.Limits =
+    handles.extraPlot.CLim =  power_range;
+elseif handles.powerRangeChoice.Value == 3
+    % set z limits
+    if any(get(handles.ZLim, 'String')) && numel(str2num(get(handles.ZLim, 'String')))>1
+        clim(handles.extraPlot, str2num(get(handles.ZLim, 'String')));
+        cb.Limits = str2num(get(handles.ZLim, 'String'));
+    end
+end
+%
+% power_range = [min(tf(freq_selection,:,handles.trialcounter), [], 'all'), max(tf(freq_selection,:,handles.trialcounter), [], 'all')];
+% clim(power_range);
+% cb.Limits = power_range;
+% % cb.Limits =
+% handles.extraPlot.CLim =  power_range;
 % handles.extraPlot.ZLim = [min(tf(freq_selection,:,:), [], 'all'), max(tf(freq_selection,:,:), [], 'all')];
 
+guidata(hObject,handles)
 
-% set z limits
-if any(get(handles.ZLim, 'String')) && numel(str2num(get(handles.ZLim, 'String')))>1
-    clim(handles.extraPlot, str2num(get(handles.ZLim, 'String')));
-    cb.Limits = str2num(get(handles.ZLim, 'String'));
+function plotPowerspectrum(hObject, handles)
+cla(handles.extraPlot)
+if ~isempty(findobj('Tag','Colorbar'))
+    delete(findobj('Tag','Colorbar'));
+end
+F = handles.tf.F;
+tf = handles.tf.data;
+
+ylimits = str2double(strsplit(handles.freqLim.String));
+Fselect = F> ylimits(1) & F < ylimits(2);
+
+if handles.powerPlotChoice.Value == 2
+    % plot mean +/- 2 SD
+    meanPower = mean(tf(Fselect,:,:),[2 3]);
+    stdPower = std(mean(tf(Fselect,:,:),2),0,3);
+    plot(handles.extraPlot, F(Fselect), meanPower, Color='r');
+    hold on
+    plot(handles.extraPlot, F(Fselect), meanPower+2*stdPower, Color='r', LineStyle=':');
+    plot(handles.extraPlot, F(Fselect), meanPower-2*stdPower, Color='r', LineStyle=':');
+
+elseif handles.powerPlotChoice.Value == 3
+    % plot all trials as grey lines
+    plot(handles.extraPlot, F(Fselect), squeeze(mean(tf(Fselect,:,:),2)), Color=[0.7 0.7 0.7]);
+    hold on
+end
+
+% plot current trial
+plot(handles.extraPlot,F(Fselect), mean(tf(Fselect,:,handles.trialcounter),2), Color='b', LineWidth=2);
+
+ylabel(handles.extraPlot, 'Power')
+xlabel(handles.extraPlot, 'Frequency (Hz)')
+axis tight
+
+if handles.powerRangeChoice.Value == 1
+    ylim auto
+elseif handles.powerRangeChoice.Value == 2
+    y_lim = str2double(strsplit(handles.freqLim.String));
+    freq_selection = (F>y_lim(1)) & (F<y_lim(2));
+    ylim([min(tf(freq_selection,:,:), [], 'all'), max(tf(freq_selection,:,:), [], 'all')]);
+elseif handles.powerRangeChoice.Value == 3
+    if ~isempty(handles.ZLim.String) && length(handles.ZLim.String) > 1
+        ylim(str2double(strsplit(handles.ZLim.String)));
+    end
 end
 guidata(hObject,handles)
 
@@ -403,25 +498,83 @@ end
 guidata(hObject,handles)
 
 
-
-function plotStats_Callback(hObject, eventdata, handles)
-plotData(hObject, handles)
-
-
-function YLim_Callback(hObject, eventdata, handles)
-plotData(hObject, handles)
+function freqLim_Callback(hObject, eventdata, handles)
+plotPower(hObject, handles)
 
 
-function YLim_CreateFcn(hObject, eventdata, handles)
+function freqLim_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 function ZLim_Callback(hObject, eventdata, handles)
-plotData(hObject, handles)
+plotPower(hObject, handles)
 
 % --- Executes during object creation, after setting all properties.
 function ZLim_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in powerPlotChoice.
+function powerPlotChoice_Callback(hObject, eventdata, handles)
+plotPower(hObject, handles)
+
+
+
+% --- Executes during object creation, after setting all properties.
+function powerPlotChoice_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes on selection change in TrialPlotChoice.
+function TrialPlotChoice_Callback(hObject, eventdata, handles)
+plotTrial(hObject, handles)
+
+
+% --- Executes during object creation, after setting all properties.
+function TrialPlotChoice_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes on selection change in trialYlimChoice.
+function trialYlimChoice_Callback(hObject, eventdata, handles)
+if handles.trialYlimChoice.Value == 3
+    handles.trialYlim.Enable = 'on';
+else
+    handles.trialYlim.Enable = 'off';
+end
+
+% --- Executes during object creation, after setting all properties.
+function trialYlimChoice_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function trialYlim_Callback(hObject, eventdata, handles)
+plotData(hObject, handles)
+
+% --- Executes during object creation, after setting all properties.
+function trialYlim_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in powerRangeChoice.
+function powerRangeChoice_Callback(hObject, eventdata, handles)
+if handles.powerRangeChoice.Value == 3
+    handles.ZLim.Enable = 'on';
+else
+    handles.ZLim.Enable = 'off';
+end
+plotPower(hObject, handles)
+
+% --- Executes during object creation, after setting all properties.
+function powerRangeChoice_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
