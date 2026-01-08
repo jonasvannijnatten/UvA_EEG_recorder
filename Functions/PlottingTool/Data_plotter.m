@@ -225,7 +225,10 @@ end
 
 % --- Executes on button press in export_figure.
 function export_figure_Callback(hObject, eventdata, handles)
+handles.axes1.Units="normalized";
 copyobj([handles.axes1.Legend handles.axes1], figure);
+h=gca;
+h.OuterPosition=[0, 0, 1, 1];
 % hObject    handle to export_figure (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
