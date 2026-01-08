@@ -309,6 +309,7 @@ try
 
     % apply correction
     if handles.bslmethod.Value == 2
+        % power over baseline
         % normalize data to prevent extreme values in the resulting TF
         tf = (tf - min(tf(:))) / (max(tf(:)) - min(tf(:)));
         % calculate power during baseline
@@ -317,7 +318,7 @@ try
         %         tf = bsxfun(@ldivide, tf, bslP);
         tf = bsxfun(@rdivide, tf, bslP)*100;
 
-        powerUnit = "power (% to baseline)";
+        powerUnit = "power (dB; % to baseline)";
         fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
         handles.history.base = sprintf(['Relative baseline correction per frequency (power/baseline) applied at %s\n' ...
             'The time widow used as baseline is %2.f until %.2f'], datetime, bsl(1)/Fs, bsl(2)/Fs);
@@ -1156,7 +1157,7 @@ EEG.frequency = str2num(handles.foi.String);
 % Store analyzed channel label and type
 EEG.channelLabels = handles.channelLabel;
 EEG.channelTypes = handles.channelTypes;
-EEG = rmfield(EEG.channelnumbers);
+EEG = rmfield(EEG,'channelnumbers');
 
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
@@ -1204,7 +1205,7 @@ EEG.time = str2num(handles.toi.String);
 % Store analyzed channel label and type
 EEG.channelLabels = handles.channelLabel;
 EEG.channelTypes = handles.channelTypes;
-EEG = rmfield(EEG.channelnumbers);
+EEG = rmfield(EEG,'channelnumbers');
 
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
