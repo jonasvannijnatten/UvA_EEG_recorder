@@ -309,6 +309,7 @@ try
 
     % apply correction
     if handles.bslmethod.Value == 2
+        % power over baseline
         % normalize data to prevent extreme values in the resulting TF
         tf = (tf - min(tf(:))) / (max(tf(:)) - min(tf(:)));
         % calculate power during baseline
@@ -317,7 +318,7 @@ try
         %         tf = bsxfun(@ldivide, tf, bslP);
         tf = bsxfun(@rdivide, tf, bslP)*100;
 
-        powerUnit = "power (% to baseline)";
+        powerUnit = "power (dB; % to baseline)";
         fprintf('Relative baseline correction applied per frequency (power/baseline)\n')
         handles.history.base = sprintf(['Relative baseline correction per frequency (power/baseline) applied at %s\n' ...
             'The time widow used as baseline is %2.f until %.2f'], datetime, bsl(1)/Fs, bsl(2)/Fs);
@@ -457,7 +458,7 @@ ylabel(cb, ztitle);
 
 % set z limits
 if any(get(handles.ZLim, 'String')) && numel(str2num(get(handles.ZLim, 'String')))>1
-    caxis(handles.tfPlot, str2num(get(handles.ZLim, 'String')));
+    clim(handles.tfPlot, str2num(get(handles.ZLim, 'String')));
     cb.Limits = str2num(get(handles.ZLim, 'String'));
 end
 
@@ -1150,11 +1151,13 @@ EEG = handles.EEG;
 EEG.data = data;
 EEG.dims = "times";
 EEG.time = handles.tf.T;
-EEG.frequency = handles.tf.F;
+EEG.powerUnit = handles.tf.powerUnit;
+EEG.frequency = str2num(handles.foi.String);
 
 % Store analyzed channel label and type
 EEG.channelLabels = handles.channelLabel;
 EEG.channelTypes = handles.channelTypes;
+EEG = rmfield(EEG,'channelnumbers');
 
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
@@ -1195,12 +1198,14 @@ EEG.data = mean(handles.tf.data(:,Tselect),2);
 EEG.dims = "frequencies";
 EEG.domain = "frequency";
 EEG.frequency = handles.tf.F;
+EEG.powerUnit = handles.tf.powerUnit;
 % remove the time information from the struct.
-EEG = rmfield(EEG,'time');
+EEG.time = str2num(handles.toi.String);
 
 % Store analyzed channel label and type
 EEG.channelLabels = handles.channelLabel;
 EEG.channelTypes = handles.channelTypes;
+EEG = rmfield(EEG,'channelnumbers');
 
 % Update history depending on whether TF analysis, baseline correction and averaging was applied
 % History is updated here to make it flexible while user is still using the tool
