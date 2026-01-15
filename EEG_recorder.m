@@ -43,6 +43,8 @@ end
 
 function EEG_recorder_OpeningFcn(hObject, eventdata, handles, varargin)
 fprintf('powering up...\n')
+% Set WindowStyle to Normal so that new figures open in a new window
+set(groot, 'DefaultFigureWindowStyle', 'normal');
 % Enable 'start' button, disable 'stop' and 'clear' button
 set(handles.start_recording, 'Enable','on');
 set(handles.stop_recording, 'Enable','off');
