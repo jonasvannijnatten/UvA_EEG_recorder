@@ -22,6 +22,10 @@ set(get(handles.markerPanelTTL, 'Children'), 'Enable', 'off')
 set(get(handles.timePanel, 'Children'), 'Enable', 'off')
 set(get(handles.manualPanel, 'Children'), 'Enable', 'off')
 
+% Change Font Units
+txt_handles = findall(handles.figure1, '-property', 'FontUnits');
+set(txt_handles, 'FontUnits', 'normalized');
+
 handles.output = hObject;
 % handles.dir = varargin{1}.dir;
 guidata(hObject, handles);
