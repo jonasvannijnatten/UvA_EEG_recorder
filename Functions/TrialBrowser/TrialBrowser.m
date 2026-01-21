@@ -59,6 +59,10 @@ else
     handles.dir = varargin{1}.dir;
 end
 
+% Change Font Units
+txt_handles = findall(handles.figure1, '-property', 'FontUnits');
+set(txt_handles, 'FontUnits', 'normalized');
+
 % Update handles structure
 guidata(hObject, handles);
 
