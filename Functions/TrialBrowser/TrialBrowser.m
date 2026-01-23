@@ -187,7 +187,9 @@ xlabel(handles.trialPlot,'Time (seconds)')
 ylabel(handles.trialPlot,'Amplitude (\muV)')
 axis(handles.trialPlot, 'tight')
 
-if handles.trialYlimChoice.Value == 2
+if handles.trialYlimChoice.Value == 1
+    handles.trialPlot.YLim = [min(data(:,handles.channelcounter,handles.trialcounter),[],'all') max(data(:,handles.channelcounter,handles.trialcounter), [], 'all')];
+elseif handles.trialYlimChoice.Value == 2
     handles.trialPlot.YLim = [min(data(:,handles.channelcounter,:),[],'all') max(data(:,handles.channelcounter,:), [], 'all')];
 elseif handles.trialYlimChoice.Value == 3
     if ~isempty(handles.trialYlim.String) && length(handles.trialYlim.String) >1
@@ -244,9 +246,12 @@ ztitle = 'Power (dB)';
 ylabel(cb, ztitle);
 
 if handles.powerRangeChoice.Value == 1
-
+    power_range = [min(tf(freq_selection,:,handles.trialcounter), [], 'all'), max(tf(freq_selection,:,handles.trialcounter), [], 'all')];
+    clim(power_range);
+    cb.Limits = power_range;
+    % cb.Limits =
+    handles.extraPlot.CLim =  power_range;
 elseif handles.powerRangeChoice.Value == 2
-    % power_range = [min(tf(freq_selection,:,handles.trialcounter), [], 'all'), max(tf(freq_selection,:,handles.trialcounter), [], 'all')];
     power_range = [min(tf(freq_selection,:,:), [], 'all'), max(tf(freq_selection,:,:), [], 'all')];
     clim(power_range);
     cb.Limits = power_range;
@@ -302,11 +307,11 @@ ylabel(handles.extraPlot, 'Power')
 xlabel(handles.extraPlot, 'Frequency (Hz)')
 axis tight
 
+y_lim = str2double(strsplit(handles.freqLim.String));
+freq_selection = (F>y_lim(1)) & (F<y_lim(2));
 if handles.powerRangeChoice.Value == 1
-    ylim auto
+    ylim([min(mean(tf(freq_selection,:,handles.trialcounter),2), [], 'all'), max(mean(tf(freq_selection,:,handles.trialcounter),2), [], 'all')]);
 elseif handles.powerRangeChoice.Value == 2
-    y_lim = str2double(strsplit(handles.freqLim.String));
-    freq_selection = (F>y_lim(1)) & (F<y_lim(2));
     ylim([min(tf(freq_selection,:,:), [], 'all'), max(tf(freq_selection,:,:), [], 'all')]);
 elseif handles.powerRangeChoice.Value == 3
     if ~isempty(handles.ZLim.String) && length(handles.ZLim.String) > 1
