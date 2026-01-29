@@ -60,6 +60,13 @@ if isempty(varargin)
 else
     handles.dir = varargin{1}.dir;
 end
+
+% Change Font Units
+txt_handles = findall(handles.figure1, '-property', 'FontUnits');
+set(txt_handles, 'FontUnits', 'normalized');
+win_handles = findall(handles.figure1, '-property', 'Units');
+set(wind_handles, 'Units', 'normalized')
+
 % Update handles structure
 guidata(hObject, handles);
 
